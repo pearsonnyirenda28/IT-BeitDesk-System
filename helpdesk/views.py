@@ -93,7 +93,12 @@ def dashboard(request):
         .values('assigned_to__username', 'assigned_to__first_name', 'assigned_to__last_name')
         .annotate(count=Count('id')).order_by('-count')[:5]
     )
-    recent_audit = AuditLog.objects.select_related('user').order_by('-timestamp')[:10]
+    if request.user.is_staff:
+        recent_audit = AuditLog.objects.select_related('user').order_by('-timestamp')[:10]
+    else:
+        recent_audit = AuditLog.objects.select_related('user').filter(
+            user=request.user
+        ).order_by('-timestamp')[:10]
 
     context = {
         'stats': stats,
@@ -184,6 +189,10 @@ def ticket_detail(request, ticket_id):
                 return redirect('ticket_detail', ticket_id=ticket_id)
 
         elif action == 'status_change':
+            if not request.user.is_staff:
+                messages.error(request, 'Only IT staff and administrators can change ticket status.')
+                return redirect('ticket_detail', ticket_id=ticket_id)
+
             old_status = ticket.status
             new_status = request.POST.get('status')
             if new_status and new_status != old_status:
@@ -209,6 +218,29 @@ def ticket_detail(request, ticket_id):
                        changes={'assigned_to': {'from': old_agent,
                                                 'to': str(ticket.assigned_to or 'Unassigned')}})
             messages.success(request, 'Ticket assignment updated.')
+            return redirect('ticket_detail', ticket_id=ticket_id)
+
+        elif action == 'take_ticket':
+            # Staff and admins may self-assign an unassigned, open ticket.
+            # This is separate from full reassignment, which stays admin-only.
+            if not request.user.is_staff:
+                messages.error(request, 'Only IT staff and administrators can take tickets.')
+                return redirect('ticket_detail', ticket_id=ticket_id)
+
+            if ticket.assigned_to is not None:
+                messages.error(request, 'This ticket is already assigned and cannot be taken.')
+                return redirect('ticket_detail', ticket_id=ticket_id)
+
+            ticket.assigned_to = request.user
+            if ticket.status == Ticket.STATUS_OPEN:
+                ticket.status = Ticket.STATUS_IN_PROGRESS
+            ticket.save()
+            log_action(request, AuditLog.ACTION_ASSIGN, 'Ticket',
+                       ticket.ticket_id, str(ticket),
+                       changes={'assigned_to': {'from': 'Unassigned',
+                                                'to': str(request.user)}},
+                       notes='Self-assigned via Take Ticket')
+            messages.success(request, f'You have taken ticket {ticket.ticket_id}.')
             return redirect('ticket_detail', ticket_id=ticket_id)
 
     audit_trail = AuditLog.objects.filter(
@@ -265,34 +297,15 @@ def ticket_create(request):
 
 @login_required
 def ticket_edit(request, ticket_id):
-    ticket = get_object_or_404(Ticket, ticket_id=ticket_id)
-    if request.method == 'POST':
-        form = TicketForm(request.POST, request.FILES, instance=ticket)
-        if form.is_valid():
-            changed_fields = form.changed_data
-            ticket = form.save(commit=False)
-            # Only administrators may change the assignee — restore the
-            # original value for anyone else regardless of what was posted
-            if not request.user.is_superuser:
-                original = Ticket.objects.get(pk=ticket.pk)
-                ticket.assigned_to = original.assigned_to
-                if 'assigned_to' in changed_fields:
-                    changed_fields.remove('assigned_to')
-            ticket.save()
-            form.save_m2m()
-            log_action(request, AuditLog.ACTION_UPDATE, 'Ticket',
-                       ticket.ticket_id, str(ticket),
-                       changes={'fields_changed': changed_fields})
-            messages.success(request, 'Ticket updated.')
-            return redirect('ticket_detail', ticket_id=ticket.ticket_id)
-    else:
-        form = TicketForm(instance=ticket)
-        if not request.user.is_superuser:
-            form.fields.pop('assigned_to', None)
-
-    return render(request, 'helpdesk/ticket_form.html',
-                  {'form': form, 'ticket': ticket,
-                   'page_title': f'Edit {ticket.ticket_id}'})
+    # Tickets are immutable once created. Status changes go through the
+    # dedicated status_change action in ticket_detail (staff/admin only);
+    # no other field may be edited by anyone, including administrators.
+    messages.error(
+        request,
+        'Tickets cannot be edited after creation. Use the status control '
+        'on the ticket page to update its progress.'
+    )
+    return redirect('ticket_detail', ticket_id=ticket_id)
 
 
 @login_required
@@ -352,7 +365,15 @@ def reports(request):
 
 @login_required
 def audit_log(request):
-    logs = AuditLog.objects.select_related('user').all()
+    if not request.user.is_staff:
+        messages.error(request, 'Access denied. The audit trail is restricted to IT staff and administrators.')
+        return redirect('dashboard')
+
+    # Superusers see everything; staff see only their own audit events
+    if request.user.is_superuser:
+        logs = AuditLog.objects.select_related('user').all()
+    else:
+        logs = AuditLog.objects.select_related('user').filter(user=request.user)
 
     search = request.GET.get('search', '')
     action = request.GET.get('action', '')

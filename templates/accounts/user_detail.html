@@ -142,6 +142,7 @@
     <!-- ── SIDEBAR ─────────────────────────────── -->
     <div>
         <!-- Stats -->
+        {% if request.user.is_staff or request.user.is_superuser %}
         <div class="card mb-4">
             <div class="card-header"><h6><i class="fas fa-chart-simple" style="color:var(--accent-hover);margin-right:6px;"></i>Activity Stats</h6></div>
             <div class="card-body" style="display:grid;gap:12px;font-size:13px;">
@@ -171,8 +172,10 @@
                 </div>
             </div>
         </div>
+        {% endif %}
 
-        <!-- Account Status -->
+        <!-- Account Status — hidden from regular users and from staff viewing admins -->
+        {% if can_manage %}
         <div class="card mb-4">
             <div class="card-header"><h6><i class="fas fa-toggle-on" style="color:var(--success-text);margin-right:6px;"></i>Account Status</h6></div>
             <div class="card-body">
@@ -221,6 +224,13 @@
             <i class="fas fa-circle-info" style="color:var(--info-text);"></i>
             Deactivating preserves all ticket history and audit logs. Use this instead of deleting accounts.
         </div>
+        {% elif not is_own_profile and target.is_superuser %}
+        <div style="background:rgba(218,54,51,.08);border:1px solid rgba(248,81,73,.2);
+                    border-radius:8px;padding:12px 14px;font-size:11px;color:var(--text-muted);line-height:1.6;">
+            <i class="fas fa-shield-halved" style="color:var(--danger-text);"></i>
+            Administrator accounts can only be managed by other administrators.
+        </div>
+        {% endif %}
     </div>
 </div>
 

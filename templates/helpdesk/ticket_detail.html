@@ -29,9 +29,6 @@
             </div>
         </div>
     </div>
-    <a href="{% url 'ticket_edit' ticket.ticket_id %}" class="btn btn-secondary btn-sm">
-        <i class="fas fa-edit"></i> Edit
-    </a>
 </div>
 
 <div class="grid" style="grid-template-columns:1fr 310px;gap:20px;align-items:start;">
@@ -55,6 +52,7 @@
         </div>
 
         <!-- Change Status -->
+        {% if request.user.is_staff %}
         <div class="card mb-4">
             <div class="card-header">
                 <div class="header-icon"
@@ -79,6 +77,7 @@
                 </form>
             </div>
         </div>
+        {% endif %}
 
         <!-- Comments & Activity -->
         <div class="card mb-4">
@@ -332,6 +331,18 @@
                     <button type="submit" class="btn btn-secondary btn-sm"
                             style="width:100%;justify-content:center;">
                         <i class="fas fa-user-plus"></i> Assign
+                    </button>
+                </form>
+                {% elif not ticket.assigned_to and request.user.is_staff %}
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="take_ticket">
+                    <p class="text-muted" style="font-size:12px;margin-bottom:10px;">
+                        This ticket is unassigned.
+                    </p>
+                    <button type="submit" class="btn btn-primary btn-sm"
+                            style="width:100%;justify-content:center;">
+                        <i class="fas fa-hand-paper"></i> Take This Ticket
                     </button>
                 </form>
                 {% elif not ticket.assigned_to %}

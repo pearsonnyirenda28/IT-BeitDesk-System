@@ -127,6 +127,23 @@ def user_detail(request, user_id):
         messages.error(request, 'Access denied.')
         return redirect('dashboard')
 
+    # Staff cannot manage admin accounts — only superusers can
+    staff_viewing_admin = (
+        request.user.is_staff
+        and not request.user.is_superuser
+        and target.is_superuser
+    )
+    if staff_viewing_admin and request.method == 'POST':
+        messages.error(request, 'IT staff cannot manage administrator accounts.')
+        return redirect('user_detail', user_id=user_id)
+
+    # Determines which management controls the template shows
+    # Superusers can manage anyone; staff can only manage non-admins (not self for status)
+    can_manage = (
+        request.user.is_superuser or
+        (request.user.is_staff and not target.is_superuser and not is_own_profile)
+    )
+
     if request.method == 'POST':
         action = request.POST.get('action')
 
@@ -224,6 +241,8 @@ def user_detail(request, user_id):
         'tickets_open':     tickets_qs.filter(status__in=['OPEN', 'IN_PROGRESS']).count(),
         'calls_count':      calls_count,
         'audit_logs':       audit_logs,
+        'can_manage':       can_manage,
+        'is_own_profile':   is_own_profile,
     })
 
 

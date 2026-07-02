@@ -1,0 +1,42 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block branding %}
+<div id="site-name" style="display:flex;align-items:center;gap:12px;padding:8px 0;">
+    <img src="{% static 'img/beitbridge_logo.jpg' %}"
+         alt="Beitbridge"
+         style="width:44px;height:44px;border-radius:8px;object-fit:cover;">
+    <div>
+        <div style="font-size:15px;font-weight:700;color:#e6edf3;line-height:1.2;">BeitDesk</div>
+        <div style="font-size:10px;color:#c9a227;letter-spacing:.5px;">MUNICIPALITY OF BEITBRIDGE</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block nav-global %}
+<div style="background:#1a2a1a;border-bottom:1px solid #2a4a2a;padding:6px 20px;
+            display:flex;gap:20px;align-items:center;">
+    <span style="font-size:11px;color:#6e7681;">Quick Links:</span>
+    <a href="/admin/howto/"
+       style="font-size:12px;color:#c9a227;text-decoration:none;font-weight:500;">
+        📖 How to Use
+    </a>
+    <a href="/admin/about/"
+       style="font-size:12px;color:#c9a227;text-decoration:none;font-weight:500;">
+        ℹ️ About BeitDesk
+    </a>
+    <a href="/dashboard/"
+       style="font-size:12px;color:#3fb950;text-decoration:none;font-weight:500;">
+        ⬅ Back to Dashboard
+    </a>
+</div>
+{% endblock %}
+
+{% block footer %}
+<div id="footer" style="padding:12px 20px;text-align:center;
+            font-size:11px;color:#6e7681;border-top:1px solid #30363d;">
+    BeitDesk &copy; {% now "Y" %} Municipality of Beitbridge &bull;
+    Developed by <strong style="color:#c9a227;">Bl@de_zar</strong> | Pearson Nyirenda &bull;
+    Ambition · Perseverance · Success
+</div>
+{% endblock %}

@@ -1,0 +1,240 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<div style="max-width:900px;">
+
+    <h1 style="margin-bottom:6px;">How to Use BeitDesk</h1>
+    <p style="color:#888;margin-bottom:28px;">Step-by-step guide for administrators and IT staff</p>
+
+    <!-- Quick nav -->
+    <div style="background:#1c2128;border:1px solid #30363d;border-radius:8px;
+                padding:14px 20px;margin-bottom:28px;display:flex;gap:20px;flex-wrap:wrap;">
+        <span style="font-size:12px;color:#6e7681;">Jump to:</span>
+        <a href="#tickets"  style="font-size:12px;color:#58a6ff;">Tickets</a>
+        <a href="#voip"     style="font-size:12px;color:#58a6ff;">VoIP Calls</a>
+        <a href="#users"    style="font-size:12px;color:#58a6ff;">User Management</a>
+        <a href="#audit"    style="font-size:12px;color:#58a6ff;">Audit Trail</a>
+        <a href="#reports"  style="font-size:12px;color:#58a6ff;">Reports</a>
+        <a href="#roles"    style="font-size:12px;color:#58a6ff;">Roles &amp; Permissions</a>
+    </div>
+
+    <!-- ── TICKETS ─────────────────────────────────────────────────────── -->
+    <div id="tickets" style="background:#1c2128;border:1px solid #30363d;
+         border-radius:8px;padding:22px;margin-bottom:20px;">
+        <h2 style="font-size:15px;color:#3fb950;margin-bottom:16px;">
+            🎫 Ticket Management
+        </h2>
+
+        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Creating a Ticket</h4>
+        <ol style="font-size:13px;color:#8b949e;line-height:2;padding-left:20px;margin-bottom:16px;">
+            <li>Click <strong style="color:#e6edf3;">New Ticket</strong> in the top bar or sidebar.</li>
+            <li>Fill in the <strong style="color:#e6edf3;">Title</strong> and <strong style="color:#e6edf3;">Description</strong> — be specific about the issue.</li>
+            <li>Select the <strong style="color:#e6edf3;">Category</strong> (e.g. Network, Hardware, Software).</li>
+            <li>Set the <strong style="color:#e6edf3;">Priority</strong>: Low / Medium / High / Critical.</li>
+            <li>Set the <strong style="color:#e6edf3;">Source</strong>: how the issue was reported (Web, Phone, Walk-In, VoIP, Email).</li>
+            <li>Enter the <strong style="color:#e6edf3;">Requester</strong> details — name, email, phone, department.</li>
+            <li>Click <strong style="color:#e6edf3;">Create Ticket</strong>. The system assigns a unique ID (e.g. ND001001).</li>
+        </ol>
+        <div style="background:#161b22;border-left:3px solid #f85149;padding:10px 14px;
+                    border-radius:4px;font-size:12px;color:#8b949e;margin-bottom:16px;">
+            ⚠️ <strong style="color:#e6edf3;">Important:</strong> Once created, ticket fields cannot be edited.
+            Ensure all details are correct before submitting. Only the status can be changed afterwards.
+        </div>
+
+        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Managing Ticket Status</h4>
+        <table style="width:100%;font-size:12px;color:#8b949e;margin-bottom:16px;">
+            <tr style="border-bottom:1px solid #30363d;">
+                <th style="padding:6px 10px;text-align:left;color:#e6edf3;">Status</th>
+                <th style="padding:6px 10px;text-align:left;color:#e6edf3;">Meaning</th>
+                <th style="padding:6px 10px;text-align:left;color:#e6edf3;">Who can set</th>
+            </tr>
+            <tr><td style="padding:6px 10px;color:#17a2b8;">Open</td><td>Newly raised, not yet picked up</td><td>System (on create)</td></tr>
+            <tr><td style="padding:6px 10px;color:#388bfd;">In Progress</td><td>Actively being worked on</td><td>IT Staff / Admin</td></tr>
+            <tr><td style="padding:6px 10px;color:#d29922;">Pending</td><td>Waiting on requester or third party</td><td>IT Staff / Admin</td></tr>
+            <tr><td style="padding:6px 10px;color:#3fb950;">Resolved</td><td>Issue fixed, awaiting confirmation</td><td>IT Staff / Admin</td></tr>
+            <tr><td style="padding:6px 10px;color:#6e7681;">Closed</td><td>Confirmed resolved, archived</td><td>IT Staff / Admin</td></tr>
+        </table>
+
+        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Assigning Tickets</h4>
+        <ul style="font-size:13px;color:#8b949e;line-height:2;padding-left:20px;margin-bottom:8px;">
+            <li><strong style="color:#e6edf3;">Administrators</strong> can assign any ticket to any IT staff member from the ticket detail page.</li>
+            <li><strong style="color:#e6edf3;">IT Staff</strong> can <em>take</em> any open, unassigned ticket by clicking <strong style="color:#e6edf3;">Take This Ticket</strong>. The ticket automatically moves to In Progress.</li>
+            <li>Once assigned, only administrators can reassign the ticket to someone else.</li>
+        </ul>
+    </div>
+
+    <!-- ── VOIP ──────────────────────────────────────────────────────────── -->
+    <div id="voip" style="background:#1c2128;border:1px solid #30363d;
+         border-radius:8px;padding:22px;margin-bottom:20px;">
+        <h2 style="font-size:15px;color:#58a6ff;margin-bottom:16px;">
+            📞 VoIP Call Tracking
+        </h2>
+        <div style="background:#161b22;border-left:3px solid #58a6ff;padding:10px 14px;
+                    border-radius:4px;font-size:12px;color:#8b949e;margin-bottom:16px;">
+            ℹ️ Live call events require a PBX/Asterisk integration on the LAN.
+            Manual call logging is always available regardless.
+        </div>
+
+        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Logging a Call Manually</h4>
+        <ol style="font-size:13px;color:#8b949e;line-height:2;padding-left:20px;margin-bottom:16px;">
+            <li>Click <strong style="color:#e6edf3;">Log Call</strong> in the top bar or VoIP → Log a Call in the sidebar.</li>
+            <li>Enter the <strong style="color:#e6edf3;">Caller Number</strong> (full number with country code, e.g. +263771234567).</li>
+            <li>Enter the <strong style="color:#e6edf3;">Caller Name</strong> if known.</li>
+            <li>Set the <strong style="color:#e6edf3;">Direction</strong> (Inbound / Outbound / Internal) and <strong style="color:#e6edf3;">Status</strong>.</li>
+            <li>Enter the <strong style="color:#e6edf3;">Talk Duration</strong> in minutes (decimals allowed, e.g. 2.5 = 2m 30s).</li>
+            <li>Add <strong style="color:#e6edf3;">Notes</strong> summarising the call topic.</li>
+            <li>Optionally tick <strong style="color:#e6edf3;">Also create a ticket</strong> to log a support issue from the call.</li>
+        </ol>
+
+        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Call Log &amp; Caller Directory</h4>
+        <ul style="font-size:13px;color:#8b949e;line-height:2;padding-left:20px;">
+            <li>The <strong style="color:#e6edf3;">Call Log</strong> lists all recorded calls with filters for date, status, and direction.</li>
+            <li>The <strong style="color:#e6edf3;">Caller Directory</strong> tracks known callers — name, company, total calls, last call, VIP/blocked flags.</li>
+            <li>From any call record, click <strong style="color:#e6edf3;">Create Ticket</strong> to raise a linked support ticket pre-filled with caller details.</li>
+        </ul>
+    </div>
+
+    <!-- ── USERS ─────────────────────────────────────────────────────────── -->
+    <div id="users" style="background:#1c2128;border:1px solid #30363d;
+         border-radius:8px;padding:22px;margin-bottom:20px;">
+        <h2 style="font-size:15px;color:#d29922;margin-bottom:16px;">
+            👥 User Management
+        </h2>
+
+        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Creating a New User</h4>
+        <ol style="font-size:13px;color:#8b949e;line-height:2;padding-left:20px;margin-bottom:16px;">
+            <li>Go to <strong style="color:#e6edf3;">Analytics → Manage Users</strong> in the sidebar.</li>
+            <li>Click <strong style="color:#e6edf3;">Add User</strong> (superusers only).</li>
+            <li>Fill in username, name, email, and a password of at least 8 characters.</li>
+            <li>Tick <strong style="color:#e6edf3;">Grant IT Staff access</strong> if this person should be an agent who can manage tickets.</li>
+            <li>Click <strong style="color:#e6edf3;">Create User</strong>.</li>
+        </ol>
+
+        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Resetting a Password</h4>
+        <ol style="font-size:13px;color:#8b949e;line-height:2;padding-left:20px;margin-bottom:16px;">
+            <li>Go to <strong style="color:#e6edf3;">Manage Users</strong> and click the gear icon next to the user.</li>
+            <li>In the <strong style="color:#e6edf3;">Reset Password</strong> panel, enter and confirm the new password.</li>
+            <li>Click <strong style="color:#e6edf3;">Reset Password</strong>. The user must use this new password on next login.</li>
+        </ol>
+
+        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Deactivating a User</h4>
+        <ul style="font-size:13px;color:#8b949e;line-height:2;padding-left:20px;">
+            <li>On the user's detail page, click <strong style="color:#e6edf3;">Deactivate Account</strong>.</li>
+            <li>The user cannot log in, but all their ticket history and audit events are preserved.</li>
+            <li>Click <strong style="color:#e6edf3;">Reactivate Account</strong> to restore access at any time.</li>
+            <li>IT Staff cannot deactivate or manage administrator accounts.</li>
+        </ul>
+    </div>
+
+    <!-- ── AUDIT TRAIL ───────────────────────────────────────────────────── -->
+    <div id="audit" style="background:#1c2128;border:1px solid #30363d;
+         border-radius:8px;padding:22px;margin-bottom:20px;">
+        <h2 style="font-size:15px;color:#f85149;margin-bottom:16px;">
+            🛡️ Audit Trail
+        </h2>
+        <ul style="font-size:13px;color:#8b949e;line-height:2;padding-left:20px;">
+            <li>Every action in BeitDesk is recorded: logins, ticket creation, status changes, assignments, comments, call logs, and user changes.</li>
+            <li><strong style="color:#e6edf3;">Administrators</strong> can see all events across all users.</li>
+            <li><strong style="color:#e6edf3;">IT Staff</strong> can see only their own audit events.</li>
+            <li><strong style="color:#e6edf3;">Regular Users</strong> see only their own events on the dashboard — they cannot access the full audit trail page.</li>
+            <li>The audit trail records the <strong style="color:#e6edf3;">user</strong>, <strong style="color:#e6edf3;">action</strong>, <strong style="color:#e6edf3;">timestamp</strong>, and <strong style="color:#e6edf3;">IP address</strong> for every event.</li>
+            <li>Audit records cannot be edited or deleted through the application interface.</li>
+        </ul>
+    </div>
+
+    <!-- ── REPORTS ───────────────────────────────────────────────────────── -->
+    <div id="reports" style="background:#1c2128;border:1px solid #30363d;
+         border-radius:8px;padding:22px;margin-bottom:20px;">
+        <h2 style="font-size:15px;color:#9b72ea;margin-bottom:16px;">
+            📊 Reports
+        </h2>
+        <ul style="font-size:13px;color:#8b949e;line-height:2;padding-left:20px;">
+            <li>Go to <strong style="color:#e6edf3;">Analytics → Reports</strong> from the sidebar.</li>
+            <li>Use the period selector to view data for the last <strong style="color:#e6edf3;">7, 30, 90, or 365 days</strong>.</li>
+            <li>Reports show: total tickets created and resolved, average resolution time, breakdown by priority/category/source, and agent performance.</li>
+            <li>VoIP stats show total calls, completion rate, missed calls, and average call duration for the period.</li>
+        </ul>
+    </div>
+
+    <!-- ── ROLES ─────────────────────────────────────────────────────────── -->
+    <div id="roles" style="background:#1c2128;border:1px solid #30363d;
+         border-radius:8px;padding:22px;margin-bottom:20px;">
+        <h2 style="font-size:15px;color:#c9a227;margin-bottom:16px;">
+            🔐 Roles &amp; Permissions Summary
+        </h2>
+        <table style="width:100%;font-size:12px;border-collapse:collapse;">
+            <tr style="background:#161b22;border-bottom:1px solid #30363d;">
+                <th style="padding:8px 12px;text-align:left;color:#e6edf3;">Feature</th>
+                <th style="padding:8px 12px;text-align:center;color:#f85149;">Admin</th>
+                <th style="padding:8px 12px;text-align:center;color:#388bfd;">IT Staff</th>
+                <th style="padding:8px 12px;text-align:center;color:#8b949e;">User</th>
+            </tr>
+            <tr style="border-bottom:1px solid #21262d;">
+                <td style="padding:7px 12px;color:#8b949e;">View own tickets</td>
+                <td style="text-align:center;color:#3fb950;">✔</td>
+                <td style="text-align:center;color:#3fb950;">✔</td>
+                <td style="text-align:center;color:#3fb950;">✔</td>
+            </tr>
+            <tr style="border-bottom:1px solid #21262d;">
+                <td style="padding:7px 12px;color:#8b949e;">View all tickets</td>
+                <td style="text-align:center;color:#3fb950;">✔</td>
+                <td style="text-align:center;color:#3fb950;">✔</td>
+                <td style="text-align:center;color:#f85149;">✘</td>
+            </tr>
+            <tr style="border-bottom:1px solid #21262d;">
+                <td style="padding:7px 12px;color:#8b949e;">Change ticket status</td>
+                <td style="text-align:center;color:#3fb950;">✔</td>
+                <td style="text-align:center;color:#3fb950;">✔</td>
+                <td style="text-align:center;color:#f85149;">✘</td>
+            </tr>
+            <tr style="border-bottom:1px solid #21262d;">
+                <td style="padding:7px 12px;color:#8b949e;">Assign ticket to agent</td>
+                <td style="text-align:center;color:#3fb950;">✔</td>
+                <td style="text-align:center;color:#f85149;">✘</td>
+                <td style="text-align:center;color:#f85149;">✘</td>
+            </tr>
+            <tr style="border-bottom:1px solid #21262d;">
+                <td style="padding:7px 12px;color:#8b949e;">Take unassigned ticket</td>
+                <td style="text-align:center;color:#3fb950;">✔</td>
+                <td style="text-align:center;color:#3fb950;">✔</td>
+                <td style="text-align:center;color:#f85149;">✘</td>
+            </tr>
+            <tr style="border-bottom:1px solid #21262d;">
+                <td style="padding:7px 12px;color:#8b949e;">Log / view VoIP calls</td>
+                <td style="text-align:center;color:#3fb950;">✔</td>
+                <td style="text-align:center;color:#3fb950;">✔</td>
+                <td style="text-align:center;color:#3fb950;">✔</td>
+            </tr>
+            <tr style="border-bottom:1px solid #21262d;">
+                <td style="padding:7px 12px;color:#8b949e;">Full audit trail</td>
+                <td style="text-align:center;color:#3fb950;">✔ (all)</td>
+                <td style="text-align:center;color:#d29922;">✔ (own)</td>
+                <td style="text-align:center;color:#f85149;">✘</td>
+            </tr>
+            <tr style="border-bottom:1px solid #21262d;">
+                <td style="padding:7px 12px;color:#8b949e;">Manage users</td>
+                <td style="text-align:center;color:#3fb950;">✔</td>
+                <td style="text-align:center;color:#d29922;">✔ (non-admins)</td>
+                <td style="text-align:center;color:#f85149;">✘</td>
+            </tr>
+            <tr style="border-bottom:1px solid #21262d;">
+                <td style="padding:7px 12px;color:#8b949e;">Create / deactivate users</td>
+                <td style="text-align:center;color:#3fb950;">✔</td>
+                <td style="text-align:center;color:#f85149;">✘</td>
+                <td style="text-align:center;color:#f85149;">✘</td>
+            </tr>
+            <tr>
+                <td style="padding:7px 12px;color:#8b949e;">Edit own profile</td>
+                <td style="text-align:center;color:#3fb950;">✔</td>
+                <td style="text-align:center;color:#3fb950;">✔</td>
+                <td style="text-align:center;color:#3fb950;">✔</td>
+            </tr>
+        </table>
+    </div>
+
+    <div style="background:#1c2128;border:1px solid #30363d;border-radius:8px;padding:16px;
+                text-align:center;font-size:12px;color:#6e7681;">
+        BeitDesk v1.0 &bull; Municipality of Beitbridge &bull; IT Department &bull;
+        <a href="/admin/about/" style="color:#c9a227;">About this system</a>
+    </div>
+</div>
+{% endblock %}

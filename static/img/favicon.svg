@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a5c2a"/>
+      <stop offset="100%" stop-color="#2d8a45"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="10" fill="url(#g)"/>
+  <!-- Shield shape -->
+  <path fill="#c9a227" d="M14 14 h36 v24 q0 14-18 22 q-18-8-18-22 z"/>
+  <path fill="#1a5c2a" d="M16 16 h32 v22 q0 12-16 20 q-16-8-16-20 z"/>
+  <!-- Bridge simplified -->
+  <rect fill="#c9a227" x="20" y="30" width="24" height="2" rx="1"/>
+  <rect fill="#c9a227" x="23" y="26" width="2" height="6"/>
+  <rect fill="#c9a227" x="39" y="26" width="2" height="6"/>
+  <rect fill="#c9a227" x="20" y="24" width="24" height="1.5" rx=".75"/>
+  <!-- Water -->
+  <path fill="#3a8fc4" d="M16 32 q8-3 16 0 q8 3 16 0 v10 q-8 3-16 0 q-8-3-16 0 z"/>
+</svg>

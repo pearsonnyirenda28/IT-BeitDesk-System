@@ -1,17 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+{% load static %}
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NexusDesk — Sign In</title>
+    <title>BeitDesk — Sign In</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-primary:#0d1117;--bg-secondary:#161b22;--bg-tertiary:#21262d;
             --border:#30363d;--text-primary:#e6edf3;--text-secondary:#8b949e;
-            --text-muted:#6e7681;--accent:#1f6feb;--accent-hover:#388bfd;
-            --danger-text:#f85149;--success-text:#3fb950;
+            --text-muted:#6e7681;--accent:#1a6b30;--accent-hover:#2d8a45;
+            --gold:#c9a227;--danger-text:#f85149;--success-text:#3fb950;
         }
         *{box-sizing:border-box;margin:0;padding:0;}
         body{font-family:'Inter',sans-serif;background:var(--bg-primary);color:var(--text-primary);
@@ -56,25 +58,25 @@
         .alert{padding:10px 14px;border-radius:6px;font-size:13px;margin-bottom:16px;
             background:rgba(218,54,51,.12);border:1px solid rgba(248,81,73,.3);
             color:var(--danger-text);display:flex;align-items:center;gap:8px;}
-        .default-creds{background:var(--bg-tertiary);border:1px solid var(--border);
-            border-radius:6px;padding:12px 14px;margin-bottom:20px;}
-        .default-creds p{font-size:11px;color:var(--text-muted);margin-bottom:8px;
-            display:flex;align-items:center;gap:6px;}
-        .cred-row{display:flex;justify-content:space-between;align-items:center;
-            font-size:12px;margin-bottom:4px;}
-        .cred-key{color:var(--text-secondary);}
-        .cred-val{font-family:'JetBrains Mono',monospace;color:var(--success-text);
-            background:rgba(63,185,80,.08);padding:2px 8px;border-radius:4px;}
-        .footer-note{text-align:center;font-size:11px;color:var(--text-muted);margin-top:20px;}
+        .footer-note{text-align:center;font-size:11px;color:var(--text-muted);margin-top:20px;line-height:1.8;}
+        .footer-credit{font-size:10px;color:var(--text-muted);margin-top:4px;}
+        .footer-credit .handle{color:var(--accent-hover);font-weight:600;}
         .divider{height:1px;background:var(--border);margin:20px 0;}
     </style>
 </head>
 <body>
 <div class="login-wrap">
     <div class="brand">
-        <div class="brand-icon"><i class="fas fa-headset"></i></div>
-        <div class="brand-name">NexusDesk</div>
-        <div class="brand-tagline">IT HELP DESK &amp; VOIP TRACKING</div>
+        <img src="{% static 'img/beitbridge_logo.jpg' %}"
+             alt="Municipality of Beitbridge"
+             style="width:80px;height:80px;border-radius:12px;object-fit:cover;
+                    margin:0 auto 14px;display:block;
+                    box-shadow:0 4px 20px rgba(201,162,39,.3);">
+        <div class="brand-name">BeitDesk</div>
+        <div style="font-size:11px;color:var(--gold);letter-spacing:.5px;font-weight:500;">
+            MUNICIPALITY OF BEITBRIDGE
+        </div>
+        <div class="brand-tagline" style="margin-top:4px;">IT HELP DESK &amp; SUPPORT SYSTEM</div>
     </div>
 
     <div class="card">
@@ -87,12 +89,6 @@
         {% for message in messages %}
         <div class="alert"><i class="fas fa-exclamation-circle"></i> {{ message }}</div>
         {% endfor %}
-
-        <div class="default-creds">
-            <p><i class="fas fa-circle-info"></i> Default admin credentials</p>
-            <div class="cred-row"><span class="cred-key">Username</span><span class="cred-val">admin</span></div>
-            <div class="cred-row"><span class="cred-key">Password</span><span class="cred-val">admin123!</span></div>
-        </div>
 
         <form method="post" id="loginForm">
             {% csrf_token %}
@@ -128,14 +124,17 @@
                 </label>
             </div>
 
-            <button type="submit" class="btn">
+            <button type="submit" class="btn" style="background:var(--accent);">
                 <i class="fas fa-sign-in-alt"></i> Sign In
             </button>
         </form>
     </div>
 
     <div class="footer-note">
-        NexusDesk &copy; {% now "Y" %} &bull; IT Department Help Desk &bull; v1.0
+        BeitDesk &copy; {% now "Y" %} &bull; Municipality of Beitbridge IT Help Desk &bull; v1.0
+        <div class="footer-credit">
+            Developed by <span class="handle" style="color:var(--gold);">Bl@de_zar</span> | Pearson Nyirenda
+        </div>
     </div>
 </div>
 

@@ -1,0 +1,96 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<div style="max-width:860px;">
+
+    <h1 style="margin-bottom:6px;">About BeitDesk</h1>
+    <p style="color:#888;margin-bottom:28px;">Municipality of Beitbridge — IT Help Desk & Support System</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px;">
+        <div style="background:#1c2128;border:1px solid #30363d;border-radius:8px;padding:20px;">
+            <h3 style="color:#3fb950;margin-bottom:12px;font-size:14px;">
+                <span style="margin-right:8px;">ℹ️</span>System Overview
+            </h3>
+            <p style="font-size:13px;color:#8b949e;line-height:1.7;">
+                BeitDesk is the official IT Help Desk and Support Management System for the
+                Municipality of Beitbridge. It provides a centralised platform for logging,
+                tracking, and resolving IT support tickets raised by municipal staff, while
+                also monitoring VoIP call activity for the IT department.
+            </p>
+        </div>
+        <div style="background:#1c2128;border:1px solid #30363d;border-radius:8px;padding:20px;">
+            <h3 style="color:#c9a227;margin-bottom:12px;font-size:14px;">
+                <span style="margin-right:8px;">🏛️</span>Organisation
+            </h3>
+            <table style="width:100%;font-size:13px;color:#8b949e;">
+                <tr><td style="padding:4px 0;color:#e6edf3;">Organisation</td><td>Municipality of Beitbridge</td></tr>
+                <tr><td style="padding:4px 0;color:#e6edf3;">Department</td><td>Information Technology</td></tr>
+                <tr><td style="padding:4px 0;color:#e6edf3;">System</td><td>BeitDesk v1.0</td></tr>
+                <tr><td style="padding:4px 0;color:#e6edf3;">Framework</td><td>Django 5.2 / Python 3.14</td></tr>
+                <tr><td style="padding:4px 0;color:#e6edf3;">Database</td><td>PostgreSQL 18</td></tr>
+                <tr><td style="padding:4px 0;color:#e6edf3;">Established</td><td>2007</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <div style="background:#1c2128;border:1px solid #30363d;border-radius:8px;padding:20px;margin-bottom:20px;">
+        <h3 style="color:#58a6ff;margin-bottom:14px;font-size:14px;">
+            <span style="margin-right:8px;">✅</span>System Capabilities
+        </h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;color:#8b949e;">
+            <div>✔ Ticket creation, assignment, and tracking</div>
+            <div>✔ Priority and category management</div>
+            <div>✔ VoIP call logging with caller ID</div>
+            <div>✔ Live call board with auto-refresh</div>
+            <div>✔ Role-based access control (Admin / Staff / User)</div>
+            <div>✔ Immutable audit trail with full event history</div>
+            <div>✔ Agent workload monitoring</div>
+            <div>✔ Period-based reporting and analytics</div>
+            <div>✔ Caller directory and history</div>
+            <div>✔ Self-service profile and password management</div>
+        </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+        <div style="background:#1c2128;border:1px solid #30363d;border-radius:8px;padding:20px;">
+            <h3 style="color:#f85149;margin-bottom:12px;font-size:14px;">
+                <span style="margin-right:8px;">🔐</span>Access Control
+            </h3>
+            <table style="width:100%;font-size:12px;color:#8b949e;">
+                <tr style="border-bottom:1px solid #30363d;">
+                    <th style="padding:6px 0;color:#e6edf3;text-align:left;">Role</th>
+                    <th style="padding:6px 0;color:#e6edf3;text-align:left;">Capabilities</th>
+                </tr>
+                <tr>
+                    <td style="padding:6px 0;color:#f85149;">Administrator</td>
+                    <td>Full system access, assign tickets, manage all users</td>
+                </tr>
+                <tr>
+                    <td style="padding:6px 0;color:#388bfd;">IT Staff</td>
+                    <td>All tickets, take unassigned, change status, view own audit</td>
+                </tr>
+                <tr>
+                    <td style="padding:6px 0;color:#8b949e;">User</td>
+                    <td>Own tickets only, own audit events, own profile</td>
+                </tr>
+            </table>
+        </div>
+        <div style="background:#1c2128;border:1px solid #30363d;border-radius:8px;padding:20px;">
+            <h3 style="color:#d29922;margin-bottom:12px;font-size:14px;">
+                <span style="margin-right:8px;">👨‍💻</span>Developer Information
+            </h3>
+            <table style="width:100%;font-size:13px;color:#8b949e;">
+                <tr><td style="padding:4px 0;color:#e6edf3;">Developer</td><td>Bl@de_zar</td></tr>
+                <tr><td style="padding:4px 0;color:#e6edf3;">Full Name</td><td>Pearson Nyirenda</td></tr>
+                <tr><td style="padding:4px 0;color:#e6edf3;">Version</td><td>1.0.0</td></tr>
+                <tr><td style="padding:4px 0;color:#e6edf3;">Motto</td><td style="color:#c9a227;">Ambition · Perseverance · Success</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <div style="background:#1c2128;border:1px solid #30363d;border-radius:8px;padding:16px;
+                text-align:center;font-size:12px;color:#6e7681;">
+        BeitDesk &copy; {% now "Y" %} Municipality of Beitbridge &bull;
+        Built with Django &bull; Ambition · Perseverance · Success
+    </div>
+</div>
+{% endblock %}
