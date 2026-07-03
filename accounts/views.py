@@ -127,21 +127,25 @@ def user_detail(request, user_id):
         messages.error(request, 'Access denied.')
         return redirect('dashboard')
 
-    # Staff cannot manage admin accounts — only superusers can
-    staff_viewing_admin = (
+    # Staff cannot manage admin accounts OR other staff accounts
+    protected_target = (
         request.user.is_staff
         and not request.user.is_superuser
-        and target.is_superuser
+        and (target.is_superuser or (target.is_staff and not is_own_profile))
     )
-    if staff_viewing_admin and request.method == 'POST':
-        messages.error(request, 'IT staff cannot manage administrator accounts.')
+    if protected_target and request.method == 'POST':
+        messages.error(request, 'IT staff cannot manage administrator or other staff accounts.')
         return redirect('user_detail', user_id=user_id)
 
     # Determines which management controls the template shows
     # Superusers can manage anyone; staff can only manage non-admins (not self for status)
     can_manage = (
         request.user.is_superuser or
-        (request.user.is_staff and not target.is_superuser and not is_own_profile)
+        (request.user.is_staff
+         and not request.user.is_superuser
+         and not target.is_superuser
+         and not target.is_staff       # staff cannot manage other staff
+         and not is_own_profile)
     )
 
     if request.method == 'POST':
@@ -175,6 +179,27 @@ def user_detail(request, user_id):
                 role = 'IT Staff' if target.is_staff else 'regular user'
                 log_action(request, AuditLog.ACTION_UPDATE, target.pk,
                            target.username, notes=f'Role changed to {role}')
+                messages.success(
+                    request,
+                    f'{target.username} is now a {role}.'
+                )
+            return redirect('user_detail', user_id=user_id)
+
+        # ── Toggle admin (superuser) status ───────────────────────────────────
+        elif action == 'toggle_admin':
+            if not request.user.is_superuser:
+                messages.error(request, 'Only administrators can promote or demote other administrators.')
+            elif target == request.user:
+                messages.error(request, 'You cannot change your own administrator status.')
+            else:
+                target.is_superuser = not target.is_superuser
+                # Admins must also be staff
+                if target.is_superuser:
+                    target.is_staff = True
+                target.save()
+                role = 'Administrator' if target.is_superuser else 'IT Staff'
+                log_action(request, AuditLog.ACTION_UPDATE, target.pk,
+                           target.username, notes=f'Admin status changed to {role}')
                 messages.success(
                     request,
                     f'{target.username} is now a {role}.'
@@ -249,17 +274,18 @@ def user_detail(request, user_id):
 @login_required
 def user_create(request):
     if not request.user.is_superuser:
-        messages.error(request, 'Only superusers can create new users.')
+        messages.error(request, 'Only administrators can create new users.')
         return redirect('user_list')
 
     if request.method == 'POST':
-        username   = request.POST.get('username', '').strip()
-        first_name = request.POST.get('first_name', '').strip()
-        last_name  = request.POST.get('last_name', '').strip()
-        email      = request.POST.get('email', '').strip()
-        password   = request.POST.get('password', '').strip()
-        confirm    = request.POST.get('confirm_password', '').strip()
-        is_staff   = request.POST.get('is_staff') == 'on'
+        username     = request.POST.get('username', '').strip()
+        first_name   = request.POST.get('first_name', '').strip()
+        last_name    = request.POST.get('last_name', '').strip()
+        email        = request.POST.get('email', '').strip()
+        password     = request.POST.get('password', '').strip()
+        confirm      = request.POST.get('confirm_password', '').strip()
+        is_staff     = request.POST.get('is_staff') == 'on'
+        is_superuser = request.POST.get('is_superuser') == 'on'
 
         errors = []
         if not username:
@@ -277,14 +303,20 @@ def user_create(request):
             for e in errors:
                 messages.error(request, e)
         else:
+            # Superusers are automatically also staff
+            if is_superuser:
+                is_staff = True
             user = User.objects.create_user(
                 username=username, password=password,
                 first_name=first_name, last_name=last_name,
                 email=email, is_staff=is_staff,
+                is_superuser=is_superuser,
             )
+            role = 'Administrator' if is_superuser else ('IT Staff' if is_staff else 'User')
             log_action(request, AuditLog.ACTION_CREATE, user.pk,
-                       user.username, notes=f'Created by {request.user.username}')
-            messages.success(request, f'User {username} created successfully.')
+                       user.username,
+                       notes=f'Created by {request.user.username} as {role}')
+            messages.success(request, f'User {username} created successfully as {role}.')
             return redirect('user_detail', user_id=user.pk)
 
     return render(request, 'accounts/user_create.html')

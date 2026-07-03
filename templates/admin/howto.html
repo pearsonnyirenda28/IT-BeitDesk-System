@@ -15,6 +15,8 @@
         <a href="#audit"    style="font-size:12px;color:#58a6ff;">Audit Trail</a>
         <a href="#reports"  style="font-size:12px;color:#58a6ff;">Reports</a>
         <a href="#roles"    style="font-size:12px;color:#58a6ff;">Roles &amp; Permissions</a>
+        <a href="#groups"   style="font-size:12px;color:#9b72ea;">Groups</a>
+        <a href="#voip-lan" style="font-size:12px;color:#3fb950;">VoIP LAN Setup</a>
     </div>
 
     <!-- ── TICKETS ─────────────────────────────────────────────────────── -->
@@ -229,6 +231,154 @@
                 <td style="text-align:center;color:#3fb950;">✔</td>
             </tr>
         </table>
+    </div>
+
+    <!-- ── GROUPS ────────────────────────────────────────────────────────── -->
+    <div id="groups" style="background:#1c2128;border:1px solid #30363d;
+         border-radius:8px;padding:22px;margin-bottom:20px;">
+        <h2 style="font-size:15px;color:#9b72ea;margin-bottom:16px;">
+            👥 Groups (Django Permission Groups)
+        </h2>
+        <p style="font-size:13px;color:#8b949e;line-height:1.7;margin-bottom:14px;">
+            BeitDesk uses Django's built-in Groups system for additional permission granularity.
+            Groups are managed from the Admin Panel under
+            <strong style="color:#e6edf3;">Authentication and Authorization → Groups</strong>.
+        </p>
+
+        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Role Flags vs Groups</h4>
+        <table style="width:100%;font-size:12px;color:#8b949e;margin-bottom:16px;border-collapse:collapse;">
+            <tr style="background:#161b22;border-bottom:1px solid #30363d;">
+                <th style="padding:8px 12px;text-align:left;color:#e6edf3;">Role / Flag</th>
+                <th style="padding:8px 12px;text-align:left;color:#e6edf3;">Set via</th>
+                <th style="padding:8px 12px;text-align:left;color:#e6edf3;">Effect in BeitDesk</th>
+            </tr>
+            <tr style="border-bottom:1px solid #21262d;">
+                <td style="padding:7px 12px;color:#f85149;">is_superuser</td>
+                <td>Manage Users → Promote to Administrator</td>
+                <td>Full access — all tickets, all users, full audit log, assign tickets</td>
+            </tr>
+            <tr style="border-bottom:1px solid #21262d;">
+                <td style="padding:7px 12px;color:#388bfd;">is_staff</td>
+                <td>Manage Users → Grant Staff Role</td>
+                <td>All tickets visible, can take/change status, own audit log</td>
+            </tr>
+            <tr style="border-bottom:1px solid #21262d;">
+                <td style="padding:7px 12px;color:#8b949e;">Neither</td>
+                <td>Default for new users</td>
+                <td>Own tickets only, own profile, own audit events on dashboard</td>
+            </tr>
+            <tr>
+                <td style="padding:7px 12px;color:#9b72ea;">Django Group</td>
+                <td>Admin → Groups → assign to user</td>
+                <td>Model-level permissions (add/change/delete on specific models)</td>
+            </tr>
+        </table>
+
+        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Creating a Custom Group</h4>
+        <ol style="font-size:13px;color:#8b949e;line-height:2;padding-left:20px;margin-bottom:14px;">
+            <li>Go to <code style="background:#161b22;padding:2px 5px;border-radius:3px;">/admin/</code>
+                → <strong style="color:#e6edf3;">Authentication and Authorization → Groups → Add Group</strong>.</li>
+            <li>Name the group (e.g. <code style="background:#161b22;padding:2px 5px;border-radius:3px;">Level 2 Support</code>).</li>
+            <li>In the <strong style="color:#e6edf3;">Permissions</strong> panel, select the model
+                permissions this group should have (e.g. <code>helpdesk | ticket | Can view ticket</code>).</li>
+            <li>Click <strong style="color:#e6edf3;">Save</strong>.</li>
+            <li>To assign: open any user in <code>/admin/auth/user/</code>, scroll to
+                <strong style="color:#e6edf3;">Groups</strong>, and add them to the group.</li>
+        </ol>
+
+        <div style="background:#161b22;border-left:3px solid #9b72ea;padding:10px 14px;
+                    border-radius:4px;font-size:12px;color:#8b949e;">
+            ℹ️ For most deployments the <strong style="color:#e6edf3;">is_staff</strong> and
+            <strong style="color:#e6edf3;">is_superuser</strong> flags (managed from BeitDesk's own
+            Manage Users page) are sufficient. Use Django Groups only when you need
+            fine-grained model permissions beyond the three built-in roles.
+        </div>
+    </div>
+
+    <!-- ── VOIP LAN CONFIG ───────────────────────────────────────────────── -->
+    <div id="voip-lan" style="background:#1c2128;border:1px solid #30363d;
+         border-radius:8px;padding:22px;margin-bottom:20px;">
+        <h2 style="font-size:15px;color:#58a6ff;margin-bottom:16px;">
+            🔌 Configuring Live VoIP on LAN (Asterisk / FreePBX)
+        </h2>
+        <p style="font-size:13px;color:#8b949e;line-height:1.7;margin-bottom:14px;">
+            BeitDesk supports live call events from a PBX on your local network.
+            When configured, calls appear on the Live Call Board automatically.
+            Manual logging always works with or without a PBX connected.
+        </p>
+
+        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Requirements</h4>
+        <ul style="font-size:13px;color:#8b949e;line-height:2;padding-left:20px;margin-bottom:14px;">
+            <li>Asterisk 18+ or FreePBX 16+ on the same LAN as BeitDesk</li>
+            <li>AMI (Asterisk Manager Interface) enabled on the PBX</li>
+            <li>BeitDesk server reachable from the PBX on its port (default 8000)</li>
+        </ul>
+
+        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Step 1 — Enable AMI on the PBX</h4>
+        <p style="font-size:12px;color:#8b949e;margin-bottom:6px;">
+            Edit <code style="background:#161b22;padding:2px 5px;border-radius:3px;">/etc/asterisk/manager.conf</code>:
+        </p>
+        <pre style="background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:14px;
+                    font-size:12px;color:#79c0ff;overflow-x:auto;margin-bottom:14px;">[general]
+enabled = yes
+port = 5038
+bindaddr = 0.0.0.0
+
+[beitdesk]
+secret = your_ami_password_here
+read = call,cdr,agent
+write = call
+permit = 192.168.1.0/255.255.255.0   ; replace with your LAN subnet</pre>
+        <p style="font-size:12px;color:#8b949e;margin-bottom:14px;">
+            Restart Asterisk: <code style="background:#161b22;padding:2px 5px;border-radius:3px;">sudo systemctl restart asterisk</code>
+        </p>
+
+        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Step 2 — Update .env</h4>
+        <pre style="background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:14px;
+                    font-size:12px;color:#79c0ff;overflow-x:auto;margin-bottom:14px;">ASTERISK_HOST=192.168.1.10       # PBX IP on your LAN
+ASTERISK_PORT=5038               # AMI port (default 5038)
+ASTERISK_USERNAME=beitdesk       # matches [beitdesk] in manager.conf
+ASTERISK_PASSWORD=your_ami_password_here</pre>
+
+        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Step 3 — Add VoIP Provider in BeitDesk Admin</h4>
+        <ol style="font-size:13px;color:#8b949e;line-height:2;padding-left:20px;margin-bottom:14px;">
+            <li>Go to <code style="background:#161b22;padding:2px 5px;border-radius:3px;">/admin/</code>
+                → <strong style="color:#e6edf3;">Voip → Voip providers → Add</strong>.</li>
+            <li>Set <strong style="color:#e6edf3;">Name</strong> (e.g. Beitbridge PBX),
+                <strong style="color:#e6edf3;">Host</strong> to the PBX LAN IP,
+                <strong style="color:#e6edf3;">Port</strong> to 5060 (SIP),
+                <strong style="color:#e6edf3;">Protocol</strong> to SIP.</li>
+            <li>Tick <strong style="color:#e6edf3;">Is active</strong> and save.</li>
+        </ol>
+
+        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Step 4 — Register Extensions</h4>
+        <ol style="font-size:13px;color:#8b949e;line-height:2;padding-left:20px;margin-bottom:14px;">
+            <li>Go to <code style="background:#161b22;padding:2px 5px;border-radius:3px;">/admin/</code>
+                → <strong style="color:#e6edf3;">Voip → Extensions → Add</strong>.</li>
+            <li>Enter the <strong style="color:#e6edf3;">Extension number</strong> (e.g. 4001).</li>
+            <li>Link to the <strong style="color:#e6edf3;">User</strong> (IT staff member using that extension).</li>
+            <li>Set <strong style="color:#e6edf3;">Department</strong> and select the VoIP provider.</li>
+            <li>Repeat for each IT staff extension.</li>
+        </ol>
+
+        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Step 5 — Test</h4>
+        <ol style="font-size:13px;color:#8b949e;line-height:2;padding-left:20px;margin-bottom:14px;">
+            <li>Make a test call to a registered extension.</li>
+            <li>Open <strong style="color:#e6edf3;">VoIP → Live Board</strong> — the call should appear within seconds.</li>
+            <li>If nothing appears, verify the PBX can reach BeitDesk on port 8000 and AMI credentials match.</li>
+        </ol>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div style="background:#161b22;border-left:3px solid #f85149;padding:10px 14px;border-radius:4px;font-size:12px;color:#8b949e;">
+                ⚠️ <strong style="color:#e6edf3;">Firewall:</strong> Port 5038 must be open between
+                BeitDesk and the PBX. On Windows: Windows Firewall inbound rule.
+                On Linux: <code>sudo ufw allow 5038</code>.
+            </div>
+            <div style="background:#161b22;border-left:3px solid #3fb950;padding:10px 14px;border-radius:4px;font-size:12px;color:#8b949e;">
+                ✅ <strong style="color:#e6edf3;">No PBX?</strong> Use <strong style="color:#e6edf3;">VoIP → Log a Call</strong>
+                manually. All other features including the call board work fully in manual mode.
+            </div>
+        </div>
     </div>
 
     <div style="background:#1c2128;border:1px solid #30363d;border-radius:8px;padding:16px;

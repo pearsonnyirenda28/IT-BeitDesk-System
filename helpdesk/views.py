@@ -116,7 +116,13 @@ def dashboard(request):
 
 @login_required
 def ticket_list(request):
-    tickets = Ticket.objects.select_related('requester', 'assigned_to', 'category').all()
+    # Staff and admins see all tickets; regular users see only theirs
+    if request.user.is_staff:
+        tickets = Ticket.objects.select_related('requester', 'assigned_to', 'category').all()
+    else:
+        tickets = Ticket.objects.select_related('requester', 'assigned_to', 'category').filter(
+            Q(requester=request.user) | Q(assigned_to=request.user)
+        )
 
     status   = request.GET.get('status', '')
     priority = request.GET.get('priority', '')
@@ -170,6 +176,13 @@ def ticket_list(request):
 @login_required
 def ticket_detail(request, ticket_id):
     ticket = get_object_or_404(Ticket, ticket_id=ticket_id)
+
+    # Regular users may only view tickets they raised or are assigned to
+    if not request.user.is_staff:
+        if ticket.requester != request.user and ticket.assigned_to != request.user:
+            messages.error(request, 'You do not have permission to view this ticket.')
+            return redirect('ticket_list')
+
     comment_form = TicketCommentForm()
 
     if request.method == 'POST':

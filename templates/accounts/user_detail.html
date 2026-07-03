@@ -201,17 +201,40 @@
                 {% endif %}
 
                 {% if request.user.is_superuser and target != request.user %}
-                <form method="post">
+                <!-- Staff role toggle -->
+                {% if not target.is_superuser %}
+                <form method="post" style="margin-bottom:8px;">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="toggle_staff">
                     {% if target.is_staff %}
-                    <button type="submit" class="btn btn-secondary btn-sm" style="width:100%;justify-content:center;"
+                    <button type="submit" class="btn btn-secondary btn-sm"
+                            style="width:100%;justify-content:center;"
                             onclick="return confirm('Remove IT Staff role from {{ target.username }}?')">
                         <i class="fas fa-user-minus"></i> Remove Staff Role
                     </button>
                     {% else %}
-                    <button type="submit" class="btn btn-primary btn-sm" style="width:100%;justify-content:center;">
+                    <button type="submit" class="btn btn-primary btn-sm"
+                            style="width:100%;justify-content:center;">
                         <i class="fas fa-user-shield"></i> Grant Staff Role
+                    </button>
+                    {% endif %}
+                </form>
+                {% endif %}
+                <!-- Admin promotion/demotion toggle -->
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="toggle_admin">
+                    {% if target.is_superuser %}
+                    <button type="submit" class="btn btn-danger btn-sm"
+                            style="width:100%;justify-content:center;"
+                            onclick="return confirm('Remove Administrator role from {{ target.username }}? They will become IT Staff only.')">
+                        <i class="fas fa-shield-halved"></i> Remove Admin Role
+                    </button>
+                    {% else %}
+                    <button type="submit" class="btn btn-success btn-sm"
+                            style="width:100%;justify-content:center;"
+                            onclick="return confirm('Promote {{ target.username }} to Administrator? They will have full system access.')">
+                        <i class="fas fa-crown"></i> Promote to Administrator
                     </button>
                     {% endif %}
                 </form>
@@ -219,9 +242,9 @@
             </div>
         </div>
 
-        <div style="background:rgba(31,111,235,.08);border:1px solid rgba(31,111,235,.15);
+        <div style="background:rgba(26,107,48,.08);border:1px solid rgba(45,138,69,.2);
                     border-radius:8px;padding:12px 14px;font-size:11px;color:var(--text-muted);line-height:1.6;">
-            <i class="fas fa-circle-info" style="color:var(--info-text);"></i>
+            <i class="fas fa-circle-info" style="color:var(--accent-hover);"></i>
             Deactivating preserves all ticket history and audit logs. Use this instead of deleting accounts.
         </div>
         {% elif not is_own_profile and target.is_superuser %}
@@ -229,6 +252,12 @@
                     border-radius:8px;padding:12px 14px;font-size:11px;color:var(--text-muted);line-height:1.6;">
             <i class="fas fa-shield-halved" style="color:var(--danger-text);"></i>
             Administrator accounts can only be managed by other administrators.
+        </div>
+        {% elif not is_own_profile and target.is_staff %}
+        <div style="background:rgba(158,106,3,.08);border:1px solid rgba(210,153,34,.2);
+                    border-radius:8px;padding:12px 14px;font-size:11px;color:var(--text-muted);line-height:1.6;">
+            <i class="fas fa-lock" style="color:var(--warning-text);"></i>
+            IT staff accounts can only be managed by administrators.
         </div>
         {% endif %}
     </div>

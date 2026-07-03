@@ -61,10 +61,22 @@
                 </div>
 
                 <div style="background:var(--bg-tertiary);border:1px solid var(--border);
-                            border-radius:6px;padding:12px 14px;margin-bottom:18px;">
+                            border-radius:6px;padding:12px 14px;margin-bottom:10px;">
                     <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
                         <input type="checkbox" name="is_staff" style="accent-color:var(--accent);width:16px;height:16px;">
-                        Grant IT Staff access (can view all tickets, log calls, view reports)
+                        Grant IT Staff access (can view all tickets, manage own assigned, view reports)
+                    </label>
+                </div>
+
+                <div style="background:var(--bg-tertiary);border:1px solid var(--border);
+                            border-radius:6px;padding:12px 14px;margin-bottom:18px;">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
+                        <input type="checkbox" name="is_superuser" style="accent-color:var(--gold);width:16px;height:16px;">
+                        <span>Grant Administrator access
+                            <span style="font-size:11px;color:var(--text-muted);display:block;margin-top:2px;">
+                                Full system access — assign tickets, manage all users, view all audit logs. Also grants IT Staff automatically.
+                            </span>
+                        </span>
                     </label>
                 </div>
 
