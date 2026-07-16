@@ -9,9 +9,17 @@
         <h1>Tickets</h1>
         <p>{{ total_count }} ticket{{ total_count|pluralize }} found</p>
     </div>
-    <a href="{% url 'ticket_create' %}" class="btn btn-primary">
-        <i class="fas fa-plus"></i> Create Ticket
-    </a>
+    <div style="display:flex;gap:8px;">
+        {% if request.user.is_superuser %}
+        <a href="{% url 'print_tickets' %}{% if filters.status %}?status={{ filters.status }}{% endif %}{% if filters.priority %}&priority={{ filters.priority }}{% endif %}"
+           target="_blank" class="btn btn-secondary">
+            <i class="fas fa-print"></i> Print Tickets
+        </a>
+        {% endif %}
+        <a href="{% url 'ticket_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Create Ticket
+        </a>
+    </div>
 </div>
 
 <!-- FILTERS -->

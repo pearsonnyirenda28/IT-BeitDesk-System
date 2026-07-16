@@ -1,18 +1,39 @@
 """
-NexusDesk - IT Help Desk & VoIP Tracking System
+BeitDesk - Municipality of Beitbridge IT Help Desk & VoIP Tracking System
 Django Settings
 """
 
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-nexusdesk-change-this-in-production-use-env-vars'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'beitdesk-change-this-in-production-use-env-vars')
 
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
+
+# ── Multi-device / LAN access ─────────────────────────────────────────────────
+# Allows other devices on your network (phones, other PCs) to connect.
+# Find your PC's LAN IP: run  ipconfig  in CMD, look for IPv4 Address.
+# Then add it below and run the server with:
+#   py manage.py runserver 0.0.0.0:8000
+# Other devices open:  http://<your-ip>:8000
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+    # Add your LAN IP here, e.g.:
+    # 'http://192.168.1.50:8000',
+]
+
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_HTTPONLY = False
 
 INSTALLED_APPS = [
     'django.contrib.admin',

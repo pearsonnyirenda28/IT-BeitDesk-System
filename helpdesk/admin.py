@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Ticket, TicketComment, Category, Tag, AuditLog, KnowledgeBase, TicketAttachment
+from .models import Ticket, TicketComment, Category, Tag, AuditLog, KnowledgeBase, TicketAttachment, GlossaryTerm, DatabaseYear
 
 
 @admin.register(Category)
@@ -61,3 +61,28 @@ class KnowledgeBaseAdmin(admin.ModelAdmin):
     list_filter = ['is_published', 'category']
     search_fields = ['title', 'content']
     prepopulated_fields = {'slug': ('title',)}
+
+
+@admin.register(GlossaryTerm)
+class GlossaryTermAdmin(admin.ModelAdmin):
+    list_display  = ['term', 'category', 'added_by', 'created_at']
+    list_filter   = ['category']
+    search_fields = ['term', 'definition']
+    readonly_fields = ['added_by', 'created_at', 'updated_at']
+
+    def save_model(self, request, obj, form, change):
+        if not obj.pk:
+            obj.added_by = request.user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(DatabaseYear)
+class DatabaseYearAdmin(admin.ModelAdmin):
+    list_display  = ['year', 'db_name', 'is_current', 'is_active', 'created_by', 'created_at']
+    list_filter   = ['is_current', 'is_active']
+    readonly_fields = ['created_by', 'created_at']
+
+    def save_model(self, request, obj, form, change):
+        if not obj.pk:
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)

@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BeitDesk — Ticket Print Report</title>
+    <style>
+        /* ── Reset & Base ── */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 11pt;
+            color: #1a1a1a;
+            background: #fff;
+        }
+
+        /* ── Letterhead ── */
+        .letterhead {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 32px 16px;
+            border-bottom: 3px solid #1a6b30;
+            margin-bottom: 0;
+        }
+        .letterhead-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .letterhead-logo {
+            width: 72px;
+            height: 72px;
+            object-fit: cover;
+            border-radius: 6px;
+        }
+        .letterhead-text h1 {
+            font-size: 18pt;
+            font-weight: 700;
+            color: #1a6b30;
+            letter-spacing: 0.5px;
+        }
+        .letterhead-text h2 {
+            font-size: 10pt;
+            font-weight: 500;
+            color: #444;
+            margin-top: 2px;
+        }
+        .letterhead-text .motto {
+            font-size: 8pt;
+            color: #c9a227;
+            font-style: italic;
+            margin-top: 3px;
+        }
+        .letterhead-right {
+            text-align: right;
+            font-size: 9pt;
+            color: #555;
+            line-height: 1.7;
+        }
+        .letterhead-right .doc-title {
+            font-size: 13pt;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 4px;
+        }
+
+        /* ── Gold accent bar ── */
+        .accent-bar {
+            height: 4px;
+            background: linear-gradient(90deg, #c9a227 0%, #1a6b30 100%);
+            margin-bottom: 20px;
+        }
+
+        /* ── Filter summary ── */
+        .print-meta {
+            padding: 10px 32px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            font-size: 9pt;
+            color: #555;
+        }
+        .print-meta .meta-block span {
+            display: inline-block;
+            background: #f0f4f0;
+            border: 1px solid #c8d8c8;
+            border-radius: 4px;
+            padding: 2px 8px;
+            margin-right: 6px;
+            color: #1a6b30;
+            font-weight: 600;
+        }
+
+        /* ── Table ── */
+        .ticket-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0 0 24px;
+            font-size: 9pt;
+        }
+        .ticket-table thead tr {
+            background: #1a6b30;
+            color: #fff;
+        }
+        .ticket-table th {
+            padding: 8px 10px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 8.5pt;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+        .ticket-table tbody tr:nth-child(even) {
+            background: #f7fbf7;
+        }
+        .ticket-table tbody tr {
+            border-bottom: 1px solid #dde8dd;
+        }
+        .ticket-table td {
+            padding: 7px 10px;
+            vertical-align: top;
+        }
+        .ticket-table td.ticket-id {
+            font-family: 'Courier New', monospace;
+            font-weight: 700;
+            font-size: 9pt;
+            color: #1a6b30;
+            white-space: nowrap;
+        }
+        .ticket-table td.title-cell {
+            max-width: 220px;
+        }
+
+        /* ── Status / Priority badges ── */
+        .badge {
+            display: inline-block;
+            padding: 2px 7px;
+            border-radius: 3px;
+            font-size: 7.5pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+        }
+        .badge-open       { background:#dbeeff; color:#0066cc; border:1px solid #99ccff; }
+        .badge-in_progress{ background:#ffe8cc; color:#cc6600; border:1px solid #ffcc88; }
+        .badge-pending    { background:#fff3cc; color:#996600; border:1px solid #ffdd66; }
+        .badge-resolved   { background:#d4edda; color:#155724; border:1px solid #88cc99; }
+        .badge-closed     { background:#e8e8e8; color:#555;    border:1px solid #bbb; }
+        .badge-critical   { background:#f8d7da; color:#721c24; border:1px solid #f5c2c7; }
+        .badge-high       { background:#ffe5cc; color:#8b3a00; border:1px solid #ffbb77; }
+        .badge-medium     { background:#fff3cd; color:#856404; border:1px solid #ffc107; }
+        .badge-low        { background:#d4edda; color:#155724; border:1px solid #88cc99; }
+
+        /* ── Summary box ── */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            padding: 0 32px 20px;
+        }
+        .summary-card {
+            border: 1px solid #c8d8c8;
+            border-radius: 6px;
+            padding: 10px 14px;
+            text-align: center;
+        }
+        .summary-card .s-value {
+            font-size: 20pt;
+            font-weight: 700;
+            color: #1a6b30;
+        }
+        .summary-card .s-label {
+            font-size: 8pt;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        /* ── Footer ── */
+        .print-footer {
+            margin-top: 24px;
+            padding: 12px 32px 8px;
+            border-top: 2px solid #1a6b30;
+            display: flex;
+            justify-content: space-between;
+            font-size: 8pt;
+            color: #777;
+        }
+        .confidential {
+            text-align: center;
+            font-size: 7.5pt;
+            color: #999;
+            margin-top: 6px;
+            padding-bottom: 12px;
+        }
+
+        /* ── Print control bar (screen only) ── */
+        .print-controls {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            background: #1a6b30;
+            color: #fff;
+            padding: 10px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 9999;
+            font-size: 13px;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        .print-controls button {
+            background: #c9a227;
+            color: #fff;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 5px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        .print-controls a {
+            color: rgba(255,255,255,.8);
+            text-decoration: none;
+            font-size: 12px;
+        }
+
+        /* ── Page setup ── */
+        @page {
+            size: A4 landscape;
+            margin: 18mm 14mm;
+        }
+        @media print {
+            .print-controls { display: none !important; }
+            body { padding-top: 0 !important; }
+            .ticket-table { font-size: 8.5pt; }
+        }
+        body { padding-top: 50px; }
+    </style>
+</head>
+<body>
+
+<!-- ── Print Controls (hidden on print) ── -->
+<div class="print-controls">
+    <div>
+        <strong>BeitDesk</strong> — Ticket Print Report
+        &nbsp;·&nbsp; {{ total }} ticket{{ total|pluralize }}
+        &nbsp;·&nbsp; <a href="javascript:history.back()">← Back</a>
+    </div>
+    <div>
+        <button onclick="window.print()">🖨 Print / Save PDF</button>
+    </div>
+</div>
+
+<!-- ── Letterhead ── -->
+<div class="letterhead">
+    <div class="letterhead-left">
+        <img src="{% static 'img/beitbridge_logo.jpg' %}" alt="Beitbridge" class="letterhead-logo">
+        <div class="letterhead-text">
+            <h1>Municipality of Beitbridge</h1>
+            <h2>Information Technology Department</h2>
+            <div class="motto">Ambition · Perseverance · Success</div>
+        </div>
+    </div>
+    <div class="letterhead-right">
+        <div class="doc-title">IT Help Desk — Ticket Report</div>
+        <div>Printed by: <strong>{{ printed_by.get_full_name|default:printed_by.username }}</strong></div>
+        <div>Date: <strong>{{ printed_at|date:"d F Y, H:i" }}</strong></div>
+        <div>Total records: <strong>{{ total }}</strong></div>
+        {% if filters.status or filters.priority %}
+        <div style="margin-top:4px;color:#1a6b30;font-weight:600;">
+            Filtered:
+            {% if filters.status %}Status = {{ filters.status }}{% endif %}
+            {% if filters.priority %}Priority = {{ filters.priority }}{% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+<div class="accent-bar"></div>
+
+<!-- ── Summary Cards ── -->
+<div class="summary-grid">
+    <div class="summary-card">
+        <div class="s-value">{{ tickets|length }}</div>
+        <div class="s-label">Total Printed</div>
+    </div>
+    <div class="summary-card">
+        <div class="s-value" style="color:#0066cc;">
+            {{ tickets|dictsortreversed:"status"|length }}
+        </div>
+        <div class="s-label">Open / In Progress</div>
+    </div>
+    <div class="summary-card">
+        <div class="s-value" style="color:#155724;">
+            {% with resolved=0 %}{{ tickets|length }}{% endwith %}
+        </div>
+        <div class="s-label">All Statuses</div>
+    </div>
+    <div class="summary-card">
+        <div class="s-value" style="color:#721c24;">
+            {% regroup tickets by priority as by_prio %}
+            {% for g in by_prio %}{% if g.grouper == 'CRITICAL' %}{{ g.list|length }}{% endif %}{% endfor %}
+        </div>
+        <div class="s-label">Critical Priority</div>
+    </div>
+</div>
+
+<!-- ── Ticket Table ── -->
+<div style="padding:0 32px;">
+    {% if tickets %}
+    <table class="ticket-table">
+        <thead>
+            <tr>
+                <th style="width:80px;">Ticket ID</th>
+                <th>Title</th>
+                <th style="width:120px;">Category</th>
+                <th style="width:140px;">Requester</th>
+                <th style="width:70px;">Priority</th>
+                <th style="width:80px;">Status</th>
+                <th style="width:110px;">Assigned To</th>
+                <th style="width:90px;">Created</th>
+                <th style="width:90px;">Resolved</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ticket in tickets %}
+            <tr>
+                <td class="ticket-id">{{ ticket.ticket_id }}</td>
+                <td class="title-cell">{{ ticket.title|truncatechars:60 }}</td>
+                <td>{{ ticket.category.name|default:"—" }}</td>
+                <td>
+                    {% if ticket.requester_name %}{{ ticket.requester_name }}
+                    {% elif ticket.requester %}{{ ticket.requester.get_full_name|default:ticket.requester.username }}
+                    {% else %}—{% endif %}
+                    {% if ticket.requester_department %}
+                    <br><span style="font-size:8pt;color:#777;">{{ ticket.requester_department }}</span>
+                    {% endif %}
+                </td>
+                <td><span class="badge badge-{{ ticket.priority|lower }}">{{ ticket.priority }}</span></td>
+                <td><span class="badge badge-{{ ticket.status|lower }}">{{ ticket.get_status_display }}</span></td>
+                <td>
+                    {% if ticket.assigned_to %}
+                        {{ ticket.assigned_to.get_full_name|default:ticket.assigned_to.username }}
+                    {% else %}
+                        <span style="color:#999;">Unassigned</span>
+                    {% endif %}
+                </td>
+                <td style="white-space:nowrap;font-size:8pt;">{{ ticket.created_at|date:"d/m/Y" }}</td>
+                <td style="white-space:nowrap;font-size:8pt;">{{ ticket.resolved_at|date:"d/m/Y"|default:"—" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="text-align:center;padding:40px;color:#888;">No tickets found for the selected filters.</div>
+    {% endif %}
+</div>
+
+<!-- ── Footer ── -->
+<div class="print-footer">
+    <div>BeitDesk v1.0 — Municipality of Beitbridge IT Help Desk</div>
+    <div>Printed: {{ printed_at|date:"d F Y H:i" }} &nbsp;|&nbsp; By: {{ printed_by.username }}</div>
+    <div>CONFIDENTIAL — FOR INTERNAL USE ONLY</div>
+</div>
+<div class="confidential">
+    This document contains confidential IT support information for the Municipality of Beitbridge.
+    Not for distribution outside the IT Department.
+</div>
+
+</body>
+</html>

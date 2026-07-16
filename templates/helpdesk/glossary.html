@@ -1,0 +1,266 @@
+{% extends 'base.html' %}
+{% block title %}Glossary{% endblock %}
+{% block page_title %}System Glossary{% endblock %}
+{% block breadcrumb %}BeitDesk / Glossary{% endblock %}
+
+{% block content %}
+<div class="flex-between mb-6">
+    <div>
+        <h1>System Glossary</h1>
+        <p class="text-muted" style="font-size:13px;">
+            {{ total }} term{{ total|pluralize }} — terminology and definitions used in BeitDesk
+        </p>
+    </div>
+</div>
+
+<div class="grid" style="grid-template-columns:1fr 320px;gap:18px;align-items:start;">
+
+    <!-- Terms list -->
+    <div>
+        <!-- Search -->
+        <div class="card mb-4">
+            <div class="card-body" style="padding:12px 14px;">
+                <form method="get" style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <input type="text" name="search" class="form-control"
+                           placeholder="Search terms or definitions..."
+                           value="{{ search }}" style="flex:1;min-width:160px;">
+                    {% if categories %}
+                    <select name="category" class="form-select" style="min-width:150px;">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat }}" {% if category == cat %}selected{% endif %}>{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                    {% endif %}
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                    {% if search or category %}
+                    <a href="{% url 'glossary' %}" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-times"></i> Clear
+                    </a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+
+        <!-- Term cards -->
+        {% for term in terms %}
+        <div class="card mb-3" style="border-left:3px solid var(--accent);transition:box-shadow .2s;">
+            <div class="card-body" style="padding:14px 16px;">
+                <div class="flex-between" style="margin-bottom:8px;">
+                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                        <span style="font-size:15px;font-weight:700;color:var(--text-primary);">
+                            {{ term.term }}
+                        </span>
+                        {% if term.category %}
+                        <span class="badge" style="background:rgba(26,107,48,.15);color:var(--accent-hover);
+                                                   border:1px solid rgba(26,107,48,.3);font-size:9px;">
+                            <i class="fas fa-tag" style="font-size:8px;"></i> {{ term.category }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    {% if request.user.is_staff %}
+                    <div style="display:flex;gap:5px;">
+                        <button onclick="openEdit({{ term.pk }},'{{ term.term|escapejs }}','{{ term.definition|escapejs }}','{{ term.category|default:''|escapejs }}','{{ term.example|default:''|escapejs }}')"
+                                class="btn btn-secondary btn-sm btn-icon" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <form method="post" style="display:inline;"
+                              onsubmit="return confirm('Delete &quot;{{ term.term }}&quot; from glossary?')">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="term_id" value="{{ term.pk }}">
+                            <button type="submit" class="btn btn-danger btn-sm btn-icon" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <p style="font-size:13px;color:var(--text-secondary);line-height:1.7;margin-bottom:0;">
+                    {{ term.definition }}
+                </p>
+
+                {% if term.example %}
+                <div style="background:var(--bg-tertiary);border-radius:5px;padding:8px 12px;
+                            border-left:2px solid var(--gold);margin-top:10px;">
+                    <div style="font-size:9px;color:var(--gold);font-weight:700;
+                                text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;">
+                        <i class="fas fa-quote-left" style="font-size:8px;"></i> Example
+                    </div>
+                    <p style="font-size:12px;color:var(--text-muted);font-style:italic;margin:0;">
+                        {{ term.example }}
+                    </p>
+                </div>
+                {% endif %}
+
+                <div style="margin-top:10px;font-size:10px;color:var(--text-muted);
+                            display:flex;align-items:center;gap:8px;">
+                    <i class="fas fa-user" style="font-size:9px;"></i>
+                    {% if term.added_by %}{{ term.added_by.get_full_name|default:term.added_by.username }}
+                    {% else %}Unknown{% endif %}
+                    <span>·</span>
+                    <i class="fas fa-calendar" style="font-size:9px;"></i>
+                    {{ term.created_at|date:"d M Y" }}
+                    {% if term.updated_at != term.created_at %}
+                    <span>·</span>
+                    <em>updated {{ term.updated_at|timesince }} ago</em>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="card">
+            <div style="padding:48px;text-align:center;color:var(--text-muted);">
+                <i class="fas fa-book-open" style="font-size:36px;margin-bottom:12px;
+                   display:block;opacity:.25;"></i>
+                <div style="font-size:15px;font-weight:600;margin-bottom:6px;">
+                    {% if search %}No terms matching "{{ search }}"{% else %}No glossary terms yet{% endif %}
+                </div>
+                <div style="font-size:13px;">Use the form on the right to add the first term.</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Sidebar: Add form + categories -->
+    <div>
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="header-icon" style="background:rgba(13,148,136,.2);color:#2dd4bf;">
+                    <i class="fas fa-plus"></i>
+                </div>
+                <h6>Add New Term</h6>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add">
+                    <div class="form-group">
+                        <label class="form-label">Term / Word *</label>
+                        <input type="text" name="term" class="form-control"
+                               placeholder="e.g. SLA, Escalation, VoIP" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Definition *</label>
+                        <textarea name="definition" class="form-control" rows="4"
+                                  placeholder="Clear explanation of this term..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        <input type="text" name="category" class="form-control"
+                               placeholder="e.g. Ticketing, VoIP, Network"
+                               list="catSuggestions">
+                        <datalist id="catSuggestions">
+                            <option value="Ticketing"><option value="VoIP">
+                            <option value="Network"><option value="Security">
+                            <option value="Hardware"><option value="Software">
+                            <option value="General">
+                            {% for cat in categories %}<option value="{{ cat }}">{% endfor %}
+                        </datalist>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Example Usage</label>
+                        <textarea name="example" class="form-control" rows="2"
+                                  placeholder="Optional: term used in a sentence..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">
+                        <i class="fas fa-save"></i> Save Term
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        {% if categories %}
+        <div class="card">
+            <div class="card-header">
+                <div class="header-icon" style="background:rgba(201,162,39,.2);color:var(--gold);">
+                    <i class="fas fa-tags"></i>
+                </div>
+                <h6>Categories</h6>
+            </div>
+            <div class="card-body" style="padding:10px 14px;">
+                {% for cat in categories %}
+                <a href="?category={{ cat }}"
+                   style="display:flex;align-items:center;gap:8px;padding:7px 0;
+                          border-bottom:1px solid var(--border-subtle);text-decoration:none;
+                          font-size:13px;color:{% if category == cat %}var(--accent-hover){% else %}var(--text-secondary){% endif %};">
+                    <span class="nav-icon-box icon-green" style="width:18px;height:18px;font-size:9px;">
+                        <i class="fas fa-tag"></i>
+                    </span>
+                    {{ cat }}
+                </a>
+                {% endfor %}
+                {% if category %}
+                <a href="{% url 'glossary' %}" style="display:block;margin-top:8px;font-size:11px;
+                          color:var(--text-muted);text-align:center;">
+                    <i class="fas fa-times"></i> Clear filter
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Edit modal -->
+<div id="editOverlay" onclick="closeEdit()"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;"></div>
+<div id="editModal"
+     style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+            z-index:501;width:min(500px,95vw);background:var(--bg-card);
+            border:1px solid var(--border);border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.5);">
+    <div style="padding:16px 18px;border-bottom:1px solid var(--border);
+                display:flex;justify-content:space-between;align-items:center;">
+        <h6 style="font-size:14px;font-weight:600;margin:0;">Edit Glossary Term</h6>
+        <button onclick="closeEdit()"
+                style="background:none;border:none;color:var(--text-muted);
+                       cursor:pointer;font-size:18px;line-height:1;">✕</button>
+    </div>
+    <form method="post" style="padding:18px;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="edit">
+        <input type="hidden" name="term_id" id="editTermId">
+        <div class="form-group">
+            <label class="form-label">Term</label>
+            <input type="text" name="term" id="editTerm" class="form-control" required>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Definition</label>
+            <textarea name="definition" id="editDefinition" class="form-control" rows="4" required></textarea>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Category</label>
+            <input type="text" name="category" id="editCategory" class="form-control">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Example</label>
+            <textarea name="example" id="editExample" class="form-control" rows="2"></textarea>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+            <button type="button" onclick="closeEdit()" class="btn btn-secondary btn-sm">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-sm">
+                <i class="fas fa-save"></i> Save Changes
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+function openEdit(id,term,def,cat,ex){
+    document.getElementById('editTermId').value=id;
+    document.getElementById('editTerm').value=term;
+    document.getElementById('editDefinition').value=def;
+    document.getElementById('editCategory').value=cat;
+    document.getElementById('editExample').value=ex;
+    document.getElementById('editModal').style.display='block';
+    document.getElementById('editOverlay').style.display='block';
+}
+function closeEdit(){
+    document.getElementById('editModal').style.display='none';
+    document.getElementById('editOverlay').style.display='none';
+}
+</script>
+{% endblock %}

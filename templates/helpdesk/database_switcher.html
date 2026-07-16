@@ -1,0 +1,289 @@
+{% extends 'base.html' %}
+{% block title %}Database / Year{% endblock %}
+{% block page_title %}Database Year Manager{% endblock %}
+{% block breadcrumb %}BeitDesk / Database &amp; Year{% endblock %}
+
+{% block content %}
+
+{% if request.session.active_db_year %}
+<div class="alert alert-info">
+    <i class="fas fa-database"></i>
+    <div>
+        You are currently viewing <strong>{{ request.session.active_db_year }} records</strong>
+        — database: <span class="mono">{{ request.session.active_db_name }}</span>.
+        <form method="post" style="display:inline;margin-left:10px;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="clear_session">
+            <button type="submit"
+                    style="background:none;border:none;color:var(--warning-text);
+                           cursor:pointer;font-size:13px;text-decoration:underline;padding:0;">
+                Return to current year
+            </button>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<div class="grid" style="grid-template-columns:1fr 360px;gap:18px;align-items:start;">
+
+    <!-- Available years table -->
+    <div>
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="header-icon" style="background:rgba(201,162,39,.2);color:var(--gold);">
+                    <i class="fas fa-database"></i>
+                </div>
+                <h6>Available Database Years</h6>
+            </div>
+
+            {% if years %}
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Year</th>
+                            <th>Database</th>
+                            <th>Status</th>
+                            <th>Description</th>
+                            <th>Created</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for yr in years %}
+                        <tr {% if yr.year == request.session.active_db_year %}style="background:rgba(26,107,48,.08);"{% endif %}>
+                            <td>
+                                <span class="mono" style="font-size:15px;font-weight:700;">{{ yr.year }}</span>
+                                {% if yr.is_current %}
+                                <span class="badge badge-resolved" style="margin-left:5px;font-size:9px;">
+                                    <i class="fas fa-star"></i> Current
+                                </span>
+                                {% endif %}
+                                {% if yr.year == request.session.active_db_year %}
+                                <span class="badge badge-in_progress" style="margin-left:3px;font-size:9px;">
+                                    <i class="fas fa-eye"></i> Viewing
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="mono" style="font-size:11px;">{{ yr.db_name }}</td>
+                            <td>
+                                {% if yr.is_active %}
+                                <span class="badge badge-resolved">Active</span>
+                                {% else %}
+                                <span class="badge badge-closed">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td style="font-size:12px;color:var(--text-muted);">
+                                {{ yr.description|default:"—"|truncatechars:35 }}
+                            </td>
+                            <td style="font-size:11px;color:var(--text-muted);">
+                                {{ yr.created_at|date:"d/m/Y" }}
+                            </td>
+                            <td>
+                                <div style="display:flex;gap:5px;">
+                                    {% if yr.year != request.session.active_db_year %}
+                                    <form method="post">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="switch">
+                                        <input type="hidden" name="year_id" value="{{ yr.pk }}">
+                                        <button type="submit" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-right-left"></i> Switch
+                                        </button>
+                                    </form>
+                                    {% else %}
+                                    <span class="btn btn-secondary btn-sm" style="opacity:.5;cursor:default;">
+                                        <i class="fas fa-check"></i> Viewing
+                                    </span>
+                                    {% endif %}
+                                    {% if request.user.is_superuser and not yr.is_current %}
+                                    <form method="post">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="set_current">
+                                        <input type="hidden" name="year_id" value="{{ yr.pk }}">
+                                        <button type="submit" class="btn btn-secondary btn-sm btn-icon"
+                                                title="Set as current operating year"
+                                                onclick="return confirm('Set {{ yr.year }} as current operating year?')">
+                                            <i class="fas fa-star"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div style="padding:40px;text-align:center;color:var(--text-muted);">
+                <i class="fas fa-database" style="font-size:32px;display:block;margin-bottom:12px;opacity:.25;"></i>
+                <div style="font-size:14px;font-weight:600;margin-bottom:6px;">No database years registered yet</div>
+                <div style="font-size:13px;">Use the form on the right to register the first year.</div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- How it works card -->
+        <div class="card">
+            <div class="card-header">
+                <div class="header-icon" style="background:rgba(88,166,255,.15);color:var(--info-text);">
+                    <i class="fas fa-circle-info"></i>
+                </div>
+                <h6>How Yearly Databases Work</h6>
+            </div>
+            <div class="card-body">
+                <div style="display:grid;gap:12px;">
+                    {% for num, icon, col, text in steps %}
+                    {% endfor %}
+                    <div style="display:flex;gap:10px;align-items:flex-start;">
+                        <span class="nav-icon-box icon-green" style="flex-shrink:0;margin-top:1px;font-weight:700;">1</span>
+                        <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;">
+                            Each year gets its own PostgreSQL database — e.g.
+                            <span class="mono">beitdesk_2025</span>, <span class="mono">beitdesk_2026</span>.
+                            Records stay clean, fast and separated by year.
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:10px;align-items:flex-start;">
+                        <span class="nav-icon-box icon-blue" style="flex-shrink:0;margin-top:1px;font-weight:700;">2</span>
+                        <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;">
+                            At year start an administrator registers the new database here,
+                            runs the SQL setup below, and marks it as Current.
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:10px;align-items:flex-start;">
+                        <span class="nav-icon-box icon-yellow" style="flex-shrink:0;margin-top:1px;font-weight:700;">3</span>
+                        <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;">
+                            <strong style="color:var(--text-primary);">Any user</strong> can Switch to a previous year
+                            to view historical tickets and calls. The sidebar shows a year badge
+                            while viewing a past year.
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:10px;align-items:flex-start;">
+                        <span class="nav-icon-box icon-red" style="flex-shrink:0;margin-top:1px;font-weight:700;">4</span>
+                        <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;">
+                            Past year databases are for <strong style="color:var(--text-primary);">viewing only</strong>.
+                            New tickets should only be created in the current year.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Create year + SQL commands -->
+    <div>
+        {% if request.user.is_superuser %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="header-icon" style="background:rgba(35,134,54,.2);color:var(--success-text);">
+                    <i class="fas fa-plus"></i>
+                </div>
+                <h6>Register New Year Database</h6>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create_year">
+                    <div class="form-group">
+                        <label class="form-label">Year *</label>
+                        <input type="number" name="new_year" class="form-control mono"
+                               min="2020" max="2099" value="{{ current_year }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">PostgreSQL Database Name *</label>
+                        <input type="text" name="db_name" class="form-control mono"
+                               value="{{ suggested_db }}" required>
+                        <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">
+                            Must match exactly what you create in PostgreSQL.
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <input type="text" name="description" class="form-control"
+                               placeholder="e.g. BeitDesk records for {{ current_year }}">
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">
+                        <i class="fas fa-database"></i> Register Year Database
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- SQL Setup -->
+        <div class="card">
+            <div class="card-header">
+                <div class="header-icon" style="background:rgba(110,64,201,.2);color:#9b72ea;">
+                    <i class="fas fa-terminal"></i>
+                </div>
+                <h6>PostgreSQL Setup Commands</h6>
+            </div>
+            <div class="card-body">
+                <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;">
+                    Run as PostgreSQL superuser after registering above:
+                </div>
+
+                <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;
+                            letter-spacing:.5px;margin-bottom:5px;">Step 1 — Create in psql</div>
+                <div style="position:relative;margin-bottom:14px;">
+                    <pre id="sqlBlock" style="background:#0d1117;border:1px solid #30363d;
+                         border-radius:6px;padding:11px;font-size:11px;color:#79c0ff;
+                         overflow-x:auto;margin:0;line-height:1.6;">CREATE DATABASE {{ suggested_db }};
+GRANT ALL PRIVILEGES ON DATABASE {{ suggested_db }} TO {{ db_user }};
+ALTER DATABASE {{ suggested_db }} OWNER TO {{ db_user }};</pre>
+                    <button onclick="copySql()"
+                            style="position:absolute;top:7px;right:7px;background:var(--bg-tertiary);
+                                   border:1px solid var(--border);border-radius:4px;
+                                   color:var(--text-muted);cursor:pointer;padding:3px 8px;font-size:10px;"
+                            id="copyBtn">
+                        <i class="fas fa-copy"></i> Copy
+                    </button>
+                </div>
+
+                <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;
+                            letter-spacing:.5px;margin-bottom:5px;">Step 2 — Run migrations</div>
+                <pre style="background:#0d1117;border:1px solid #30363d;border-radius:6px;
+                     padding:11px;font-size:11px;color:#79c0ff;overflow-x:auto;
+                     margin-bottom:14px;line-height:1.6;">py manage.py migrate --database={{ suggested_db }}</pre>
+
+                <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;
+                            letter-spacing:.5px;margin-bottom:5px;">Step 3 — Set as Current</div>
+                <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;margin-bottom:10px;">
+                    Register it above, then click the
+                    <i class="fas fa-star" style="color:var(--gold);"></i> star
+                    in the table to make it the active year.
+                </div>
+
+                <div style="background:rgba(201,162,39,.08);border:1px solid rgba(201,162,39,.2);
+                            border-radius:6px;padding:10px 12px;font-size:11px;color:var(--text-muted);">
+                    <i class="fas fa-lightbulb" style="color:var(--gold);"></i>
+                    <strong style="color:var(--gold);">Annual process:</strong>
+                    Do this once at the start of each year. Old databases remain accessible
+                    for historical lookups at any time.
+                </div>
+            </div>
+        </div>
+
+        {% else %}
+        <div class="card">
+            <div class="card-body" style="text-align:center;padding:24px;color:var(--text-muted);">
+                <i class="fas fa-lock" style="font-size:24px;display:block;margin-bottom:10px;opacity:.3;"></i>
+                <div style="font-size:13px;">
+                    Only administrators can create new year databases.
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function copySql(){
+    navigator.clipboard.writeText(document.getElementById('sqlBlock').textContent).then(()=>{
+        const btn=document.getElementById('copyBtn');
+        btn.innerHTML='<i class="fas fa-check"></i> Copied!';
+        btn.style.color='var(--success-text)';
+        setTimeout(()=>{btn.innerHTML='<i class="fas fa-copy"></i> Copy';btn.style.color='';},2000);
+    });
+}
+</script>
+{% endblock %}

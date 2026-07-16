@@ -253,3 +253,63 @@ class KnowledgeBase(models.Model):
 
     def __str__(self):
         return self.title
+
+
+# ── Glossary ──────────────────────────────────────────────────────────────────
+
+class GlossaryTerm(models.Model):
+    term        = models.CharField(max_length=120, unique=True)
+    definition  = models.TextField()
+    category    = models.CharField(max_length=80, blank=True)
+    example     = models.TextField(blank=True)
+    added_by    = models.ForeignKey(User, on_delete=models.SET_NULL,
+                                    null=True, related_name='glossary_terms')
+    created_at  = models.DateTimeField(auto_now_add=True)
+    updated_at  = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['term']
+        verbose_name = 'Glossary Term'
+
+    def __str__(self):
+        return self.term
+
+
+# ── Yearly Database Registry ──────────────────────────────────────────────────
+
+class DatabaseYear(models.Model):
+    year        = models.PositiveIntegerField(unique=True)
+    db_name     = models.CharField(max_length=100)
+    db_user     = models.CharField(max_length=100, blank=True)
+    db_host     = models.CharField(max_length=100, blank=True)
+    db_port     = models.CharField(max_length=10, default='5432')
+    description = models.TextField(blank=True)
+    is_active   = models.BooleanField(default=True)
+    is_current  = models.BooleanField(default=False)
+    created_by  = models.ForeignKey(User, on_delete=models.SET_NULL,
+                                    null=True, related_name='created_db_years')
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-year']
+        verbose_name = 'Database Year'
+
+    def __str__(self):
+        return f'BeitDesk {self.year} ({self.db_name})'
+
+    def save(self, *args, **kwargs):
+        if self.is_current:
+            DatabaseYear.objects.exclude(pk=self.pk).update(is_current=False)
+        super().save(*args, **kwargs)
+
+    @property
+    def db_config(self):
+        import os
+        return {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': self.db_name,
+            'USER': self.db_user or os.environ.get('DB_USER', 'beitdesk_user'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+            'HOST': self.db_host or os.environ.get('DB_HOST', 'localhost'),
+            'PORT': self.db_port or '5432',
+        }

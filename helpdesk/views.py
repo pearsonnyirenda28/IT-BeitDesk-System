@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 from datetime import timedelta
-from .models import Ticket, TicketComment, Category, AuditLog, KnowledgeBase
+from .models import Ticket, TicketComment, Category, AuditLog, KnowledgeBase, GlossaryTerm, DatabaseYear
 from .forms import TicketForm, TicketCommentForm, TicketFilterForm
 
 
@@ -431,4 +431,215 @@ def api_stats(request):
         'open_tickets': Ticket.objects.filter(
             status__in=['OPEN', 'IN_PROGRESS']).count(),
         'timestamp': timezone.now().isoformat(),
+    })
+
+
+@login_required
+def print_tickets(request):
+    """Print all tickets (filtered) — admin only, opens print-ready page."""
+    if not request.user.is_superuser:
+        messages.error(request, 'Only administrators can print ticket records.')
+        return redirect('ticket_list')
+
+    tickets = Ticket.objects.select_related(
+        'requester', 'assigned_to', 'category'
+    ).all().order_by('status', '-created_at')
+
+    # Optional filters from querystring
+    status   = request.GET.get('status', '')
+    priority = request.GET.get('priority', '')
+    if status:
+        tickets = tickets.filter(status=status)
+    if priority:
+        tickets = tickets.filter(priority=priority)
+
+    log_action(request, AuditLog.ACTION_VIEW, 'Ticket', '',
+               'Bulk print', notes=f'Printed {tickets.count()} tickets')
+
+    context = {
+        'tickets': tickets,
+        'printed_by': request.user,
+        'printed_at': timezone.now(),
+        'filters': {'status': status, 'priority': priority},
+        'status_choices': Ticket.STATUS_CHOICES,
+        'priority_choices': Ticket.PRIORITY_CHOICES,
+        'total': tickets.count(),
+    }
+    return render(request, 'helpdesk/print_tickets.html', context)
+
+
+@login_required
+def print_ticket_single(request, ticket_id):
+    """Print a single ticket — admin only."""
+    if not request.user.is_superuser:
+        messages.error(request, 'Only administrators can print ticket records.')
+        return redirect('ticket_detail', ticket_id=ticket_id)
+
+    ticket = get_object_or_404(Ticket, ticket_id=ticket_id)
+    log_action(request, AuditLog.ACTION_VIEW, 'Ticket', ticket.ticket_id,
+               str(ticket), notes='Single ticket print')
+
+    return render(request, 'helpdesk/print_ticket_single.html', {
+        'ticket': ticket,
+        'printed_by': request.user,
+        'printed_at': timezone.now(),
+        'comments': ticket.comments.all(),
+    })
+
+
+# ── Glossary ──────────────────────────────────────────────────────────────────
+
+@login_required
+def glossary(request):
+    terms = GlossaryTerm.objects.select_related('added_by').all()
+    search   = request.GET.get('search', '')
+    category = request.GET.get('category', '')
+
+    if search:
+        terms = terms.filter(
+            Q(term__icontains=search) | Q(definition__icontains=search)
+        )
+    if category:
+        terms = terms.filter(category__icontains=category)
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'add':
+            term_text  = request.POST.get('term', '').strip()
+            definition = request.POST.get('definition', '').strip()
+            cat        = request.POST.get('category', '').strip()
+            example    = request.POST.get('example', '').strip()
+            if not term_text or not definition:
+                messages.error(request, 'Term and definition are required.')
+            elif GlossaryTerm.objects.filter(term__iexact=term_text).exists():
+                messages.error(request, f'"{term_text}" already exists in the glossary.')
+            else:
+                GlossaryTerm.objects.create(
+                    term=term_text, definition=definition,
+                    category=cat, example=example, added_by=request.user
+                )
+                log_action(request, AuditLog.ACTION_CREATE, 'GlossaryTerm',
+                           term_text, term_text, notes='Glossary term added')
+                messages.success(request, f'"{term_text}" added to the glossary.')
+            return redirect('glossary')
+
+        elif action == 'delete':
+            if not request.user.is_staff:
+                messages.error(request, 'Only staff can delete glossary terms.')
+                return redirect('glossary')
+            try:
+                t = GlossaryTerm.objects.get(pk=request.POST.get('term_id'))
+                name = t.term
+                t.delete()
+                log_action(request, AuditLog.ACTION_DELETE, 'GlossaryTerm',
+                           str(t.pk), name, notes='Glossary term deleted')
+                messages.success(request, f'"{name}" removed from glossary.')
+            except GlossaryTerm.DoesNotExist:
+                messages.error(request, 'Term not found.')
+            return redirect('glossary')
+
+        elif action == 'edit':
+            if not request.user.is_staff:
+                messages.error(request, 'Only staff can edit glossary terms.')
+                return redirect('glossary')
+            try:
+                t = GlossaryTerm.objects.get(pk=request.POST.get('term_id'))
+                t.term       = request.POST.get('term', t.term).strip()
+                t.definition = request.POST.get('definition', t.definition).strip()
+                t.category   = request.POST.get('category', t.category).strip()
+                t.example    = request.POST.get('example', t.example).strip()
+                t.save()
+                messages.success(request, f'"{t.term}" updated.')
+            except GlossaryTerm.DoesNotExist:
+                messages.error(request, 'Term not found.')
+            return redirect('glossary')
+
+    categories = GlossaryTerm.objects.values_list(
+        'category', flat=True
+    ).distinct().exclude(category='').order_by('category')
+
+    return render(request, 'helpdesk/glossary.html', {
+        'terms': terms,
+        'search': search,
+        'category': category,
+        'categories': categories,
+        'total': terms.count(),
+    })
+
+
+# ── Yearly Database Switcher ──────────────────────────────────────────────────
+
+@login_required
+def database_switcher(request):
+    years      = DatabaseYear.objects.filter(is_active=True)
+    active_year = request.session.get('active_db_year', None)
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'switch':
+            try:
+                yr = DatabaseYear.objects.get(pk=request.POST.get('year_id'), is_active=True)
+                request.session['active_db_year'] = yr.year
+                request.session['active_db_name'] = yr.db_name
+                log_action(request, AuditLog.ACTION_UPDATE, 'DatabaseYear',
+                           str(yr.year), str(yr), notes=f'Switched to {yr.year} database')
+                messages.success(
+                    request,
+                    f'Now viewing {yr.year} records (database: {yr.db_name}).'
+                )
+            except DatabaseYear.DoesNotExist:
+                messages.error(request, 'Database year not found.')
+            return redirect('database_switcher')
+
+        elif action == 'create_year' and request.user.is_superuser:
+            new_year = request.POST.get('new_year', '').strip()
+            db_name  = request.POST.get('db_name', '').strip()
+            desc     = request.POST.get('description', '').strip()
+            if not new_year or not db_name:
+                messages.error(request, 'Year and database name are required.')
+            elif DatabaseYear.objects.filter(year=new_year).exists():
+                messages.error(request, f'Year {new_year} already exists.')
+            else:
+                db_year = DatabaseYear.objects.create(
+                    year=int(new_year), db_name=db_name,
+                    description=desc, created_by=request.user, is_active=True,
+                )
+                log_action(request, AuditLog.ACTION_CREATE, 'DatabaseYear',
+                           new_year, str(db_year),
+                           notes=f'New year database registered: {db_name}')
+                messages.success(
+                    request,
+                    f'{new_year} registered as "{db_name}". '
+                    f'Run the SQL commands shown to create it in PostgreSQL, '
+                    f'then run: py manage.py migrate --database={db_name}'
+                )
+            return redirect('database_switcher')
+
+        elif action == 'set_current' and request.user.is_superuser:
+            try:
+                yr = DatabaseYear.objects.get(pk=request.POST.get('year_id'))
+                yr.is_current = True
+                yr.save()
+                messages.success(request, f'{yr.year} is now the current operating year.')
+            except DatabaseYear.DoesNotExist:
+                messages.error(request, 'Year not found.')
+            return redirect('database_switcher')
+
+        elif action == 'clear_session':
+            request.session.pop('active_db_year', None)
+            request.session.pop('active_db_name', None)
+            messages.success(request, 'Returned to current year.')
+            return redirect('database_switcher')
+
+    import os
+    current_year = timezone.now().year
+    return render(request, 'helpdesk/database_switcher.html', {
+        'years':          years,
+        'active_year':    active_year,
+        'active_db_name': request.session.get('active_db_name', ''),
+        'current_year':   current_year,
+        'suggested_db':   f'beitdesk_{current_year}',
+        'db_user':        os.environ.get('DB_USER', 'beitdesk_user'),
     })

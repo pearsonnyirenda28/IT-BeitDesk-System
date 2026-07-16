@@ -29,6 +29,12 @@
             </div>
         </div>
     </div>
+    {% if request.user.is_superuser %}
+    <a href="{% url 'print_ticket_single' ticket.ticket_id %}" target="_blank"
+       class="btn btn-secondary btn-sm">
+        <i class="fas fa-print"></i> Print
+    </a>
+    {% endif %}
 </div>
 
 <div class="grid" style="grid-template-columns:1fr 310px;gap:20px;align-items:start;">
