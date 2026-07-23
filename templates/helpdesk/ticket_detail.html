@@ -134,9 +134,12 @@
                 <form method="post">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="comment">
-                    <textarea name="body" class="form-control" rows="3"
-                              placeholder="Add a comment, resolution note, or update..."
-                              required></textarea>
+                    <div class="ac-wrap" id="wrap-comment" style="position:relative;">
+                        <textarea name="body" id="id_comment_body" class="form-control" rows="3"
+                                  placeholder="Add a comment, resolution note, or update..."
+                                  autocomplete="off" required></textarea>
+                        <div class="ac-dropdown" id="ac-comment"></div>
+                    </div>
                     <div style="display:flex;justify-content:space-between;
                                 align-items:center;margin-top:10px;">
                         <label style="display:flex;align-items:center;gap:6px;
@@ -401,4 +404,88 @@
 
     </div><!-- /sidebar -->
 </div>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.ac-wrap{position:relative;}
+.ac-dropdown{display:none;position:absolute;top:calc(100% + 3px);left:0;right:0;
+    background:var(--bg-card);border:1px solid var(--accent);border-radius:6px;
+    box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:999;max-height:200px;overflow-y:auto;}
+.ac-dropdown.visible{display:block;}
+.ac-item{padding:7px 12px;font-size:13px;color:var(--text-secondary);cursor:pointer;
+    display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border-subtle);transition:background .1s;}
+.ac-item:last-child{border-bottom:none;}
+.ac-item:hover,.ac-item.selected{background:rgba(26,107,48,.18);color:var(--text-primary);}
+.ac-item .ac-icon{width:16px;height:16px;background:rgba(26,107,48,.2);border-radius:3px;
+    display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--accent-hover);flex-shrink:0;}
+.ac-match{color:var(--accent-hover);font-weight:600;}
+.ac-footer{padding:4px 10px;font-size:10px;color:var(--text-muted);border-top:1px solid var(--border);}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+    'use strict';
+    const SUGGEST_URL='/dashboard/api/suggest/';
+    const CSRF=document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const input=document.getElementById('id_comment_body');
+    const drop=document.getElementById('ac-comment');
+    if(!input||!drop)return;
+    let timer=null,activeIndex=-1;
+
+    function highlight(text,q){
+        return text.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),
+                            '<span class="ac-match">$1</span>');
+    }
+    function show(suggestions,q){
+        if(!suggestions.length){hide();return;}
+        drop.innerHTML=suggestions.map((s,i)=>
+            `<div class="ac-item" data-value="${s}" data-index="${i}">
+                <div class="ac-icon"><i class="fas fa-wand-magic-sparkles"></i></div>
+                <span>${highlight(s,q)}</span>
+            </div>`
+        ).join('')+`<div class="ac-footer"><i class="fas fa-robot" style="color:var(--accent-hover);margin-right:4px;"></i>Learned from your tickets</div>`;
+        drop.querySelectorAll('.ac-item').forEach(item=>{
+            item.addEventListener('mousedown',e=>{e.preventDefault();accept(item.dataset.value);});
+        });
+        drop.classList.add('visible');activeIndex=-1;
+    }
+    function hide(){drop.classList.remove('visible');drop.innerHTML='';activeIndex=-1;}
+    function accept(value){
+        const pos=input.selectionStart,text=input.value;
+        const before=text.substring(0,pos);
+        const lastSpace=Math.max(before.lastIndexOf(' '),before.lastIndexOf('\n'));
+        const newBefore=before.substring(0,lastSpace+1)+value+' ';
+        input.value=newBefore+text.substring(pos);
+        input.setSelectionRange(newBefore.length,newBefore.length);
+        hide();input.focus();
+    }
+    input.addEventListener('input',function(){
+        clearTimeout(timer);
+        const before=this.value.substring(0,this.selectionStart);
+        const parts=before.split(/[\s\n]+/);
+        const q=parts[parts.length-1].trim();
+        if(q.length<2){hide();return;}
+        timer=setTimeout(()=>{
+            fetch(SUGGEST_URL+'?q='+encodeURIComponent(q)+'&field=comment&limit=6',
+                  {headers:{'X-CSRFToken':CSRF}})
+            .then(r=>r.json()).then(d=>{if(document.activeElement===input)show(d.suggestions||[],q);})
+            .catch(()=>hide());
+        },200);
+    });
+    input.addEventListener('keydown',function(e){
+        if(!drop.classList.contains('visible'))return;
+        const items=drop.querySelectorAll('.ac-item');
+        if(!items.length)return;
+        if(e.key==='ArrowDown'){e.preventDefault();activeIndex=Math.min(activeIndex+1,items.length-1);items.forEach((it,i)=>it.classList.toggle('selected',i===activeIndex));}
+        else if(e.key==='ArrowUp'){e.preventDefault();activeIndex=Math.max(activeIndex-1,0);items.forEach((it,i)=>it.classList.toggle('selected',i===activeIndex));}
+        else if(e.key==='Tab'){if(activeIndex>=0&&items[activeIndex]){e.preventDefault();accept(items[activeIndex].dataset.value);}else if(items[0]){e.preventDefault();accept(items[0].dataset.value);}}
+        else if(e.key==='Escape')hide();
+    });
+    input.addEventListener('blur',()=>setTimeout(hide,150));
+    document.addEventListener('click',e=>{if(!e.target.closest('.ac-wrap'))hide();});
+})();
+</script>
 {% endblock %}

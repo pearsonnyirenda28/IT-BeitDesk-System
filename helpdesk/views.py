@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 from datetime import timedelta
-from .models import Ticket, TicketComment, Category, AuditLog, KnowledgeBase, GlossaryTerm, DatabaseYear
+from .models import Ticket, TicketComment, Category, AuditLog, KnowledgeBase, GlossaryTerm, DatabaseYear, LearnedPhrase
 from .forms import TicketForm, TicketCommentForm, TicketFilterForm
 
 
@@ -56,119 +56,198 @@ def get_voip_stats(today_start):
 def dashboard(request):
     now = timezone.now()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    week_start = today_start - timedelta(days=7)
+    week_start  = today_start - timedelta(days=7)
 
-    tickets = Ticket.objects.all()
+    # ── Active year info ────────────────────────────────────────────────────
+    active_year    = request.session.get('active_db_year')
+    active_db_name = request.session.get('active_db_name', '')
+    viewing_label  = f'{active_year} Records' if active_year else 'Current Year'
 
-    stats = {
-        'total_open': tickets.filter(status__in=['OPEN', 'IN_PROGRESS', 'REOPENED']).count(),
-        'total_pending': tickets.filter(status='PENDING').count(),
-        'total_resolved_today': tickets.filter(status='RESOLVED', resolved_at__gte=today_start).count(),
-        'total_closed': tickets.filter(status='CLOSED').count(),
-        'critical_open': tickets.filter(status__in=['OPEN', 'IN_PROGRESS'], priority='CRITICAL').count(),
-        'overdue_count': sum(1 for t in tickets.filter(
-            status__in=['OPEN', 'IN_PROGRESS', 'PENDING'],
-            due_date__isnull=False) if t.is_overdue),
-        'avg_resolution_minutes': tickets.filter(
-            resolution_time_minutes__isnull=False
-        ).aggregate(avg=Avg('resolution_time_minutes'))['avg'] or 0,
-        'resolved_this_week': tickets.filter(resolved_at__gte=week_start).count(),
-        'new_this_week': tickets.filter(created_at__gte=week_start).count(),
-    }
+    # When viewing a past year, today/week stats don't apply — zero them
+    is_past_year = bool(active_year)
 
-    voip_stats, active_calls = get_voip_stats(today_start)
+    try:
+        tickets = Ticket.objects.all()
 
-    recent_tickets = tickets.select_related(
-        'requester', 'assigned_to', 'category'
-    ).order_by('-created_at')[:10]
+        stats = {
+            'total_open':           tickets.filter(status__in=['OPEN', 'IN_PROGRESS', 'REOPENED']).count(),
+            'total_pending':        tickets.filter(status='PENDING').count(),
+            'total_resolved_today': 0 if is_past_year else tickets.filter(
+                                        status='RESOLVED', resolved_at__gte=today_start).count(),
+            'total_closed':         tickets.filter(status='CLOSED').count(),
+            'critical_open':        tickets.filter(status__in=['OPEN', 'IN_PROGRESS'], priority='CRITICAL').count(),
+            'overdue_count':        0 if is_past_year else sum(
+                                        1 for t in tickets.filter(
+                                            status__in=['OPEN', 'IN_PROGRESS', 'PENDING'],
+                                            due_date__isnull=False) if t.is_overdue),
+            'avg_resolution_minutes': tickets.filter(
+                                        resolution_time_minutes__isnull=False
+                                      ).aggregate(avg=Avg('resolution_time_minutes'))['avg'] or 0,
+            'resolved_this_week':   0 if is_past_year else tickets.filter(resolved_at__gte=week_start).count(),
+            'new_this_week':        0 if is_past_year else tickets.filter(created_at__gte=week_start).count(),
+            'total_tickets':        tickets.count(),
+        }
 
-    status_data = list(tickets.values('status').annotate(count=Count('id')).order_by('status'))
-    category_data = list(
-        tickets.filter(category__isnull=False)
-        .values('category__name').annotate(count=Count('id')).order_by('-count')[:6]
-    )
-    priority_data = list(tickets.values('priority').annotate(count=Count('id')).order_by('priority'))
-    agent_workload = list(
-        tickets.filter(status__in=['OPEN', 'IN_PROGRESS'], assigned_to__isnull=False)
-        .values('assigned_to__username', 'assigned_to__first_name', 'assigned_to__last_name')
-        .annotate(count=Count('id')).order_by('-count')[:5]
-    )
-    if request.user.is_staff:
-        recent_audit = AuditLog.objects.select_related('user').order_by('-timestamp')[:10]
+        recent_tickets   = tickets.select_related('requester', 'assigned_to', 'category').order_by('-created_at')[:10]
+        status_data      = list(tickets.values('status').annotate(count=Count('id')).order_by('status'))
+        category_data    = list(tickets.filter(category__isnull=False).values('category__name').annotate(count=Count('id')).order_by('-count')[:6])
+        priority_data    = list(tickets.values('priority').annotate(count=Count('id')).order_by('priority'))
+        agent_workload   = list(
+            tickets.filter(status__in=['OPEN', 'IN_PROGRESS'], assigned_to__isnull=False)
+            .values('assigned_to__username', 'assigned_to__first_name', 'assigned_to__last_name')
+            .annotate(count=Count('id')).order_by('-count')[:5]
+        )
+
+    except Exception:
+        # DB for this year not yet set up — show empty state
+        stats          = {k: 0 for k in ['total_open','total_pending','total_resolved_today',
+                                          'total_closed','critical_open','overdue_count',
+                                          'avg_resolution_minutes','resolved_this_week',
+                                          'new_this_week','total_tickets']}
+        recent_tickets = []
+        status_data    = []
+        category_data  = []
+        priority_data  = []
+        agent_workload = []
+
+    # VoIP stats — only meaningful for current year
+    if is_past_year:
+        voip_stats  = {'active_calls': 0, 'calls_today': 0, 'missed_today': 0, 'avg_talk_today': 0}
+        active_calls = []
     else:
-        recent_audit = AuditLog.objects.select_related('user').filter(
-            user=request.user
-        ).order_by('-timestamp')[:10]
+        voip_stats, active_calls = get_voip_stats(today_start)
+
+    # Audit — scoped to role as before
+    try:
+        if request.user.is_staff:
+            recent_audit = AuditLog.objects.select_related('user').order_by('-timestamp')[:10]
+        else:
+            recent_audit = AuditLog.objects.select_related('user').filter(
+                user=request.user).order_by('-timestamp')[:10]
+    except Exception:
+        recent_audit = []
 
     context = {
-        'stats': stats,
-        'voip_stats': voip_stats,
-        'active_calls': active_calls,
+        'stats':          stats,
+        'voip_stats':     voip_stats,
+        'active_calls':   active_calls,
         'recent_tickets': recent_tickets,
-        'status_data': status_data,
-        'category_data': category_data,
-        'priority_data': priority_data,
+        'status_data':    status_data,
+        'category_data':  category_data,
+        'priority_data':  priority_data,
         'agent_workload': agent_workload,
-        'recent_audit': recent_audit,
+        'recent_audit':   recent_audit,
+        # Year context for the banner
+        'active_year':    active_year,
+        'active_db_name': active_db_name,
+        'viewing_label':  viewing_label,
+        'is_past_year':   is_past_year,
     }
     return render(request, 'helpdesk/dashboard.html', context)
 
 
 @login_required
 def ticket_list(request):
-    # Staff and admins see all tickets; regular users see only theirs
-    if request.user.is_staff:
-        tickets = Ticket.objects.select_related('requester', 'assigned_to', 'category').all()
-    else:
-        tickets = Ticket.objects.select_related('requester', 'assigned_to', 'category').filter(
-            Q(requester=request.user) | Q(assigned_to=request.user)
-        )
+    active_year    = request.session.get('active_db_year')
+    active_db_name = request.session.get('active_db_name', '')
+    is_past_year   = bool(active_year)
+    db_error       = False
 
-    status   = request.GET.get('status', '')
-    priority = request.GET.get('priority', '')
-    category = request.GET.get('category', '')
-    assigned = request.GET.get('assigned', '')
-    search   = request.GET.get('search', '')
-    source   = request.GET.get('source', '')
+    try:
+        # Staff and admins see all tickets; regular users see only theirs
+        if request.user.is_staff:
+            tickets = Ticket.objects.select_related('requester', 'assigned_to', 'category').all()
+        else:
+            tickets = Ticket.objects.select_related('requester', 'assigned_to', 'category').filter(
+                Q(requester=request.user) | Q(assigned_to=request.user)
+            )
 
-    if status:
-        tickets = tickets.filter(status=status)
-    if priority:
-        tickets = tickets.filter(priority=priority)
-    if category:
-        tickets = tickets.filter(category_id=category)
-    if assigned == 'me':
-        tickets = tickets.filter(assigned_to=request.user)
-    elif assigned == 'unassigned':
-        tickets = tickets.filter(assigned_to__isnull=True)
-    if search:
-        tickets = tickets.filter(
-            Q(title__icontains=search) |
-            Q(ticket_id__icontains=search) |
-            Q(description__icontains=search) |
-            Q(requester_name__icontains=search) |
-            Q(requester_email__icontains=search)
-        )
-    if source:
-        tickets = tickets.filter(source=source)
+        status   = request.GET.get('status', '')
+        priority = request.GET.get('priority', '')
+        category = request.GET.get('category', '')
+        assigned = request.GET.get('assigned', '')
+        search   = request.GET.get('search', '')
+        source   = request.GET.get('source', '')
 
-    paginator = Paginator(tickets, 20)
-    page = request.GET.get('page', 1)
-    tickets_page = paginator.get_page(page)
-    categories = Category.objects.all()
+        # ── Date filters ──────────────────────────────────────────────────────
+        date_from   = request.GET.get('date_from', '')
+        date_to     = request.GET.get('date_to', '')
+        date_preset = request.GET.get('date_preset', '')
+        now = timezone.now()
+
+        if date_preset == 'today':
+            date_from = now.date().isoformat()
+            date_to   = now.date().isoformat()
+        elif date_preset == 'week':
+            date_from = (now - timedelta(days=7)).date().isoformat()
+            date_to   = now.date().isoformat()
+        elif date_preset == 'month':
+            date_from = (now - timedelta(days=30)).date().isoformat()
+            date_to   = now.date().isoformat()
+
+        if date_from:
+            try:
+                tickets = tickets.filter(created_at__date__gte=date_from)
+            except Exception:
+                pass
+        if date_to:
+            try:
+                tickets = tickets.filter(created_at__date__lte=date_to)
+            except Exception:
+                pass
+
+        if status:
+            tickets = tickets.filter(status=status)
+        if priority:
+            tickets = tickets.filter(priority=priority)
+        if category:
+            tickets = tickets.filter(category_id=category)
+        if assigned == 'me':
+            tickets = tickets.filter(assigned_to=request.user)
+        elif assigned == 'unassigned':
+            tickets = tickets.filter(assigned_to__isnull=True)
+        if search:
+            tickets = tickets.filter(
+                Q(title__icontains=search) |
+                Q(ticket_id__icontains=search) |
+                Q(description__icontains=search) |
+                Q(requester_name__icontains=search) |
+                Q(requester_email__icontains=search)
+            )
+        if source:
+            tickets = tickets.filter(source=source)
+
+        total_count  = tickets.count()
+        paginator    = Paginator(tickets, 20)
+        tickets_page = paginator.get_page(request.GET.get('page', 1))
+        categories   = Category.objects.all()
+
+    except Exception:
+        db_error     = True
+        tickets_page = []
+        categories   = []
+        total_count  = 0
+        status = priority = category = assigned = search = source = ''
+        date_from = date_to = date_preset = ''
 
     context = {
-        'tickets': tickets_page,
-        'categories': categories,
+        'tickets':      tickets_page,
+        'categories':   categories,
         'filters': {
             'status': status, 'priority': priority,
             'category': category, 'assigned': assigned,
             'search': search, 'source': source,
+            'date_from': date_from, 'date_to': date_to,
+            'date_preset': date_preset,
         },
-        'status_choices': Ticket.STATUS_CHOICES,
+        'status_choices':   Ticket.STATUS_CHOICES,
         'priority_choices': Ticket.PRIORITY_CHOICES,
-        'source_choices': Ticket.SOURCE_CHOICES,
-        'total_count': tickets.count(),
+        'source_choices':   Ticket.SOURCE_CHOICES,
+        'total_count':      total_count,
+        'active_year':      active_year,
+        'active_db_name':   active_db_name,
+        'is_past_year':     is_past_year,
+        'db_error':         db_error,
     }
     return render(request, 'helpdesk/ticket_list.html', context)
 
@@ -323,56 +402,87 @@ def ticket_edit(request, ticket_id):
 
 @login_required
 def reports(request):
-    now = timezone.now()
+    now    = timezone.now()
     period = request.GET.get('period', '30')
     try:
         days = int(period)
     except ValueError:
         days = 30
-    start_date = now - timedelta(days=days)
 
-    tickets = Ticket.objects.filter(created_at__gte=start_date)
+    # ── Year context ──────────────────────────────────────────────────────────
+    active_year    = request.session.get('active_db_year')
+    active_db_name = request.session.get('active_db_name', '')
+    is_past_year   = bool(active_year)
 
-    # VoIP report stats — optional
-    voip_total = voip_completed = voip_missed = 0
-    voip_avg_duration = 0
+    # For past year archives, show ALL records in that DB instead of a date window
+    # (the date-window filter is only useful for current year live data)
     try:
-        from voip.models import VoIPCall
-        vcalls = VoIPCall.objects.filter(initiated_at__gte=start_date)
-        voip_total = vcalls.count()
-        voip_completed = vcalls.filter(status='COMPLETED').count()
-        voip_missed = vcalls.filter(status='MISSED').count()
-        voip_avg_duration = vcalls.filter(status='COMPLETED').aggregate(
-            avg=Avg('talk_duration_seconds'))['avg'] or 0
-    except Exception:
-        pass
+        if is_past_year:
+            # Show all tickets in the archive year
+            tickets    = Ticket.objects.all()
+            period_label = f'{active_year} Full Year Archive'
+        else:
+            start_date = now - timedelta(days=days)
+            tickets    = Ticket.objects.filter(created_at__gte=start_date)
+            period_label = f'Last {days} days'
 
-    context = {
-        'period': period,
-        'period_label': f'Last {days} days',
-        'total_created': tickets.count(),
-        'total_resolved': tickets.filter(status__in=['RESOLVED', 'CLOSED']).count(),
-        'total_pending': tickets.filter(status__in=['OPEN', 'IN_PROGRESS', 'PENDING']).count(),
-        'avg_resolution': tickets.filter(
-            resolution_time_minutes__isnull=False
-        ).aggregate(avg=Avg('resolution_time_minutes'))['avg'] or 0,
-        'by_priority': list(tickets.values('priority').annotate(count=Count('id'))),
-        'by_category': list(
-            tickets.values('category__name').annotate(count=Count('id')).order_by('-count')[:10]
-        ),
-        'by_agent': list(
-            tickets.filter(assigned_to__isnull=False)
-            .values('assigned_to__username')
-            .annotate(total=Count('id'),
-                      resolved=Count('id', filter=Q(status__in=['RESOLVED', 'CLOSED'])))
-            .order_by('-total')[:10]
-        ),
-        'by_source': list(tickets.values('source').annotate(count=Count('id'))),
-        'voip_total': voip_total,
-        'voip_completed': voip_completed,
-        'voip_missed': voip_missed,
-        'voip_avg_duration': voip_avg_duration,
-    }
+        voip_total = voip_completed = voip_missed = voip_avg_duration = 0
+        try:
+            from voip.models import VoIPCall
+            vcalls = VoIPCall.objects.all() if is_past_year else \
+                     VoIPCall.objects.filter(initiated_at__gte=start_date if not is_past_year else now - timedelta(days=36500))
+            if not is_past_year:
+                vcalls = VoIPCall.objects.filter(initiated_at__gte=start_date)
+            else:
+                vcalls = VoIPCall.objects.all()
+            voip_total     = vcalls.count()
+            voip_completed = vcalls.filter(status='COMPLETED').count()
+            voip_missed    = vcalls.filter(status='MISSED').count()
+            voip_avg_duration = vcalls.filter(status='COMPLETED').aggregate(
+                avg=Avg('talk_duration_seconds'))['avg'] or 0
+        except Exception:
+            pass
+
+        context = {
+            'period':       period,
+            'period_label': period_label,
+            'is_past_year': is_past_year,
+            'active_year':  active_year,
+            'active_db_name': active_db_name,
+            'total_created':  tickets.count(),
+            'total_resolved': tickets.filter(status__in=['RESOLVED', 'CLOSED']).count(),
+            'total_pending':  tickets.filter(status__in=['OPEN', 'IN_PROGRESS', 'PENDING']).count(),
+            'avg_resolution': tickets.filter(
+                resolution_time_minutes__isnull=False
+            ).aggregate(avg=Avg('resolution_time_minutes'))['avg'] or 0,
+            'by_priority': list(tickets.values('priority').annotate(count=Count('id'))),
+            'by_category': list(
+                tickets.values('category__name').annotate(count=Count('id')).order_by('-count')[:10]
+            ),
+            'by_agent': list(
+                tickets.filter(assigned_to__isnull=False)
+                .values('assigned_to__username')
+                .annotate(total=Count('id'),
+                          resolved=Count('id', filter=Q(status__in=['RESOLVED', 'CLOSED'])))
+                .order_by('-total')[:10]
+            ),
+            'by_source':       list(tickets.values('source').annotate(count=Count('id'))),
+            'voip_total':      voip_total,
+            'voip_completed':  voip_completed,
+            'voip_missed':     voip_missed,
+            'voip_avg_duration': voip_avg_duration,
+        }
+    except Exception:
+        context = {
+            'period': period, 'period_label': f'Error — {active_db_name} unreachable',
+            'is_past_year': is_past_year, 'active_year': active_year,
+            'active_db_name': active_db_name, 'db_error': True,
+            'total_created': 0, 'total_resolved': 0, 'total_pending': 0,
+            'avg_resolution': 0, 'by_priority': [], 'by_category': [],
+            'by_agent': [], 'by_source': [], 'voip_total': 0,
+            'voip_completed': 0, 'voip_missed': 0, 'voip_avg_duration': 0,
+        }
+
     return render(request, 'helpdesk/reports.html', context)
 
 
@@ -643,3 +753,74 @@ def database_switcher(request):
         'suggested_db':   f'beitdesk_{current_year}',
         'db_user':        os.environ.get('DB_USER', 'beitdesk_user'),
     })
+
+
+# ── Word Prediction API ───────────────────────────────────────────────────────
+
+def api_suggest(request):
+    """
+    Return autocomplete suggestions for a given prefix and field.
+    GET /dashboard/api/suggest/?q=USB&field=title&category=Hardware&limit=8
+    Open to all authenticated users; read-only.
+    """
+    if not request.user.is_authenticated:
+        return JsonResponse({'suggestions': []})
+
+    q         = request.GET.get('q', '').strip().lower()
+    field     = request.GET.get('field', LearnedPhrase.FIELD_TITLE)
+    category  = request.GET.get('category', '')
+    limit     = min(int(request.GET.get('limit', 8)), 20)
+
+    if len(q) < 2:
+        return JsonResponse({'suggestions': []})
+
+    # Base query — match phrases starting with q OR containing q as a word
+    qs = LearnedPhrase.objects.filter(
+        field_name=field,
+        phrase__icontains=q,
+    )
+
+    # Boost category-specific matches by fetching them first
+    if category:
+        cat_matches  = list(qs.filter(category__iexact=category)
+                              .order_by('-use_count', '-last_used')
+                              .values_list('phrase', flat=True)[:limit])
+        gen_matches  = list(qs.exclude(category__iexact=category)
+                              .order_by('-use_count', '-last_used')
+                              .values_list('phrase', flat=True)[:limit])
+        # Merge, deduplicate, cap
+        seen = set()
+        phrases = []
+        for p in cat_matches + gen_matches:
+            if p not in seen:
+                seen.add(p)
+                phrases.append(p)
+                if len(phrases) >= limit:
+                    break
+    else:
+        phrases = list(qs.order_by('-use_count', '-last_used')
+                         .values_list('phrase', flat=True)[:limit])
+
+    return JsonResponse({'suggestions': phrases, 'q': q, 'field': field})
+
+
+def api_learn(request):
+    """
+    Manually trigger learning from submitted text.
+    POST /dashboard/api/learn/   {text, field, category}
+    Used for real-time learning as user types (optional enhancement).
+    """
+    if not request.user.is_authenticated or request.method != 'POST':
+        return JsonResponse({'ok': False}, status=403)
+
+    import json
+    try:
+        data     = json.loads(request.body)
+        text     = data.get('text', '').strip()
+        field    = data.get('field', LearnedPhrase.FIELD_TITLE)
+        category = data.get('category', '')
+        if text and field:
+            LearnedPhrase.learn(text, field, category=category)
+        return JsonResponse({'ok': True})
+    except Exception:
+        return JsonResponse({'ok': False})

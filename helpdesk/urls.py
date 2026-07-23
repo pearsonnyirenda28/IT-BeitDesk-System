@@ -14,4 +14,6 @@ urlpatterns = [
     path('glossary/', views.glossary, name='glossary'),
     path('database/', views.database_switcher, name='database_switcher'),
     path('api/stats/', views.api_stats, name='api_stats'),
+    path('api/suggest/', views.api_suggest, name='api_suggest'),
+    path('api/learn/', views.api_learn, name='api_learn'),
 ]

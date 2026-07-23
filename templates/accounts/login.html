@@ -19,20 +19,21 @@
         body{font-family:'Inter',sans-serif;background:var(--bg-primary);color:var(--text-primary);
             min-height:100vh;display:flex;align-items:center;justify-content:center;
             position:relative;}
-        /* Faint council building background */
+        /* Council building background — clearly visible on login */
         body::before{
             content:'';
             position:fixed;inset:0;
             background-image:url("{% static 'img/beitbridge_bg.png' %}");
-            background-size:cover;background-position:center;background-repeat:no-repeat;
-            opacity:0.08;
+            background-size:cover;background-position:center 20%;background-repeat:no-repeat;
+            opacity:0.38;
             z-index:0;
         }
-        /* Green tint overlay */
+        /* Dark overlay — lighter so building remains visible */
         body::after{
             content:'';
             position:fixed;inset:0;
-            background:linear-gradient(135deg,rgba(26,107,48,.55) 0%,rgba(13,17,23,.85) 60%);
+            background:
+                linear-gradient(135deg,rgba(13,17,23,.70) 0%,rgba(26,107,48,.25) 50%,rgba(13,17,23,.75) 100%);
             z-index:1;
         }
         .login-wrap{position:relative;z-index:2;width:100%;max-width:400px;padding:24px;}

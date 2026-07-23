@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Ticket, TicketComment, Category, Tag, AuditLog, KnowledgeBase, TicketAttachment, GlossaryTerm, DatabaseYear
+from .models import Ticket, TicketComment, Category, Tag, AuditLog, KnowledgeBase, TicketAttachment, GlossaryTerm, DatabaseYear, LearnedPhrase
 
 
 @admin.register(Category)
@@ -86,3 +86,19 @@ class DatabaseYearAdmin(admin.ModelAdmin):
         if not obj.pk:
             obj.created_by = request.user
         super().save_model(request, obj, form, change)
+
+
+@admin.register(LearnedPhrase)
+class LearnedPhraseAdmin(admin.ModelAdmin):
+    list_display  = ['phrase', 'field_name', 'category', 'use_count', 'last_used']
+    list_filter   = ['field_name', 'category']
+    search_fields = ['phrase']
+    readonly_fields = ['use_count', 'last_used', 'created_at']
+    ordering      = ['-use_count', '-last_used']
+
+    actions = ['reset_counts']
+
+    def reset_counts(self, request, queryset):
+        queryset.update(use_count=1)
+        self.message_user(request, f'Reset use counts for {queryset.count()} phrases.')
+    reset_counts.short_description = 'Reset use counts to 1'

@@ -47,13 +47,15 @@ INSTALLED_APPS = [
     'widget_tweaks',
     # Local apps
     'accounts',
-    'helpdesk',
+    'helpdesk.apps.HelpdeskConfig',
     'voip',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    # Year DB router — must come after session so it can read active year
+    'helpdesk.db_router.YearDatabaseMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -61,6 +63,10 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'helpdesk.middleware.AuditMiddleware',
 ]
+
+# ── Database Router ───────────────────────────────────────────────────────────
+# Routes helpdesk/voip queries to the year-selected DB when active
+DATABASE_ROUTERS = ['helpdesk.db_router.YearDatabaseRouter']
 
 ROOT_URLCONF = 'nexus_helpdesk.urls'
 

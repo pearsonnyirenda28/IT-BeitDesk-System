@@ -25,14 +25,16 @@
         *{box-sizing:border-box;margin:0;padding:0;}
         body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg-primary);
              color:var(--text-primary);min-height:100vh;position:relative;}
-        /* Council building background */
+        /* Council building background — clearly visible */
         body::before{content:'';position:fixed;inset:0;
             background-image:url("{% static 'img/beitbridge_bg.png' %}");
-            background-size:cover;background-position:center 30%;
-            opacity:0.13;z-index:0;pointer-events:none;}
+            background-size:cover;background-position:center 25%;
+            opacity:0.28;z-index:0;pointer-events:none;}
+        /* Subtle dark overlay — less aggressive so building shows through */
         body::after{content:'';position:fixed;inset:0;
-            background:radial-gradient(ellipse at center,transparent 30%,rgba(13,17,23,.55) 100%),
-                       linear-gradient(180deg,rgba(26,107,48,.08) 0%,transparent 40%);
+            background:
+                radial-gradient(ellipse 80% 60% at center,transparent 20%,rgba(13,17,23,.45) 100%),
+                linear-gradient(180deg,rgba(13,17,23,.30) 0%,rgba(13,17,23,.10) 50%,rgba(13,17,23,.30) 100%);
             z-index:0;pointer-events:none;}
         .sidebar,.topbar,.main-content{position:relative;z-index:1;}
         a{color:var(--info-text);text-decoration:none;}
@@ -57,18 +59,20 @@
             transform:translateX(2px);}
         .nav-item.active{background:rgba(26,107,48,.18);color:#3fb950;
             border-left:3px solid var(--accent);padding-left:7px;}
-        /* Coloured icon boxes */
-        .nav-icon-box{width:24px;height:24px;border-radius:5px;flex-shrink:0;
-            display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .18s;}
-        .icon-green {background:rgba(26,107,48,.3); color:#3fb950;}
-        .icon-blue  {background:rgba(31,111,235,.3);color:#58a6ff;}
-        .icon-orange{background:rgba(219,100,0,.3); color:#f0883e;}
-        .icon-yellow{background:rgba(201,162,39,.3);color:#c9a227;}
-        .icon-red   {background:rgba(218,54,51,.3); color:#f85149;}
-        .icon-purple{background:rgba(110,64,201,.3);color:#9b72ea;}
-        .icon-teal  {background:rgba(13,148,136,.3);color:#2dd4bf;}
-        .icon-pink  {background:rgba(236,72,153,.3);color:#f472b6;}
-        .nav-item.active .nav-icon-box{filter:brightness(1.2);}
+        /* Coloured icon boxes — enhanced with glow */
+        .nav-icon-box{width:28px;height:28px;border-radius:6px;flex-shrink:0;
+            display:flex;align-items:center;justify-content:center;font-size:12px;
+            transition:all .2s;box-shadow:0 2px 6px rgba(0,0,0,.2);}
+        .icon-green {background:rgba(26,107,48,.35); color:#3fb950;box-shadow:0 2px 8px rgba(26,107,48,.3);}
+        .icon-blue  {background:rgba(31,111,235,.35);color:#58a6ff;box-shadow:0 2px 8px rgba(31,111,235,.3);}
+        .icon-orange{background:rgba(219,100,0,.35); color:#f0883e;box-shadow:0 2px 8px rgba(219,100,0,.3);}
+        .icon-yellow{background:rgba(201,162,39,.35);color:#c9a227;box-shadow:0 2px 8px rgba(201,162,39,.3);}
+        .icon-red   {background:rgba(218,54,51,.35); color:#f85149;box-shadow:0 2px 8px rgba(218,54,51,.3);}
+        .icon-purple{background:rgba(110,64,201,.35);color:#9b72ea;box-shadow:0 2px 8px rgba(110,64,201,.3);}
+        .icon-teal  {background:rgba(13,148,136,.35);color:#2dd4bf;box-shadow:0 2px 8px rgba(13,148,136,.3);}
+        .icon-pink  {background:rgba(236,72,153,.35);color:#f472b6;box-shadow:0 2px 8px rgba(236,72,153,.3);}
+        .nav-item:hover .nav-icon-box{transform:scale(1.15);filter:brightness(1.3);}
+        .nav-item.active .nav-icon-box{filter:brightness(1.3);box-shadow:0 3px 12px rgba(26,107,48,.5);}
         .nav-badge{margin-left:auto;font-size:10px;font-weight:600;padding:2px 6px;
             border-radius:10px;min-width:18px;text-align:center;}
         .badge-danger-pill{background:var(--danger);color:#fff;}

@@ -9,6 +9,38 @@
 
 {% block content %}
 
+{% if is_past_year %}
+<!-- ── YEAR VIEWING BANNER ── -->
+<div style="background:linear-gradient(135deg,rgba(201,162,39,.18),rgba(201,162,39,.08));
+            border:1px solid rgba(201,162,39,.4);border-radius:10px;
+            padding:14px 20px;margin-bottom:20px;
+            display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+    <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:40px;height:40px;background:rgba(201,162,39,.2);border-radius:8px;
+                    display:flex;align-items:center;justify-content:center;
+                    box-shadow:0 2px 8px rgba(201,162,39,.3);">
+            <i class="fas fa-database" style="color:var(--gold);font-size:16px;"></i>
+        </div>
+        <div>
+            <div style="font-size:14px;font-weight:700;color:var(--gold);">
+                Viewing {{ active_year }} Archive
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
+                Database: <span class="mono">{{ active_db_name }}</span>
+                &nbsp;·&nbsp; All data below is from the <strong style="color:var(--text-secondary);">{{ active_year }}</strong> records
+            </div>
+        </div>
+    </div>
+    <form method="post" action="{% url 'database_switcher' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="clear_session">
+        <button type="submit" class="btn btn-secondary btn-sm">
+            <i class="fas fa-rotate-left"></i> Return to Current Year
+        </button>
+    </form>
+</div>
+{% endif %}
+
 <!-- ── TICKET STAT ROW ─────────────────────────────────────────── -->
 <div class="grid grid-4 mb-6">
     <div class="stat-card">

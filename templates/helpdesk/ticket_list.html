@@ -4,9 +4,50 @@
 {% block breadcrumb %}Help Desk / All Tickets{% endblock %}
 
 {% block content %}
+
+{% if is_past_year %}
+<div style="background:linear-gradient(135deg,rgba(201,162,39,.18),rgba(201,162,39,.08));
+            border:1px solid rgba(201,162,39,.4);border-radius:10px;
+            padding:12px 18px;margin-bottom:18px;
+            display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+        <span class="nav-icon-box icon-yellow"><i class="fas fa-database"></i></span>
+        <div>
+            <div style="font-size:13px;font-weight:700;color:var(--gold);">
+                Viewing {{ active_year }} Archive
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);">
+                Showing tickets from <span class="mono">{{ active_db_name }}</span>
+            </div>
+        </div>
+    </div>
+    <form method="post" action="{% url 'database_switcher' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="clear_session">
+        <button type="submit" class="btn btn-secondary btn-sm">
+            <i class="fas fa-rotate-left"></i> Return to Current Year
+        </button>
+    </form>
+</div>
+{% endif %}
+
+{% if db_error %}
+<div class="alert alert-warning">
+    <i class="fas fa-triangle-exclamation"></i>
+    <div>
+        The <strong>{{ active_year }}</strong> database (<span class="mono">{{ active_db_name }}</span>)
+        is not yet set up or is unreachable.
+        Run <span class="mono" style="background:var(--bg-tertiary);padding:1px 6px;border-radius:3px;">
+        py manage.py migrate --database={{ active_db_name }}</span> to initialise it,
+        or <a href="{% url 'database_switcher' %}" style="color:var(--warning-text);font-weight:600;">
+        switch to another year</a>.
+    </div>
+</div>
+{% endif %}
+
 <div class="flex-between mb-6">
     <div class="page-header" style="margin:0;">
-        <h1>Tickets</h1>
+        <h1>{% if is_past_year %}{{ active_year }} Tickets{% else %}Tickets{% endif %}</h1>
         <p>{{ total_count }} ticket{{ total_count|pluralize }} found</p>
     </div>
     <div style="display:flex;gap:8px;">
@@ -16,53 +57,119 @@
             <i class="fas fa-print"></i> Print Tickets
         </a>
         {% endif %}
+        {% if not is_past_year %}
         <a href="{% url 'ticket_create' %}" class="btn btn-primary">
             <i class="fas fa-plus"></i> Create Ticket
         </a>
+        {% else %}
+        <span class="btn btn-secondary" style="opacity:.5;cursor:default;"
+              title="Cannot create tickets in archive year">
+            <i class="fas fa-lock"></i> Archive — Read Only
+        </span>
+        {% endif %}
     </div>
 </div>
 
 <!-- FILTERS -->
 <div class="card mb-6">
-    <div class="card-body" style="padding:16px;">
-        <form method="get" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
-            <div style="flex:1;min-width:200px;">
-                <input type="text" name="search" class="form-control" placeholder="Search tickets, IDs, email..." value="{{ filters.search }}">
-            </div>
-            <div style="min-width:140px;">
-                <select name="status" class="form-select">
+    <div class="card-body" style="padding:14px 16px;">
+        <form method="get" id="filterForm">
+            <!-- Row 1: Search + dropdowns -->
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px;">
+                <div style="flex:1;min-width:180px;">
+                    <input type="text" name="search" class="form-control"
+                           placeholder="Search tickets, IDs, email..."
+                           value="{{ filters.search }}">
+                </div>
+                <select name="status" class="form-select" style="min-width:130px;">
                     <option value="">All Statuses</option>
                     {% for val, label in status_choices %}
                     <option value="{{ val }}" {% if filters.status == val %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
-            </div>
-            <div style="min-width:140px;">
-                <select name="priority" class="form-select">
+                <select name="priority" class="form-select" style="min-width:130px;">
                     <option value="">All Priorities</option>
                     {% for val, label in priority_choices %}
                     <option value="{{ val }}" {% if filters.priority == val %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
-            </div>
-            <div style="min-width:140px;">
-                <select name="category" class="form-select">
+                <select name="category" class="form-select" style="min-width:130px;">
                     <option value="">All Categories</option>
                     {% for cat in categories %}
-                    <option value="{{ cat.id }}" {% if filters.category == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+                    <option value="{{ cat.id }}"
+                        {% if filters.category == cat.id|stringformat:"s" %}selected{% endif %}>
+                        {{ cat.name }}
+                    </option>
                     {% endfor %}
                 </select>
-            </div>
-            <div style="min-width:130px;">
-                <select name="assigned" class="form-select">
+                <select name="assigned" class="form-select" style="min-width:120px;">
                     <option value="">All Agents</option>
                     <option value="me" {% if filters.assigned == 'me' %}selected{% endif %}>My Tickets</option>
                     <option value="unassigned" {% if filters.assigned == 'unassigned' %}selected{% endif %}>Unassigned</option>
                 </select>
             </div>
-            <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Filter</button>
-            <a href="{% url 'ticket_list' %}" class="btn btn-secondary"><i class="fas fa-times"></i> Clear</a>
+
+            <!-- Row 2: Date filters -->
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+                        padding-top:10px;border-top:1px solid var(--border-subtle);">
+                <span style="font-size:11px;color:var(--text-muted);">
+                    <i class="fas fa-calendar-days"></i> Date:
+                </span>
+                <!-- Presets -->
+                <a href="?{% if filters.search %}search={{ filters.search }}&{% endif %}{% if filters.status %}status={{ filters.status }}&{% endif %}{% if filters.priority %}priority={{ filters.priority }}&{% endif %}date_preset=today"
+                   class="btn btn-sm {% if filters.date_preset == 'today' %}btn-primary{% else %}btn-secondary{% endif %}">
+                    Today
+                </a>
+                <a href="?{% if filters.search %}search={{ filters.search }}&{% endif %}{% if filters.status %}status={{ filters.status }}&{% endif %}{% if filters.priority %}priority={{ filters.priority }}&{% endif %}date_preset=week"
+                   class="btn btn-sm {% if filters.date_preset == 'week' %}btn-primary{% else %}btn-secondary{% endif %}">
+                    Last 7 Days
+                </a>
+                <a href="?{% if filters.search %}search={{ filters.search }}&{% endif %}{% if filters.status %}status={{ filters.status }}&{% endif %}{% if filters.priority %}priority={{ filters.priority }}&{% endif %}date_preset=month"
+                   class="btn btn-sm {% if filters.date_preset == 'month' %}btn-primary{% else %}btn-secondary{% endif %}">
+                    Last 30 Days
+                </a>
+
+                <!-- Custom range -->
+                <div style="display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap;">
+                    <label style="font-size:11px;color:var(--text-muted);">From</label>
+                    <input type="date" name="date_from" class="form-control"
+                           value="{{ filters.date_from }}" style="width:140px;">
+                    <label style="font-size:11px;color:var(--text-muted);">To</label>
+                    <input type="date" name="date_to" class="form-control"
+                           value="{{ filters.date_to }}" style="width:140px;">
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="fas fa-search"></i> Filter
+                    </button>
+                    <a href="{% url 'ticket_list' %}" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-times"></i> Clear
+                    </a>
+                </div>
+            </div>
         </form>
+
+        <!-- Active date filter badges -->
+        {% if filters.date_from or filters.date_to or filters.date_preset %}
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+            <span style="font-size:11px;color:var(--text-muted);">Active date filter:</span>
+            {% if filters.date_preset == 'today' %}
+            <span class="badge badge-in_progress"><i class="fas fa-calendar-day"></i> Today</span>
+            {% elif filters.date_preset == 'week' %}
+            <span class="badge badge-in_progress"><i class="fas fa-calendar-week"></i> Last 7 Days</span>
+            {% elif filters.date_preset == 'month' %}
+            <span class="badge badge-in_progress"><i class="fas fa-calendar"></i> Last 30 Days</span>
+            {% else %}
+                {% if filters.date_from %}
+                <span class="badge badge-open"><i class="fas fa-calendar-plus"></i> From {{ filters.date_from }}</span>
+                {% endif %}
+                {% if filters.date_to %}
+                <span class="badge badge-open"><i class="fas fa-calendar-check"></i> To {{ filters.date_to }}</span>
+                {% endif %}
+            {% endif %}
+            <span style="font-size:11px;color:var(--text-muted);">
+                — {{ total_count }} ticket{{ total_count|pluralize }}
+            </span>
+        </div>
+        {% endif %}
     </div>
 </div>
 

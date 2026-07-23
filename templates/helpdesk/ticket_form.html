@@ -2,66 +2,181 @@
 {% block title %}{{ page_title }}{% endblock %}
 {% block page_title %}{{ page_title }}{% endblock %}
 
+{% block extra_head %}
+<style>
+/* ── Autocomplete dropdown ── */
+.ac-wrap { position: relative; }
+.ac-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 3px);
+    left: 0; right: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.35), 0 0 0 1px rgba(26,107,48,.2);
+    z-index: 999;
+    max-height: 220px;
+    overflow-y: auto;
+}
+.ac-dropdown.visible { display: block; }
+.ac-item {
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--border-subtle);
+    transition: background .1s;
+}
+.ac-item:last-child { border-bottom: none; }
+.ac-item:hover, .ac-item.selected {
+    background: rgba(26,107,48,.18);
+    color: var(--text-primary);
+}
+.ac-item .ac-icon {
+    width: 18px; height: 18px;
+    background: rgba(26,107,48,.2);
+    border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; color: var(--accent-hover);
+    flex-shrink: 0;
+}
+.ac-item .ac-match { color: var(--accent-hover); font-weight: 600; }
+.ac-footer {
+    padding: 5px 10px;
+    font-size: 10px;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.ac-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-size: 10px;
+    background: rgba(26,107,48,.15);
+    color: var(--accent-hover);
+    border: 1px solid rgba(26,107,48,.3);
+    margin-left: auto;
+    cursor: pointer;
+}
+.ac-badge:hover { background: rgba(26,107,48,.3); }
+</style>
+{% endblock %}
+
 {% block content %}
 <div style="max-width:860px;">
     <div class="flex-between mb-6">
         <div>
             <h1 style="font-size:20px;">{{ page_title }}</h1>
-            <p class="text-muted" style="font-size:13px;margin-top:4px;">Fill in the details below to {% if ticket %}update{% else %}create{% endif %} the ticket</p>
+            <p class="text-muted" style="font-size:13px;margin-top:4px;">
+                Fill in the details below to {% if ticket %}update{% else %}create{% endif %} the ticket
+                <span style="margin-left:10px;font-size:11px;background:rgba(26,107,48,.12);
+                             border:1px solid rgba(26,107,48,.25);border-radius:10px;
+                             padding:2px 8px;color:var(--accent-hover);">
+                    <i class="fas fa-wand-magic-sparkles"></i> Word prediction active
+                </span>
+            </p>
         </div>
-        <a href="{% url 'ticket_list' %}" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Back</a>
+        <a href="{% url 'ticket_list' %}" class="btn btn-secondary btn-sm">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
     </div>
 
-    <form method="post">
+    <form method="post" id="ticketForm">
         {% csrf_token %}
-        <div class="grid grid-2 mb-4" style="grid-template-columns:1fr;">
-            <div class="card">
-                <div class="card-header"><h6><i class="fas fa-ticket" style="color:var(--accent-hover);margin-right:6px;"></i>Issue Details</h6></div>
-                <div class="card-body">
-                    <div class="form-group">
-                        <label class="form-label">Issue Title *</label>
+
+        <!-- Issue Details -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="header-icon" style="background:rgba(26,107,48,.2);color:var(--accent-hover);">
+                    <i class="fas fa-ticket"></i>
+                </div>
+                <h6>Issue Details</h6>
+            </div>
+            <div class="card-body">
+
+                <!-- Title with autocomplete -->
+                <div class="form-group">
+                    <label class="form-label">
+                        Issue Title *
+                        <span style="font-size:10px;color:var(--text-muted);margin-left:6px;">
+                            <i class="fas fa-lightbulb" style="color:var(--gold);"></i>
+                            Suggestions appear as you type
+                        </span>
+                    </label>
+                    <div class="ac-wrap" id="wrap-title">
                         {{ form.title }}
-                        {% if form.title.errors %}<div style="color:var(--danger-text);font-size:11px;margin-top:4px;">{{ form.title.errors }}</div>{% endif %}
+                        <div class="ac-dropdown" id="ac-title"></div>
+                    </div>
+                    {% if form.title.errors %}
+                    <div style="color:var(--danger-text);font-size:11px;margin-top:4px;">
+                        {{ form.title.errors }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Description with autocomplete -->
+                <div class="form-group">
+                    <label class="form-label">Description *</label>
+                    <div class="ac-wrap" id="wrap-description">
+                        {{ form.description }}
+                        <div class="ac-dropdown" id="ac-description"></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-3 gap-3">
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        {{ form.category }}
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Description *</label>
-                        {{ form.description }}
+                        <label class="form-label">Priority</label>
+                        {{ form.priority }}
                     </div>
-                    <div class="grid grid-3 gap-3">
-                        <div class="form-group">
-                            <label class="form-label">Category</label>
-                            {{ form.category }}
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Priority</label>
-                            {{ form.priority }}
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Status</label>
-                            {{ form.status }}
-                        </div>
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        {{ form.status }}
                     </div>
-                    <div class="grid grid-2 gap-3">
-                        <div class="form-group">
-                            <label class="form-label">Source</label>
-                            {{ form.source }}
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Due Date</label>
-                            {{ form.due_date }}
-                        </div>
+                </div>
+
+                <div class="grid grid-2 gap-3">
+                    <div class="form-group">
+                        <label class="form-label">Source</label>
+                        {{ form.source }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Due Date</label>
+                        {{ form.due_date }}
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- Requester + Assignment -->
         <div class="grid grid-2 mb-4">
             <div class="card">
-                <div class="card-header"><h6><i class="fas fa-user" style="color:var(--info-text);margin-right:6px;"></i>Requester Info</h6></div>
+                <div class="card-header">
+                    <div class="header-icon" style="background:rgba(88,166,255,.15);color:var(--info-text);">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <h6>Requester Info</h6>
+                </div>
                 <div class="card-body">
+                    <!-- Requester name with autocomplete -->
                     <div class="form-group">
                         <label class="form-label">Full Name</label>
-                        {{ form.requester_name }}
+                        <div class="ac-wrap" id="wrap-requester_name">
+                            {{ form.requester_name }}
+                            <div class="ac-dropdown" id="ac-requester_name"></div>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Email</label>
@@ -71,15 +186,24 @@
                         <label class="form-label">Phone</label>
                         {{ form.requester_phone }}
                     </div>
+                    <!-- Department with autocomplete -->
                     <div class="form-group">
                         <label class="form-label">Department</label>
-                        {{ form.requester_department }}
+                        <div class="ac-wrap" id="wrap-department">
+                            {{ form.requester_department }}
+                            <div class="ac-dropdown" id="ac-department"></div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="card">
-                <div class="card-header"><h6><i class="fas fa-users" style="color:var(--success-text);margin-right:6px;"></i>Assignment & Tags</h6></div>
+                <div class="card-header">
+                    <div class="header-icon" style="background:rgba(35,134,54,.2);color:var(--success-text);">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h6>Assignment &amp; Tags</h6>
+                </div>
                 <div class="card-body">
                     {% if form.assigned_to %}
                     <div class="form-group">
@@ -96,18 +220,267 @@
                         <label class="form-label">Tags</label>
                         {{ form.tags }}
                     </div>
+
+                    <!-- Learned phrase info panel -->
+                    <div style="margin-top:16px;background:rgba(26,107,48,.06);
+                                border:1px solid rgba(26,107,48,.2);border-radius:8px;
+                                padding:12px 14px;">
+                        <div style="font-size:11px;font-weight:600;color:var(--accent-hover);
+                                    margin-bottom:6px;">
+                            <i class="fas fa-wand-magic-sparkles"></i> Word Prediction
+                        </div>
+                        <div style="font-size:11px;color:var(--text-muted);line-height:1.7;">
+                            BeitDesk learns from your text as you type.
+                            Suggestions are drawn from real tickets logged
+                            in your system — the more tickets logged,
+                            the smarter suggestions become.
+                        </div>
+                        <div style="margin-top:8px;font-size:10px;color:var(--text-muted);">
+                            <kbd style="background:var(--bg-tertiary);border:1px solid var(--border);
+                                        border-radius:3px;padding:1px 5px;font-size:10px;">Tab</kbd>
+                            or click to accept &nbsp;·&nbsp;
+                            <kbd style="background:var(--bg-tertiary);border:1px solid var(--border);
+                                        border-radius:3px;padding:1px 5px;font-size:10px;">Esc</kbd>
+                            to dismiss
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div style="display:flex;gap:10px;">
             <button type="submit" class="btn btn-primary">
-                <i class="fas fa-save"></i> {% if ticket %}Save Changes{% else %}Create Ticket{% endif %}
+                <i class="fas fa-save"></i>
+                {% if ticket %}Save Changes{% else %}Create Ticket{% endif %}
             </button>
-            <a href="{% if ticket %}{% url 'ticket_detail' ticket.ticket_id %}{% else %}{% url 'ticket_list' %}{% endif %}" class="btn btn-secondary">
+            <a href="{% if ticket %}{% url 'ticket_detail' ticket.ticket_id %}{% else %}{% url 'ticket_list' %}{% endif %}"
+               class="btn btn-secondary">
                 Cancel
             </a>
         </div>
     </form>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── BeitDesk Word Prediction Engine ──────────────────────────────────────────
+(function() {
+    'use strict';
+
+    const SUGGEST_URL = '/dashboard/api/suggest/';
+    const CSRF = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    // Config: which input → which field_name for the API
+    const AC_FIELDS = [
+        { inputId: 'id_title',                dropId: 'ac-title',         fieldName: 'title' },
+        { inputId: 'id_description',          dropId: 'ac-description',   fieldName: 'description' },
+        { inputId: 'id_requester_name',       dropId: 'ac-requester_name',fieldName: 'requester_name' },
+        { inputId: 'id_requester_department', dropId: 'ac-department',     fieldName: 'requester_name' },
+    ];
+
+    let activeDropdown = null;
+    let activeIndex    = -1;
+    let fetchTimer     = null;
+
+    function getCategory() {
+        const sel = document.getElementById('id_category');
+        if (!sel) return '';
+        const opt = sel.options[sel.selectedIndex];
+        return opt ? opt.text : '';
+    }
+
+    function highlightMatch(text, q) {
+        if (!q) return text;
+        const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+        return text.replace(re, '<span class="ac-match">$1</span>');
+    }
+
+    function showDropdown(drop, suggestions, q) {
+        if (!suggestions.length) {
+            hideDropdown(drop);
+            return;
+        }
+        drop.innerHTML = suggestions.map((s, i) =>
+            `<div class="ac-item" data-value="${s}" data-index="${i}">
+                <div class="ac-icon"><i class="fas fa-wand-magic-sparkles"></i></div>
+                <span>${highlightMatch(s, q)}</span>
+            </div>`
+        ).join('') +
+        `<div class="ac-footer">
+            <i class="fas fa-robot" style="color:var(--accent-hover);"></i>
+            Learned from your tickets
+            <span class="ac-badge" onclick="window.location='/dashboard/glossary/'">
+                <i class="fas fa-book-open"></i> Glossary
+            </span>
+        </div>`;
+
+        // Attach click handlers
+        drop.querySelectorAll('.ac-item').forEach(item => {
+            item.addEventListener('mousedown', e => {
+                e.preventDefault();
+                acceptSuggestion(item.dataset.value);
+            });
+        });
+
+        drop.classList.add('visible');
+        activeDropdown = drop;
+        activeIndex = -1;
+    }
+
+    function hideDropdown(drop) {
+        if (drop) {
+            drop.classList.remove('visible');
+            drop.innerHTML = '';
+        }
+        if (activeDropdown === drop) {
+            activeDropdown = null;
+            activeIndex    = -1;
+        }
+    }
+
+    function hideAllDropdowns() {
+        document.querySelectorAll('.ac-dropdown').forEach(d => hideDropdown(d));
+    }
+
+    function acceptSuggestion(value) {
+        if (!currentInput) return;
+
+        // For textarea (description, comment): append the suggestion word/phrase
+        // after the last word the user was typing. For single-line: replace last word.
+        const input = currentInput;
+        const isTextarea = input.tagName === 'TEXTAREA';
+
+        if (isTextarea) {
+            const pos   = input.selectionStart;
+            const text  = input.value;
+            const before = text.substring(0, pos);
+            const after  = text.substring(pos);
+            // Find start of current word
+            const lastSpace = Math.max(before.lastIndexOf(' '), before.lastIndexOf('\n'));
+            const wordStart = lastSpace + 1;
+            const newBefore = before.substring(0, wordStart) + value + ' ';
+            input.value = newBefore + after;
+            const newPos = newBefore.length;
+            input.setSelectionRange(newPos, newPos);
+        } else {
+            const text  = input.value;
+            const pos   = input.selectionStart;
+            const before = text.substring(0, pos);
+            const lastSpace = before.lastIndexOf(' ');
+            const newBefore = (lastSpace >= 0 ? before.substring(0, lastSpace + 1) : '') + value + ' ';
+            input.value = newBefore + text.substring(pos);
+            input.setSelectionRange(newBefore.length, newBefore.length);
+        }
+
+        hideAllDropdowns();
+        input.focus();
+    }
+
+    let currentInput = null;
+    let currentDrop  = null;
+
+    function attachAutocomplete(cfg) {
+        const input = document.getElementById(cfg.inputId);
+        const drop  = document.getElementById(cfg.dropId);
+        if (!input || !drop) return;
+
+        input.setAttribute('autocomplete', 'off');
+
+        input.addEventListener('input', function() {
+            clearTimeout(fetchTimer);
+            const text    = this.value;
+            const pos     = this.selectionStart;
+            const before  = text.substring(0, pos);
+            // Get current word being typed
+            const parts   = before.split(/[\s\n]+/);
+            const q       = parts[parts.length - 1].trim();
+
+            if (q.length < 2) {
+                hideDropdown(drop);
+                return;
+            }
+
+            currentInput = input;
+            currentDrop  = drop;
+
+            // Debounce 200ms
+            fetchTimer = setTimeout(() => {
+                const params = new URLSearchParams({
+                    q:        q,
+                    field:    cfg.fieldName,
+                    category: getCategory(),
+                    limit:    8
+                });
+                fetch(SUGGEST_URL + '?' + params.toString(), {
+                    headers: { 'X-CSRFToken': CSRF }
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (document.activeElement === input) {
+                        showDropdown(drop, data.suggestions || [], q);
+                    }
+                })
+                .catch(() => hideDropdown(drop));
+            }, 200);
+        });
+
+        input.addEventListener('keydown', function(e) {
+            if (!drop.classList.contains('visible')) return;
+            const items = drop.querySelectorAll('.ac-item');
+            if (!items.length) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                activeIndex = Math.min(activeIndex + 1, items.length - 1);
+                items.forEach((it, i) => it.classList.toggle('selected', i === activeIndex));
+                if (items[activeIndex]) items[activeIndex].scrollIntoView({ block: 'nearest' });
+
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                activeIndex = Math.max(activeIndex - 1, 0);
+                items.forEach((it, i) => it.classList.toggle('selected', i === activeIndex));
+                if (items[activeIndex]) items[activeIndex].scrollIntoView({ block: 'nearest' });
+
+            } else if (e.key === 'Tab' || e.key === 'Enter') {
+                if (activeIndex >= 0 && items[activeIndex]) {
+                    e.preventDefault();
+                    acceptSuggestion(items[activeIndex].dataset.value);
+                } else if (e.key === 'Tab' && items[0]) {
+                    e.preventDefault();
+                    acceptSuggestion(items[0].dataset.value);
+                }
+
+            } else if (e.key === 'Escape') {
+                hideDropdown(drop);
+            }
+        });
+
+        input.addEventListener('blur', function() {
+            // Small delay so mousedown on item fires first
+            setTimeout(() => hideDropdown(drop), 150);
+        });
+
+        input.addEventListener('focus', function() {
+            currentInput = input;
+            currentDrop  = drop;
+        });
+    }
+
+    // Attach to all configured fields
+    AC_FIELDS.forEach(attachAutocomplete);
+
+    // Close all dropdowns on outside click
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.ac-wrap')) hideAllDropdowns();
+    });
+
+    // Re-fetch if category changes (context-aware suggestions)
+    const catSel = document.getElementById('id_category');
+    if (catSel) {
+        catSel.addEventListener('change', hideAllDropdowns);
+    }
+
+})();
+</script>
 {% endblock %}
