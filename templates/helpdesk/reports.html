@@ -135,41 +135,90 @@
 <!-- Agent Performance Table -->
 <div class="card mb-6">
     <div class="card-header">
-        <div class="header-icon" style="background:rgba(110,118,129,.2);color:var(--text-secondary);"><i class="fas fa-users"></i></div>
-        <h6>Agent Performance — {{ period_label }}</h6>
+        <div class="header-icon" style="background:rgba(110,64,201,.2);color:#9b72ea;">
+            <i class="fas fa-chart-line"></i>
+        </div>
+        <h6>Staff Performance — {{ period_label }}</h6>
     </div>
     <div class="table-wrapper">
         <table>
             <thead>
                 <tr>
                     <th>Agent</th>
-                    <th>Tickets Assigned</th>
+                    <th>Assigned</th>
                     <th>Resolved</th>
                     <th>Resolution Rate</th>
+                    <th>Avg Resolution</th>
+                    <th>SLA Breaches</th>
                     <th>Performance</th>
                 </tr>
             </thead>
             <tbody>
                 {% for agent in by_agent %}
                 <tr>
-                    <td style="font-weight:500;">{{ agent.assigned_to__username }}</td>
-                    <td class="mono">{{ agent.total }}</td>
-                    <td class="mono text-success">{{ agent.resolved }}</td>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <div style="width:28px;height:28px;border-radius:50%;
+                                        background:linear-gradient(135deg,#6e40c9,#9b72ea);
+                                        display:flex;align-items:center;justify-content:center;
+                                        font-size:11px;font-weight:700;color:#fff;flex-shrink:0;">
+                                {{ agent.assigned_to__username|first|upper }}
+                            </div>
+                            <div>
+                                <div style="font-weight:600;font-size:13px;">{{ agent.assigned_to__username }}</div>
+                                {% if agent.assigned_to__first_name %}
+                                <div style="font-size:11px;color:var(--text-muted);">
+                                    {{ agent.assigned_to__first_name }} {{ agent.assigned_to__last_name }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="mono" style="font-weight:600;">{{ agent.total }}</td>
+                    <td class="mono" style="color:var(--success-text);font-weight:600;">{{ agent.resolved }}</td>
                     <td>
                         {% if agent.total %}
                         {% widthratio agent.resolved agent.total 100 %}%
                         {% else %}—{% endif %}
                     </td>
-                    <td style="width:200px;">
-                        <div style="height:6px;background:var(--bg-tertiary);border-radius:3px;">
-                            {% if agent.total %}
-                            <div style="height:100%;background:var(--success-text);border-radius:3px;width:{% widthratio agent.resolved agent.total 100 %}%;"></div>
-                            {% endif %}
+                    <td style="font-size:12px;color:var(--text-secondary);">
+                        {% if agent.avg_resolution %}
+                        {% if agent.avg_resolution < 60 %}
+                        {{ agent.avg_resolution|floatformat:0 }} min
+                        {% else %}
+                        {{ agent.avg_resolution|divisibleby:60|floatformat:1 }}h
+                        {% endif %}
+                        {% else %}—{% endif %}
+                    </td>
+                    <td>
+                        {% if agent.sla_breaches %}
+                        <span class="badge badge-critical">{{ agent.sla_breaches }}</span>
+                        {% else %}
+                        <span style="font-size:12px;color:var(--success-text);">
+                            <i class="fas fa-check"></i> None
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td style="width:160px;">
+                        {% if agent.total %}
+                        {% with rate=agent.resolved|stringformat:"s" %}
+                        <div style="height:8px;background:var(--bg-tertiary);border-radius:4px;overflow:hidden;">
+                            <div style="height:100%;border-radius:4px;transition:width .4s;
+                                        background:{% widthratio agent.resolved agent.total 100 as pct %}{% if pct >= 80 %}var(--success-text){% elif pct >= 50 %}var(--warning-text){% else %}var(--danger-text){% endif %};
+                                        width:{% widthratio agent.resolved agent.total 100 %}%;">
+                            </div>
                         </div>
+                        {% endwith %}
+                        {% endif %}
                     </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No agent data for this period</td></tr>
+                <tr>
+                    <td colspan="7" class="text-muted" style="text-align:center;padding:28px;">
+                        <i class="fas fa-users" style="font-size:24px;display:block;margin-bottom:8px;opacity:.3;"></i>
+                        No agent data for this period
+                    </td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>

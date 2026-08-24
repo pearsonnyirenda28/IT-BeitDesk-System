@@ -32,6 +32,8 @@ def log_action(request, action, object_id, object_repr, notes=''):
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
+    from helpdesk.models import DatabaseYear
+    db_years = DatabaseYear.objects.filter(is_active=True).order_by('-year')
     form = AuthenticationForm()
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
@@ -41,10 +43,28 @@ def login_view(request):
             request.session.set_expiry(
                 60 * 60 * 24 * 30 if request.POST.get('remember_me') else 0
             )
+            # DB year selection
+            selected_year_id = request.POST.get('db_year','').strip()
+            if selected_year_id:
+                try:
+                    yr = DatabaseYear.objects.get(pk=selected_year_id, is_active=True)
+                    request.session['active_db_year'] = yr.year
+                    request.session['active_db_name'] = yr.db_name
+                    try:
+                        p = user.profile; p.preferred_db_year=yr.year
+                        p.save(update_fields=['preferred_db_year'])
+                    except Exception: pass
+                except DatabaseYear.DoesNotExist: pass
+            else:
+                request.session.pop('active_db_year', None)
+                request.session.pop('active_db_name', None)
+            # Restore theme
+            try: request.session['user_theme'] = user.profile.theme
+            except Exception: request.session['user_theme'] = 'dark'
             return redirect(request.GET.get('next', '/dashboard/'))
         else:
             messages.error(request, 'Invalid username or password.')
-    return render(request, 'accounts/login.html', {'form': form})
+    return render(request, 'accounts/login.html', {'form': form, 'db_years': db_years})
 
 
 @login_required

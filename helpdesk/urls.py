@@ -16,4 +16,8 @@ urlpatterns = [
     path('api/stats/', views.api_stats, name='api_stats'),
     path('api/suggest/', views.api_suggest, name='api_suggest'),
     path('api/learn/', views.api_learn, name='api_learn'),
+    path('api/notifications/', views.api_notifications, name='api_notifications'),
+    path('api/push/subscribe/', views.api_push_subscribe, name='api_push_subscribe'),
+    path('api/theme/', views.api_theme, name='api_theme'),
+    path('api/bulk/', views.api_bulk_action, name='api_bulk_action'),
 ]

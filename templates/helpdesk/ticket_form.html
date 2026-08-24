@@ -188,10 +188,29 @@
                     </div>
                     <!-- Department with autocomplete -->
                     <div class="form-group">
-                        <label class="form-label">Department</label>
+                        <label class="form-label">
+                            Department
+                            <span style="font-size:10px;color:var(--text-muted);margin-left:4px;">
+                                e.g. Revenue Department
+                            </span>
+                        </label>
                         <div class="ac-wrap" id="wrap-department">
                             {{ form.requester_department }}
                             <div class="ac-dropdown" id="ac-department"></div>
+                        </div>
+                    </div>
+
+                    <!-- Section with autocomplete -->
+                    <div class="form-group">
+                        <label class="form-label">
+                            Section
+                            <span style="font-size:10px;color:var(--text-muted);margin-left:4px;">
+                                Sub-section within the department
+                            </span>
+                        </label>
+                        <div class="ac-wrap" id="wrap-section">
+                            {{ form.requester_section }}
+                            <div class="ac-dropdown" id="ac-section"></div>
                         </div>
                     </div>
                 </div>
@@ -276,7 +295,8 @@
         { inputId: 'id_title',                dropId: 'ac-title',         fieldName: 'title' },
         { inputId: 'id_description',          dropId: 'ac-description',   fieldName: 'description' },
         { inputId: 'id_requester_name',       dropId: 'ac-requester_name',fieldName: 'requester_name' },
-        { inputId: 'id_requester_department', dropId: 'ac-department',     fieldName: 'requester_name' },
+        { inputId: 'id_requester_department', dropId: 'ac-department', fieldName: 'requester_name' },
+        { inputId: 'id_requester_section',    dropId: 'ac-section',    fieldName: 'requester_name' },
     ];
 
     let activeDropdown = null;

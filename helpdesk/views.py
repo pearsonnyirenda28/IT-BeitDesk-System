@@ -1,3 +1,4 @@
+import json
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -293,6 +294,10 @@ def ticket_detail(request, ticket_id):
                 log_action(request, AuditLog.ACTION_STATUS_CHANGE, 'Ticket',
                            ticket.ticket_id, str(ticket),
                            changes={'status': {'from': old_status, 'to': new_status}})
+                try:
+                    from helpdesk.notifications import notify_status_change
+                    notify_status_change(ticket, old_status, new_status, request.user)
+                except Exception: pass
                 messages.success(request, f'Status changed to {ticket.get_status_display()}.')
                 return redirect('ticket_detail', ticket_id=ticket_id)
 
@@ -309,6 +314,11 @@ def ticket_detail(request, ticket_id):
                        ticket.ticket_id, str(ticket),
                        changes={'assigned_to': {'from': old_agent,
                                                 'to': str(ticket.assigned_to or 'Unassigned')}})
+            if ticket.assigned_to:
+                try:
+                    from helpdesk.notifications import notify_ticket_assigned
+                    notify_ticket_assigned(ticket, ticket.assigned_to, request.user)
+                except Exception: pass
             messages.success(request, 'Ticket assignment updated.')
             return redirect('ticket_detail', ticket_id=ticket_id)
 
@@ -824,3 +834,86 @@ def api_learn(request):
         return JsonResponse({'ok': True})
     except Exception:
         return JsonResponse({'ok': False})
+
+
+# ── Notifications poll ────────────────────────────────────────────────────────
+def api_notifications(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({'notifications':[]})
+    from helpdesk.models import PendingNotification
+    # Get IDs first, then fetch and update separately (can't update a sliced queryset)
+    pending_ids = list(
+        PendingNotification.objects.filter(user=request.user, delivered=False)
+        .order_by('created_at')
+        .values_list('id', flat=True)[:10]
+    )
+    pending = PendingNotification.objects.filter(id__in=pending_ids)
+    items = []
+    for n in pending:
+        try: items.append(json.loads(n.payload))
+        except: pass
+    pending.update(delivered=True)
+    return JsonResponse({'notifications':items,'count':len(items)})
+
+
+def api_push_subscribe(request):
+    if not request.user.is_authenticated or request.method!='POST':
+        return JsonResponse({'ok':False},status=403)
+    try:
+        data = json.loads(request.body)
+        sub  = data.get('subscription','')
+        ena  = data.get('enabled',True)
+        p = request.user.profile
+        p.push_subscription = json.dumps(sub) if isinstance(sub,dict) else (sub or '')
+        p.push_enabled = bool(ena) and bool(sub)
+        p.save(update_fields=['push_subscription','push_enabled'])
+        return JsonResponse({'ok':True,'push_enabled':p.push_enabled})
+    except Exception as e:
+        return JsonResponse({'ok':False,'error':str(e)})
+
+
+def api_theme(request):
+    if not request.user.is_authenticated or request.method!='POST':
+        return JsonResponse({'ok':False},status=403)
+    try:
+        data  = json.loads(request.body)
+        theme = 'light' if data.get('theme')=='light' else 'dark'
+        p = request.user.profile
+        p.theme = theme
+        p.save(update_fields=['theme'])
+        request.session['user_theme'] = theme
+        return JsonResponse({'ok':True,'theme':theme})
+    except Exception as e:
+        return JsonResponse({'ok':False,'error':str(e)})
+
+
+def api_bulk_action(request):
+    if not request.user.is_staff:
+        return JsonResponse({'ok':False,'error':'Permission denied'},status=403)
+    if request.method!='POST':
+        return JsonResponse({'ok':False},status=405)
+    try:
+        data       = json.loads(request.body)
+        action     = data.get('action')
+        ticket_ids = data.get('ticket_ids',[])
+        if not ticket_ids:
+            return JsonResponse({'ok':False,'error':'No tickets selected'})
+        tickets = Ticket.objects.filter(ticket_id__in=ticket_ids)
+        count   = 0
+        if action=='close':
+            count = tickets.filter(status__in=['OPEN','IN_PROGRESS','PENDING','RESOLVED']).update(status='CLOSED')
+            log_action(request,AuditLog.ACTION_UPDATE,'Ticket','',f'Bulk close',notes=f'Bulk closed {count} tickets')
+        elif action=='resolve':
+            count = tickets.filter(status__in=['OPEN','IN_PROGRESS','PENDING']).update(status='RESOLVED',resolved_at=timezone.now())
+            log_action(request,AuditLog.ACTION_UPDATE,'Ticket','',f'Bulk resolve',notes=f'Bulk resolved {count} tickets')
+        elif action=='assign_me':
+            count = tickets.filter(assigned_to__isnull=True).update(assigned_to=request.user,status='IN_PROGRESS')
+            log_action(request,AuditLog.ACTION_ASSIGN,'Ticket','',f'Bulk assign to {request.user.username}')
+        elif action=='delete' and request.user.is_superuser:
+            count = tickets.count(); tickets.delete()
+            log_action(request,AuditLog.ACTION_DELETE,'Ticket','',f'Bulk delete {count}')
+        else:
+            return JsonResponse({'ok':False,'error':f'Unknown action: {action}'})
+        return JsonResponse({'ok':True,'count':count,'action':action})
+    except Exception as e:
+        return JsonResponse({'ok':False,'error':str(e)})

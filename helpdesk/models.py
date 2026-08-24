@@ -85,7 +85,10 @@ class Ticket(models.Model):
     requester_name = models.CharField(max_length=150, blank=True, help_text='If requester is not a system user')
     requester_email = models.EmailField(blank=True)
     requester_phone = models.CharField(max_length=30, blank=True)
-    requester_department = models.CharField(max_length=100, blank=True)
+    requester_department = models.CharField(max_length=100, blank=True,
+                                            help_text='e.g. Revenue Department, Finance')
+    requester_section    = models.CharField(max_length=100, blank=True,
+                                            help_text='Sub-section within department, e.g. Accounts Payable')
     assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='tickets_assigned')
 
     # Timestamps
@@ -96,7 +99,9 @@ class Ticket(models.Model):
     closed_at = models.DateTimeField(null=True, blank=True)
 
     # SLA
-    sla_breach = models.BooleanField(default=False)
+    sla_breach             = models.BooleanField(default=False)
+    escalation_level       = models.PositiveSmallIntegerField(default=0)
+    escalation_notified_at = models.DateTimeField(null=True, blank=True)
     resolution_time_minutes = models.PositiveIntegerField(null=True, blank=True)
 
     # Linked VoIP call
@@ -407,3 +412,14 @@ class LearnedPhrase(models.Model):
                 if category and not obj.category:
                     obj.category = category
                 obj.save(update_fields=['use_count', 'last_used', 'category'])
+
+
+class PendingNotification(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="pending_notifications")
+    payload = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    delivered = models.BooleanField(default=False)
+    class Meta:
+        ordering = ["created_at"]
+    def __str__(self):
+        return f"Notification for {self.user.username}"

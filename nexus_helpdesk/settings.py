@@ -18,22 +18,37 @@ DEBUG = True
 ALLOWED_HOSTS = ['*']
 
 # ── Multi-device / LAN access ─────────────────────────────────────────────────
-# Allows other devices on your network (phones, other PCs) to connect.
 # Find your PC's LAN IP: run  ipconfig  in CMD, look for IPv4 Address.
-# Then add it below and run the server with:
+#
+# FOR NORMAL HTTP (LAN only):
 #   py manage.py runserver 0.0.0.0:8000
-# Other devices open:  http://<your-ip>:8000
+#   Other devices: http://<your-ip>:8000
+#
+# FOR HTTPS (required for PWA install on other devices):
+#   pip install werkzeug
+#   python run_https.py
+#   Other devices: https://<your-ip>:8000
+#
+# Replace 192.168.1.171 below with YOUR actual LAN IP address.
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:8000',
     'http://127.0.0.1:8000',
-    # Add your LAN IP here, e.g.:
-    # 'http://192.168.1.50:8000',
+    'https://localhost:8000',
+    'https://127.0.0.1:8000',
+    # Your LAN IP — update this to match your ipconfig IPv4 address:
+    'http://192.168.1.171:8000',
+    'https://192.168.1.171:8000',
 ]
 
+# Cookie settings — 'Lax' works for both HTTP and HTTPS on LAN
 SESSION_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_HTTPONLY = True
-CSRF_COOKIE_SAMESITE = 'Lax'
-CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SAMESITE    = 'Lax'
+CSRF_COOKIE_HTTPONLY    = False
+
+# Allow session cookies over HTTPS
+SESSION_COOKIE_SECURE = False   # Set True only if you ALWAYS use HTTPS
+CSRF_COOKIE_SECURE    = False   # Set True only if you ALWAYS use HTTPS
 
 INSTALLED_APPS = [
     'django.contrib.admin',

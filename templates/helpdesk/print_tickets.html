@@ -334,7 +334,7 @@
                     {% elif ticket.requester %}{{ ticket.requester.get_full_name|default:ticket.requester.username }}
                     {% else %}—{% endif %}
                     {% if ticket.requester_department %}
-                    <br><span style="font-size:8pt;color:#777;">{{ ticket.requester_department }}</span>
+                    <br><span style="font-size:8pt;color:#777;">{{ ticket.requester_department }}{% if ticket.requester_section %} › {{ ticket.requester_section }}{% endif %}</span>
                     {% endif %}
                 </td>
                 <td><span class="badge badge-{{ ticket.priority|lower }}">{{ ticket.priority }}</span></td>
