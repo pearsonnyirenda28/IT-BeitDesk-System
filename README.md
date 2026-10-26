@@ -112,7 +112,7 @@ Run these SQL commands:
 
 ```sql
 CREATE DATABASE beitdesk;
-CREATE USER beitdesk_user WITH PASSWORD 'StrongPassword123!';
+CREATE USER beitdesk_user WITH PASSWORD 'yourpassword';
 GRANT ALL PRIVILEGES ON DATABASE beitdesk TO beitdesk_user;
 ALTER DATABASE beitdesk OWNER TO beitdesk_user;
 \q
@@ -138,7 +138,7 @@ Creates 5 staff users, 8 categories, 15 tickets, 20 VoIP call records.
 python manage.py runserver
 ```
 
-Open **http://127.0.0.1:8000** — login: `admin` / `admin123!`
+Open **http://127.0.0.1:8000** 
 
 ---
 
@@ -169,7 +169,7 @@ sudo -u postgres psql
 
 ```sql
 CREATE DATABASE beitdesk;
-CREATE USER beitdesk_user WITH PASSWORD 'StrongPassword123!';
+CREATE USER beitdesk_user WITH PASSWORD 'yourpassword';
 ALTER ROLE beitdesk_user SET client_encoding TO 'utf8';
 ALTER ROLE beitdesk_user SET default_transaction_isolation TO 'read committed';
 ALTER ROLE beitdesk_user SET timezone TO 'Africa/Harare';
@@ -234,7 +234,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'beitdesk',
         'USER': 'beitdesk_user',
-        'PASSWORD': 'StrongPassword123!',
+        'PASSWORD': 'yourpassword',
         'HOST': 'localhost',
         'PORT': '5432',
     }
@@ -264,7 +264,7 @@ DEBUG=True                        # Set to False in production
 DB_ENGINE=django.db.backends.postgresql
 DB_NAME=beitdesk
 DB_USER=beitdesk_user
-DB_PASSWORD=StrongPassword123!
+DB_PASSWORD=yourpassword
 DB_HOST=localhost
 DB_PORT=5432
 
@@ -327,8 +327,7 @@ python -c "from django.core.management.utils import get_random_secret_key; print
 | Credential | Value |
 |---|---|
 | URL | http://127.0.0.1:8000 |
-| Username | `admin` |
-| Password | `admin123!` |
+
 
 **Change the admin password immediately after first login:**
 Go to the top-right profile icon → My Profile → Change Password.
