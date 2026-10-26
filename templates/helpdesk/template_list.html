@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}Ticket Templates{% endblock %}
+{% block page_title %}Ticket Templates{% endblock %}
+{% block breadcrumb %}Tickets / Templates{% endblock %}
+
+{% block content %}
+<div class="flex-between mb-6">
+    <div>
+        <h1>Ticket Templates</h1>
+        <p class="text-muted" style="font-size:13px;">
+            {{ total }} template{{ total|pluralize }} — used for quick ticket creation
+        </p>
+    </div>
+    <div style="display:flex;gap:8px;">
+        <a href="{% url 'recurring_list' %}" class="btn btn-secondary btn-sm">
+            <i class="fas fa-calendar-plus"></i> Recurring Schedules
+        </a>
+        <a href="{% url 'template_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> New Template
+        </a>
+    </div>
+</div>
+
+<div style="background:rgba(26,107,48,.08);border:1px solid rgba(26,107,48,.2);
+            border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:12px;
+            color:var(--text-secondary);display:flex;gap:10px;align-items:flex-start;">
+    <i class="fas fa-circle-info" style="color:var(--accent-hover);flex-shrink:0;margin-top:1px;"></i>
+    Templates appear as quick-fill buttons on the New Ticket form. Clicking a template
+    pre-fills the title, description, category and priority — saving time on common requests.
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">
+    {% for tmpl in templates %}
+    <div class="card" style="{% if not tmpl.is_active %}opacity:.6;{% endif %}border-top:3px solid {{ tmpl.color }};">
+        <div class="card-body">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:40px;height:40px;background:{{ tmpl.color }}26;
+                                border-radius:10px;display:flex;align-items:center;
+                                justify-content:center;font-size:18px;color:{{ tmpl.color }};flex-shrink:0;">
+                        <i class="{{ tmpl.icon }}"></i>
+                    </div>
+                    <div>
+                        <div style="font-weight:600;font-size:14px;">{{ tmpl.name }}</div>
+                        {% if tmpl.description %}
+                        <div style="font-size:11px;color:var(--text-muted);">{{ tmpl.description }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div style="display:flex;gap:4px;flex-shrink:0;">
+                    {% if not tmpl.is_active %}
+                    <span class="badge badge-closed" style="font-size:9px;">Inactive</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;
+                        background:var(--bg-tertiary);border-radius:6px;padding:8px 10px;">
+                <div style="font-weight:500;color:var(--text-secondary);margin-bottom:3px;">
+                    {{ tmpl.title_template }}
+                </div>
+                {% if tmpl.description_template %}
+                <div>{{ tmpl.description_template|truncatechars:80 }}</div>
+                {% endif %}
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;
+                        padding-top:8px;border-top:1px solid var(--border-subtle);">
+                <div style="font-size:11px;color:var(--text-muted);">
+                    {% if tmpl.category %}<i class="fas fa-tag"></i> {{ tmpl.category.name }} &nbsp;·&nbsp;{% endif %}
+                    <span class="badge badge-{{ tmpl.priority }}" style="font-size:9px;">{{ tmpl.priority|capfirst }}</span>
+                    &nbsp;·&nbsp; Used {{ tmpl.use_count }} time{{ tmpl.use_count|pluralize }}
+                </div>
+                <div style="display:flex;gap:6px;">
+                <a href="{% url 'template_edit' tmpl.pk %}" class="btn btn-secondary btn-sm"
+                   style="padding:3px 8px;font-size:11px;" title="Edit template"><i class="fas fa-pen"></i></a>
+                {% if request.user.is_superuser %}
+                <a href="{% url 'template_delete' tmpl.pk %}"
+                   onclick="return confirm('Delete template \'{{ tmpl.name }}\'?')"
+                   class="btn btn-danger btn-sm" style="padding:3px 8px;font-size:11px;">
+                    <i class="fas fa-trash"></i>
+                </a>
+                {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="card" style="grid-column:1/-1;">
+        <div class="card-body" style="text-align:center;padding:40px;">
+            <i class="fas fa-copy" style="font-size:32px;display:block;margin-bottom:12px;opacity:.2;"></i>
+            No templates yet. <a href="{% url 'template_create' %}">Create the first one.</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

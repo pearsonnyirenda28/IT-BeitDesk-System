@@ -1,0 +1,19 @@
+{# Goes INSIDE a <form method="get">. Needs: period, period_choices #}
+<select name="period" id="periodSel" class="form-select" style="width:auto;min-width:150px;" onchange="periodChanged(this)">
+    {% for val,label in period_choices %}
+    <option value="{{ val }}" {% if period.key == val %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+</select>
+<span id="customRange" style="display:{% if period.key == 'custom' %}inline-flex{% else %}none{% endif %};gap:6px;align-items:center;">
+    <input type="date" name="from" class="form-control" value="{{ period.from }}" style="width:auto;">
+    <span class="text-muted">to</span>
+    <input type="date" name="to" class="form-control" value="{{ period.to }}" style="width:auto;">
+</span>
+<button type="submit" class="btn btn-secondary btn-sm"><i class="fas fa-rotate"></i> Apply</button>
+<script>
+function periodChanged(sel){
+    var c = document.getElementById('customRange');
+    c.style.display = sel.value === 'custom' ? 'inline-flex' : 'none';
+    if (sel.value !== 'custom') sel.form.submit();
+}
+</script>

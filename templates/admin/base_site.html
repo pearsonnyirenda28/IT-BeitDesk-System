@@ -1,42 +1,55 @@
 {% extends "admin/base.html" %}
 {% load static %}
-
+{% block title %}BeitDesk Admin — {{ title }}{% endblock %}
 {% block branding %}
 <div id="site-name" style="display:flex;align-items:center;gap:12px;padding:8px 0;">
-    <img src="{% static 'img/beitbridge_logo.jpg' %}"
-         alt="Beitbridge"
-         style="width:44px;height:44px;border-radius:8px;object-fit:cover;">
+    <img src="/static/img/beitbridge_logo.jpg" alt="Beitbridge"
+         style="width:40px;height:40px;border-radius:8px;border:2px solid rgba(201,162,39,.4);">
     <div>
-        <div style="font-size:15px;font-weight:700;color:#e6edf3;line-height:1.2;">BeitDesk</div>
-        <div style="font-size:10px;color:#c9a227;letter-spacing:.5px;">MUNICIPALITY OF BEITBRIDGE</div>
+        <span style="font-size:16px;font-weight:700;color:#e6edf3;">BeitDesk</span>
+        <span style="font-size:11px;color:#8b949e;display:block;margin-top:-2px;">Municipality of Beitbridge — Admin Panel</span>
     </div>
 </div>
 {% endblock %}
-
 {% block nav-global %}
-<div style="background:#1a2a1a;border-bottom:1px solid #2a4a2a;padding:6px 20px;
-            display:flex;gap:20px;align-items:center;">
-    <span style="font-size:11px;color:#6e7681;">Quick Links:</span>
-    <a href="/admin/howto/"
-       style="font-size:12px;color:#c9a227;text-decoration:none;font-weight:500;">
-        📖 How to Use
+<div style="display:flex;gap:8px;align-items:center;">
+    <a href="/dashboard/" style="color:#c9a227;text-decoration:none;font-size:12px;
+       padding:5px 12px;border:1px solid rgba(201,162,39,.3);border-radius:6px;">
+       ← Back to BeitDesk
     </a>
-    <a href="/admin/about/"
-       style="font-size:12px;color:#c9a227;text-decoration:none;font-weight:500;">
-        ℹ️ About BeitDesk
-    </a>
-    <a href="/dashboard/"
-       style="font-size:12px;color:#3fb950;text-decoration:none;font-weight:500;">
-        ⬅ Back to Dashboard
-    </a>
+    <a href="/admin/about/" style="color:#8b949e;text-decoration:none;font-size:12px;">About</a>
+    <a href="/admin/howto/" style="color:#8b949e;text-decoration:none;font-size:12px;">Guide</a>
 </div>
 {% endblock %}
-
-{% block footer %}
-<div id="footer" style="padding:12px 20px;text-align:center;
-            font-size:11px;color:#6e7681;border-top:1px solid #30363d;">
-    BeitDesk &copy; {% now "Y" %} Municipality of Beitbridge &bull;
-    Developed by <strong style="color:#c9a227;">Bl@de_zar</strong> | Pearson Nyirenda &bull;
-    Ambition · Perseverance · Success
-</div>
+{% block extrahead %}
+<style>
+    :root{color-scheme:dark;}
+    #header{background:#1c2128;border-bottom:1px solid #30363d;padding:8px 20px;}
+    #content{background:#0d1117;}
+    .module{background:#1c2128;border:1px solid #30363d;border-radius:8px;}
+    .module h2,.module caption{background:#161b22;color:#c9a227;font-size:12px;
+        text-transform:uppercase;letter-spacing:.5px;border-radius:8px 8px 0 0;}
+    a:link,a:visited{color:#2d8a45;}
+    select,input,textarea{color-scheme:dark;background:#21262d;color:#e6edf3;
+        border:1px solid #30363d;border-radius:4px;}
+    select option{background:#21262d;color:#e6edf3;}
+    th{color:#8b949e;}td{color:#e6edf3;}
+    .button{background:#1a6b30;color:#fff;border:none;border-radius:4px;}
+    .button:hover{background:#2d8a45;}
+    .deletelink{color:#f85149;}
+    #changelist-filter{background:#161b22;border-left:1px solid #30363d;}
+    #changelist-filter h3{color:#c9a227;font-size:11px;text-transform:uppercase;}
+    #changelist-filter li.selected a{color:#3fb950;font-weight:600;}
+    .paginator{color:#8b949e;}.paginator a{color:#2d8a45;}
+    .errornote,.errorlist li{background:rgba(218,54,51,.15);border:1px solid rgba(218,54,51,.3);
+        color:#f85149;border-radius:4px;padding:6px 10px;}
+    .successnote,.success{color:#3fb950;}
+    input[type=text],input[type=password],input[type=email],input[type=number],textarea{
+        background:#21262d;color:#e6edf3;border:1px solid #30363d;padding:6px 10px;}
+    .results th a,thead th a{color:#b1bac4;}
+    tr.row1{background:#1c2128;}tr.row2{background:#161b22;}
+    tr:hover td{background:#21262d;}
+    .breadcrumbs{background:#161b22;color:#8b949e;}
+    .breadcrumbs a{color:#2d8a45;}
+</style>
 {% endblock %}

@@ -90,8 +90,29 @@
         </a>
     </div>
 
+    {% if not ticket %}
+    <!-- Template quick-fill bar (only on new ticket form) -->
+    <div id="templateBar" style="margin-bottom:16px;">
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;
+                    letter-spacing:.5px;margin-bottom:8px;">
+            <i class="fas fa-bolt" style="color:var(--gold);"></i>
+            Quick Templates — click to pre-fill
+        </div>
+        <div id="templateBtns" style="display:flex;flex-wrap:wrap;gap:8px;">
+            <div style="font-size:12px;color:var(--text-muted);padding:6px 0;">
+                <i class="fas fa-spinner fa-spin"></i> Loading templates...
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <form method="post" id="ticketForm">
         {% csrf_token %}
+        {% if form.errors %}
+        <div class="form-alert"><i class="fas fa-circle-exclamation"></i>
+            Ticket not saved — fix the highlighted field(s). Everything else you typed has been kept.
+            {{ form.non_field_errors }}</div>
+        {% endif %}
 
         <!-- Issue Details -->
         <div class="card mb-4">
@@ -128,6 +149,7 @@
                     <label class="form-label">Description *</label>
                     <div class="ac-wrap" id="wrap-description">
                         {{ form.description }}
+                        {% if form.description.errors %}<div class="field-error"><i class="fas fa-circle-exclamation"></i> {{ form.description.errors.0 }}</div>{% endif %}
                         <div class="ac-dropdown" id="ac-description"></div>
                     </div>
                 </div>
@@ -136,14 +158,17 @@
                     <div class="form-group">
                         <label class="form-label">Category</label>
                         {{ form.category }}
+                        {% if form.category.errors %}<div class="field-error"><i class="fas fa-circle-exclamation"></i> {{ form.category.errors.0 }}</div>{% endif %}
                     </div>
                     <div class="form-group">
                         <label class="form-label">Priority</label>
                         {{ form.priority }}
+                        {% if form.priority.errors %}<div class="field-error"><i class="fas fa-circle-exclamation"></i> {{ form.priority.errors.0 }}</div>{% endif %}
                     </div>
                     <div class="form-group">
                         <label class="form-label">Status</label>
                         {{ form.status }}
+                        {% if form.status.errors %}<div class="field-error"><i class="fas fa-circle-exclamation"></i> {{ form.status.errors.0 }}</div>{% endif %}
                     </div>
                 </div>
 
@@ -151,10 +176,12 @@
                     <div class="form-group">
                         <label class="form-label">Source</label>
                         {{ form.source }}
+                        {% if form.source.errors %}<div class="field-error"><i class="fas fa-circle-exclamation"></i> {{ form.source.errors.0 }}</div>{% endif %}
                     </div>
                     <div class="form-group">
                         <label class="form-label">Due Date</label>
                         {{ form.due_date }}
+                        {% if form.due_date.errors %}<div class="field-error"><i class="fas fa-circle-exclamation"></i> {{ form.due_date.errors.0 }}</div>{% endif %}
                     </div>
                 </div>
             </div>
@@ -175,16 +202,19 @@
                         <label class="form-label">Full Name</label>
                         <div class="ac-wrap" id="wrap-requester_name">
                             {{ form.requester_name }}
+                        {% if form.requester_name.errors %}<div class="field-error"><i class="fas fa-circle-exclamation"></i> {{ form.requester_name.errors.0 }}</div>{% endif %}
                             <div class="ac-dropdown" id="ac-requester_name"></div>
                         </div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Email</label>
                         {{ form.requester_email }}
+                        {% if form.requester_email.errors %}<div class="field-error"><i class="fas fa-circle-exclamation"></i> {{ form.requester_email.errors.0 }}</div>{% endif %}
                     </div>
                     <div class="form-group">
                         <label class="form-label">Phone</label>
                         {{ form.requester_phone }}
+                        {% if form.requester_phone.errors %}<div class="field-error"><i class="fas fa-circle-exclamation"></i> {{ form.requester_phone.errors.0 }}</div>{% endif %}
                     </div>
                     <!-- Department with autocomplete -->
                     <div class="form-group">
@@ -196,6 +226,7 @@
                         </label>
                         <div class="ac-wrap" id="wrap-department">
                             {{ form.requester_department }}
+                        {% if form.requester_department.errors %}<div class="field-error"><i class="fas fa-circle-exclamation"></i> {{ form.requester_department.errors.0 }}</div>{% endif %}
                             <div class="ac-dropdown" id="ac-department"></div>
                         </div>
                     </div>
@@ -210,6 +241,7 @@
                         </label>
                         <div class="ac-wrap" id="wrap-section">
                             {{ form.requester_section }}
+                        {% if form.requester_section.errors %}<div class="field-error"><i class="fas fa-circle-exclamation"></i> {{ form.requester_section.errors.0 }}</div>{% endif %}
                             <div class="ac-dropdown" id="ac-section"></div>
                         </div>
                     </div>
@@ -228,6 +260,7 @@
                     <div class="form-group">
                         <label class="form-label">Assign To</label>
                         {{ form.assigned_to }}
+                        {% if form.assigned_to.errors %}<div class="field-error"><i class="fas fa-circle-exclamation"></i> {{ form.assigned_to.errors.0 }}</div>{% endif %}
                     </div>
                     {% elif request.user.is_superuser %}
                     {% else %}
@@ -238,6 +271,7 @@
                     <div class="form-group">
                         <label class="form-label">Tags</label>
                         {{ form.tags }}
+                        {% if form.tags.errors %}<div class="field-error"><i class="fas fa-circle-exclamation"></i> {{ form.tags.errors.0 }}</div>{% endif %}
                     </div>
 
                     <!-- Learned phrase info panel -->
@@ -279,6 +313,20 @@
         </div>
     </form>
 </div>
+
+<script>
+// Flag only the fields the server rejected and move the cursor to the first one
+(function(){
+    var bad=[{% for name, errs in form.errors.items %}"{{ name|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+    var first=null;
+    bad.forEach(function(n){
+        var el=document.querySelector('#ticketForm [name="'+n+'"]'); if(!el) return;
+        var g=el.closest('.form-group'); if(g) g.classList.add('has-error');
+        if(!first) first=el;
+    });
+    if(first){first.scrollIntoView({block:'center'}); try{first.focus();}catch(e){}}
+})();
+</script>
 {% endblock %}
 
 {% block extra_js %}
@@ -501,6 +549,88 @@
         catSel.addEventListener('change', hideAllDropdowns);
     }
 
+})();
+</script>
+
+<!-- Template quick-fill JS -->
+<script>
+(function() {
+    var bar = document.getElementById('templateBtns');
+    if (!bar) return;  // edit form — skip
+
+    fetch('/dashboard/api/templates/')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var tmpls = data.templates || [];
+            if (!tmpls.length) {
+                bar.innerHTML = '<span style="font-size:12px;color:var(--text-muted);">No templates yet — <a href="/dashboard/templates/create/" style="color:var(--accent-hover);">create one</a></span>';
+                return;
+            }
+            bar.innerHTML = '';
+            tmpls.forEach(function(t) {
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.style.cssText = 'display:inline-flex;align-items:center;gap:7px;padding:7px 14px;' +
+                    'background:var(--bg-card);border:1px solid var(--border);border-radius:8px;' +
+                    'color:var(--text-secondary);font-size:12px;font-weight:500;cursor:pointer;' +
+                    'transition:all .15s;';
+                btn.innerHTML = '<i class="' + t.icon + '" style="color:var(--accent-hover);font-size:14px;"></i>' + t.name;
+                btn.title = t.description || t.name;
+                btn.addEventListener('mouseenter', function() {
+                    this.style.borderColor = 'var(--accent-hover)';
+                    this.style.color = 'var(--text-primary)';
+                });
+                btn.addEventListener('mouseleave', function() {
+                    this.style.borderColor = 'var(--border)';
+                    this.style.color = 'var(--text-secondary)';
+                });
+                btn.addEventListener('click', function() {
+                    applyTemplate(t);
+                    // Track usage
+                    fetch('/dashboard/api/templates/' + t.id + '/use/', {
+                        method: 'POST',
+                        headers: {'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value}
+                    });
+                    // Highlight active template
+                    bar.querySelectorAll('button').forEach(function(b) {
+                        b.style.background = 'var(--bg-card)';
+                        b.style.borderColor = 'var(--border)';
+                    });
+                    btn.style.background = 'rgba(26,107,48,.15)';
+                    btn.style.borderColor = 'var(--accent-hover)';
+                });
+                bar.appendChild(btn);
+            });
+        })
+        .catch(function() {
+            bar.innerHTML = '<span style="font-size:12px;color:var(--text-muted);">Templates unavailable</span>';
+        });
+
+    function applyTemplate(t) {
+        // Set title
+        var titleEl = document.querySelector('[name=title], #id_title, [id$=title]');
+        if (titleEl) { titleEl.value = t.title; titleEl.dispatchEvent(new Event('input')); }
+
+        // Set description
+        var descEl = document.querySelector('[name=description], #id_description, [id$=description]');
+        if (descEl) { descEl.value = t.body; descEl.dispatchEvent(new Event('input')); }
+
+        // Set category
+        if (t.category) {
+            var catEl = document.querySelector('[name=category], #id_category');
+            if (catEl) { catEl.value = t.category; catEl.dispatchEvent(new Event('change')); }
+        }
+
+        // Set priority
+        if (t.priority) {
+            var priEl = document.querySelector('[name=priority], #id_priority');
+            if (priEl) { priEl.value = t.priority; }
+        }
+
+        // Scroll to title
+        if (titleEl) titleEl.scrollIntoView({behavior:'smooth', block:'center'});
+        titleEl && titleEl.focus();
+    }
 })();
 </script>
 {% endblock %}

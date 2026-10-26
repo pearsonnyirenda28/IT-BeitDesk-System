@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BeitDesk — Identity Verification</title>
+    <link rel="stylesheet" href="/static/fontawesome/css/all.min.css">
+    <style>
+        :root{--bg:#0d1117;--card:#1c2128;--border:#30363d;--accent:#1a6b30;
+              --accent-h:#2d8a45;--gold:#c9a227;--text:#e6edf3;--muted:#8b949e;
+              --danger:#f85149;--success:#3fb950;--warning:#d29922;}
+        *{box-sizing:border-box;margin:0;padding:0;}
+        body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);
+             color:var(--text);min-height:100vh;display:flex;align-items:center;
+             justify-content:center;padding:20px;}
+        .container{width:100%;max-width:460px;}
+        .header{text-align:center;margin-bottom:24px;}
+        .logo{width:64px;height:64px;border-radius:12px;margin:0 auto 12px;
+              border:2px solid rgba(201,162,39,.4);}
+        h1{font-size:20px;font-weight:700;margin-bottom:4px;}
+        p.sub{font-size:13px;color:var(--muted);}
+        .card{background:var(--card);border:1px solid var(--border);
+              border-radius:12px;padding:24px;}
+        /* Tabs */
+        .tabs{display:flex;gap:4px;background:var(--bg);border-radius:8px;
+              padding:4px;margin-bottom:20px;}
+        .tab{flex:1;padding:8px 4px;border-radius:6px;border:none;
+             background:none;color:var(--muted);font-size:12px;font-weight:500;
+             cursor:pointer;transition:all .15s;display:flex;align-items:center;
+             justify-content:center;gap:5px;}
+        .tab.active{background:var(--card);color:var(--text);
+                    box-shadow:0 1px 4px rgba(0,0,0,.3);}
+        .tab-pane{display:none;}
+        .tab-pane.active{display:block;}
+        /* TOTP */
+        .form-group{margin-bottom:14px;}
+        label{display:block;font-size:11px;color:var(--muted);
+              text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
+        input[type=text]{width:100%;padding:12px;background:rgba(255,255,255,.06);
+            border:1px solid var(--border);border-radius:8px;color:var(--text);
+            font-size:24px;outline:none;letter-spacing:8px;text-align:center;
+            font-family:monospace;}
+        input:focus{border-color:var(--accent);}
+        .btn{width:100%;padding:12px;border-radius:8px;border:none;font-size:14px;
+             font-weight:600;cursor:pointer;display:flex;align-items:center;
+             justify-content:center;gap:8px;transition:all .15s;margin-top:4px;}
+        .btn-primary{background:var(--accent);color:#fff;}
+        .btn-primary:hover{background:var(--accent-h);}
+        .btn-secondary{background:rgba(255,255,255,.07);color:var(--text);
+                       border:1px solid var(--border);margin-top:8px;}
+        /* Face */
+        .cam-wrap{position:relative;width:100%;aspect-ratio:4/3;background:#000;
+                  border-radius:10px;overflow:hidden;margin-bottom:12px;}
+        #videoEl{width:100%;height:100%;object-fit:cover;}
+        .cam-overlay{position:absolute;inset:0;display:flex;align-items:center;
+                     justify-content:center;pointer-events:none;}
+        .face-ring{width:160px;height:160px;border-radius:50%;
+                   border:3px solid rgba(26,107,48,.5);}
+        .face-ring.scanning{border-color:var(--gold);
+            animation:pulse 1.5s ease-in-out infinite;}
+        .face-ring.ok{border-color:var(--success);}
+        .face-ring.fail{border-color:var(--danger);}
+        @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(201,162,39,.4);}
+                         50%{box-shadow:0 0 0 10px rgba(201,162,39,0);}}
+        .cam-status{position:absolute;bottom:10px;left:0;right:0;text-align:center;
+                    font-size:12px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.8);
+                    padding:0 10px;}
+        .progress-bar{height:4px;background:var(--border);border-radius:2px;
+                      margin-bottom:10px;overflow:hidden;}
+        .progress-fill{height:100%;border-radius:2px;width:0%;
+                       background:linear-gradient(90deg,var(--accent),var(--gold));
+                       transition:width .3s;}
+        .alert{padding:10px 14px;border-radius:8px;font-size:12px;margin-bottom:12px;
+               display:flex;gap:8px;align-items:flex-start;}
+        .alert-info{background:rgba(26,107,48,.1);border:1px solid rgba(26,107,48,.25);
+                    color:#7ee787;}
+        .alert-warn{background:rgba(210,153,34,.1);border:1px solid rgba(210,153,34,.25);
+                    color:var(--warning);}
+        .footer{text-align:center;margin-top:16px;font-size:11px;color:var(--muted);}
+        .footer a{color:var(--muted);text-decoration:none;}
+        .footer a:hover{color:var(--text);}
+        .badge-lazy{font-size:9px;padding:1px 5px;border-radius:4px;
+                    background:rgba(201,162,39,.15);color:var(--gold);
+                    border:1px solid rgba(201,162,39,.3);margin-left:4px;
+                    vertical-align:middle;}
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <img src="/static/img/beitbridge_logo.jpg" alt="Beitbridge" class="logo">
+        <h1>Identity Verification</h1>
+        <p class="sub">Welcome back, <strong>{{ user.get_full_name|default:user.username }}</strong></p>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-warn" style="margin-bottom:12px;">
+        <i class="fas fa-circle-exclamation" style="flex-shrink:0;"></i> {{ error }}
+    </div>
+    {% endif %}
+
+    <div class="card">
+        <div class="tabs">
+            {% if totp_enabled %}
+            <button class="tab active" onclick="switchTab('totp',this)" id="tab-totp">
+                <i class="fas fa-mobile-screen"></i> Authenticator
+            </button>
+            {% endif %}
+            {% if face_enabled %}
+            <button class="tab {% if not totp_enabled %}active{% endif %}" onclick="switchTab('face',this)" id="tab-face">
+                <i class="fas fa-face-viewfinder"></i> Face
+                <span class="badge-lazy">loads on click</span>
+            </button>
+            {% endif %}
+            <button class="tab {% if not totp_enabled and not face_enabled %}active{% endif %}"
+                    onclick="switchTab('backup',this)" id="tab-backup">
+                <i class="fas fa-key"></i> Backup
+            </button>
+        </div>
+
+        <!-- TOTP tab (default — zero RAM) -->
+        {% if totp_enabled %}
+        <div class="tab-pane active" id="pane-totp">
+            <div class="alert alert-info" style="margin-bottom:14px;">
+                <i class="fas fa-mobile-screen-button" style="flex-shrink:0;margin-top:1px;"></i>
+                Open your authenticator app and enter the 6-digit code.
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="method" value="totp">
+                <div class="form-group">
+                    <label>6-Digit Code</label>
+                    <input type="text" name="totp_code" maxlength="6"
+                           placeholder="000000" autocomplete="one-time-code"
+                           autofocus inputmode="numeric" pattern="\d{6}" required>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-shield-check"></i> Verify Code
+                </button>
+            </form>
+        </div>
+        {% endif %}
+
+        <!-- Face tab (lazy-loaded — models only load when tab is clicked) -->
+        {% if face_enabled %}
+        <div class="tab-pane {% if not totp_enabled %}active{% endif %}" id="pane-face">
+            <div id="faceLoadPrompt" style="text-align:center;padding:20px 0;">
+                <i class="fas fa-face-viewfinder" style="font-size:40px;color:var(--gold);opacity:.6;display:block;margin-bottom:12px;"></i>
+                <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">
+                    Face recognition loads the camera and face models on demand.<br>
+                    <span style="font-size:11px;">Requires HTTPS and a webcam.</span>
+                </p>
+                <button onclick="initFace()" class="btn btn-primary" style="width:auto;padding:10px 24px;">
+                    <i class="fas fa-camera"></i> Start Face Recognition
+                </button>
+            </div>
+            <div id="faceUI" style="display:none;">
+                <div class="cam-wrap">
+                    <video id="videoEl" autoplay playsinline muted></video>
+                    <div class="cam-overlay">
+                        <div class="face-ring" id="faceRing"></div>
+                    </div>
+                    <div class="cam-status" id="camStatus">Initialising...</div>
+                </div>
+                <div class="progress-bar"><div class="progress-fill" id="confBar"></div></div>
+                <form method="post" id="faceForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="method" value="face">
+                    <input type="hidden" name="embedding" id="embeddingInput">
+                    <button type="submit" class="btn btn-primary" id="faceSubmitBtn" disabled>
+                        <i class="fas fa-shield-check"></i> Confirm & Enter
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Backup code tab -->
+        <div class="tab-pane {% if not totp_enabled and not face_enabled %}active{% endif %}"
+             id="pane-backup">
+            <div class="alert alert-info" style="margin-bottom:14px;">
+                <i class="fas fa-key" style="flex-shrink:0;margin-top:1px;"></i>
+                Enter one of your 8-character one-time backup codes.
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="method" value="backup">
+                <div class="form-group">
+                    <label>Backup Code</label>
+                    <input type="text" name="backup_code" maxlength="8"
+                           placeholder="XXXX0000" autocomplete="off"
+                           style="letter-spacing:5px;text-transform:uppercase;font-size:20px;"
+                           {% if not totp_enabled and not face_enabled %}autofocus{% endif %}>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-unlock"></i> Use Backup Code
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="footer">
+        <a href="{% url 'terms_view' %}">Terms & Conditions</a>
+        &nbsp;·&nbsp;
+        <a href="{% url 'login' %}">← Back to Login</a>
+    </div>
+</div>
+
+<!-- face-api.js loaded ONLY when face tab is clicked -->
+<script>
+var faceApiLoaded = false;
+var faceStream = null;
+var faceScanTimer = null;
+
+function switchTab(id, btn) {
+    document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+    document.querySelectorAll('.tab-pane').forEach(function(p){ p.classList.remove('active'); });
+    btn.classList.add('active');
+    var pane = document.getElementById('pane-' + id);
+    if (pane) pane.classList.add('active');
+    // Stop camera if switching away from face tab
+    if (id !== 'face' && faceStream) {
+        clearInterval(faceScanTimer);
+        faceStream.getTracks().forEach(function(t){ t.stop(); });
+        faceStream = null;
+    }
+}
+
+// ── Face recognition — lazy load everything ───────────────────────────────────
+function initFace() {
+    // Check HTTPS
+    var isSecure = location.protocol === 'https:' ||
+                   location.hostname === 'localhost' ||
+                   location.hostname === '127.0.0.1';
+    if (!isSecure) {
+        alert('Camera requires HTTPS.\nStart server with: python run_https.py\nThen open: https://<your-ip>:8000');
+        return;
+    }
+
+    // Show camera UI, hide prompt
+    document.getElementById('faceLoadPrompt').style.display = 'none';
+    document.getElementById('faceUI').style.display = 'block';
+    document.getElementById('camStatus').textContent = 'Loading face models (~6MB)...';
+
+    // Load face-api.js script only now
+    if (!faceApiLoaded) {
+        var script = document.createElement('script');
+        script.src = '/static/faceapi/face-api.min.js';
+        script.onload = function() {
+            faceApiLoaded = true;
+            loadModelsAndStart();
+        };
+        script.onerror = function() {
+            document.getElementById('camStatus').textContent =
+                '✗ Failed to load face-api.js. Check that static files are served.';
+        };
+        document.head.appendChild(script);
+    } else {
+        loadModelsAndStart();
+    }
+}
+
+async function loadModelsAndStart() {
+    var st = document.getElementById('camStatus');
+    var ring = document.getElementById('faceRing');
+    st.textContent = 'Loading models (tiny detector ~270KB)...';
+
+    try {
+        // Use TINY models — 28x less RAM than SSD MobileNet
+        await Promise.all([
+            faceapi.nets.tinyFaceDetector.loadFromUri('/static/faceapi/weights'),
+            faceapi.nets.faceLandmark68TinyNet.loadFromUri('/static/faceapi/weights'),
+            faceapi.nets.faceRecognitionNet.loadFromUri('/static/faceapi/weights')
+        ]);
+        st.textContent = 'Models loaded. Opening camera...';
+    } catch(e) {
+        st.textContent = '✗ Model load failed: ' + e.message;
+        return;
+    }
+
+    try {
+        faceStream = await navigator.mediaDevices.getUserMedia(
+            {video: {facingMode:'user', width:{ideal:320}, height:{ideal:240}}});
+        var video = document.getElementById('videoEl');
+        video.srcObject = faceStream;
+        video.onloadedmetadata = function() { video.play(); };
+        await new Promise(function(r){ setTimeout(r, 600); });
+        if (ring) ring.className = 'face-ring scanning';
+        st.textContent = 'Position your face in the circle...';
+        faceScanTimer = setInterval(scanFace, 1500);
+    } catch(e) {
+        var msg = '✗ ';
+        if (e.name === 'NotAllowedError') msg += 'Camera permission denied — allow in browser settings.';
+        else if (e.name === 'NotFoundError') msg += 'No camera found — connect a webcam.';
+        else msg += e.message;
+        st.textContent = msg;
+        if (ring) ring.className = 'face-ring fail';
+    }
+}
+
+async function scanFace() {
+    var video = document.getElementById('videoEl');
+    var ring = document.getElementById('faceRing');
+    var st = document.getElementById('camStatus');
+    var confBar = document.getElementById('confBar');
+    var submitBtn = document.getElementById('faceSubmitBtn');
+    var embInput = document.getElementById('embeddingInput');
+
+    if (!video || !video.videoWidth) return;
+
+    try {
+        // Tiny face detector — much lighter than SSD
+        var options = new faceapi.TinyFaceDetectorOptions({inputSize: 224, scoreThreshold: 0.4});
+        var det = await faceapi.detectSingleFace(video, options)
+                               .withFaceLandmarks(true)   // true = use tiny landmarks
+                               .withFaceDescriptor();
+        if (!det) {
+            st.textContent = 'No face detected — face the camera in good light';
+            if (ring) ring.className = 'face-ring scanning';
+            return;
+        }
+
+        var embedding = Array.from(det.descriptor);
+        embInput.value = JSON.stringify(embedding);
+
+        // Quick server-side confidence check
+        try {
+            var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
+            var r = await fetch('/accounts/mfa/api/verify/', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json',
+                          'X-CSRFToken': csrf ? csrf.value : ''},
+                body: JSON.stringify({embedding: embedding})
+            });
+            var data = await r.json();
+            var pct = Math.round((data.confidence || 0) * 100);
+            if (confBar) confBar.style.width = pct + '%';
+
+            if (data.pass) {
+                clearInterval(faceScanTimer);
+                if (ring) ring.className = 'face-ring ok';
+                st.textContent = '✓ Face matched (' + pct + '%) — logging you in...';
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.style.background = 'var(--success)';
+                }
+                setTimeout(function(){ document.getElementById('faceForm').submit(); }, 800);
+            } else {
+                if (ring) ring.className = 'face-ring scanning';
+                st.textContent = 'Face not matched (' + pct + '%) — adjust position or lighting';
+            }
+        } catch(e) {
+            // API unavailable — enable manual submit
+            if (submitBtn) submitBtn.disabled = false;
+            st.textContent = 'Face detected — click Confirm to verify';
+        }
+    } catch(e) {
+        console.warn('Scan error:', e.message);
+    }
+}
+</script>
+</body>
+</html>

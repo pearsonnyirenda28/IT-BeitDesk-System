@@ -1,0 +1,109 @@
+{% load static %}
+<style>
+    :root{--bg:#0a0f1a;--card:rgba(17,24,39,.86);--card-solid:#111827;--border:#1e2d45;--accent:#16a34a;
+          --accent-h:#22c55e;--gold:#f59e0b;--text:#f1f5f9;--muted:#94a3b8;
+          --dim:#64748b;--danger:#ef4444;--success:#22c55e;--warning:#f59e0b;--info:#60a5fa;
+          color-scheme:dark;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);
+         color:var(--text);min-height:100vh;position:relative;}
+    /* Beitbridge council building behind the form — same treatment as the login page */
+    body::before{content:'';position:fixed;inset:0;
+        background-image:url("{% static 'img/beitbridge_bg.png' %}");
+        background-size:cover;background-position:center 18%;background-repeat:no-repeat;
+        opacity:.40;z-index:0;pointer-events:none;}
+    body::after{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;
+        background:linear-gradient(180deg,rgba(10,15,26,.55) 0%,rgba(10,15,26,.82) 38%,rgba(10,15,26,.94) 100%),
+                   linear-gradient(135deg,rgba(26,107,48,.18),transparent 55%);}
+    .nav,.main{position:relative;z-index:2;}
+    .nav{background:rgba(17,24,39,.88);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);
+         padding:0 24px;display:flex;align-items:center;height:60px;gap:12px;}
+    .nav img{width:32px;height:32px;border-radius:7px;}
+    .nav h1{font-size:16px;font-weight:700;flex:1;}
+    .back-link{color:var(--muted);text-decoration:none;font-size:13px;display:flex;align-items:center;gap:6px;}
+    .back-link:hover{color:var(--text);}
+    .track-link{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.35);color:var(--accent-h);
+        padding:6px 14px;border-radius:20px;font-size:12.5px;font-weight:600;text-decoration:none;
+        display:inline-flex;align-items:center;gap:7px;}
+    .track-link:hover{background:rgba(34,197,94,.2);}
+    .track-link .n{background:var(--accent-h);color:#052e12;border-radius:10px;padding:0 7px;font-size:11px;}
+    .main{max-width:760px;margin:0 auto;padding:28px 20px 60px;}
+    .hero{margin:6px 0 22px;text-shadow:0 2px 14px rgba(0,0,0,.6);}
+    .hero h2{font-size:26px;font-weight:800;letter-spacing:-.3px;}
+    .hero p{color:#cbd5e1;font-size:14px;margin-top:4px;}
+    .card{background:var(--card);backdrop-filter:blur(6px);border:1px solid var(--border);
+          border-radius:12px;padding:22px;margin-bottom:16px;}
+    .card-title{font-size:15px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+    label{display:block;font-size:12px;font-weight:600;color:var(--muted);
+          text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;}
+    input[type=text],input[type=password],input[type=datetime-local],textarea,select{width:100%;padding:10px 13px;
+        background:#1a2235;border:2px solid var(--border);border-radius:8px;color:var(--text);
+        font-size:14px;font-family:inherit;color-scheme:dark;transition:border-color .15s;}
+    input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent);
+        box-shadow:0 0 0 3px rgba(22,163,74,.15);}
+    input[readonly]{opacity:.7;cursor:not-allowed;}
+    input::placeholder,textarea::placeholder{color:var(--dim);font-size:13px;}
+    textarea{resize:vertical;min-height:110px;line-height:1.6;}
+    select option{background:#1a2235;color:var(--text);}
+    .form-group{margin-bottom:14px;}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+    .form-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+    @media(max-width:620px){.form-grid,.form-grid-3{grid-template-columns:1fr;}}
+    .hint{font-size:11.5px;color:var(--dim);margin-top:5px;}
+    .priority-opts{display:flex;gap:8px;flex-wrap:wrap;}
+    .p-opt{padding:8px 18px;border-radius:20px;border:2px solid var(--border);font-size:13px;
+           font-weight:600;cursor:pointer;background:none;color:var(--muted);transition:all .15s;}
+    .p-opt.sel-low{border-color:var(--success);color:var(--success);background:rgba(34,197,94,.1);}
+    .p-opt.sel-medium{border-color:var(--warning);color:var(--warning);background:rgba(245,158,11,.1);}
+    .p-opt.sel-high{border-color:var(--danger);color:var(--danger);background:rgba(239,68,68,.1);}
+    .p-opt.sel-critical{border-color:#dc2626;color:#fca5a5;background:rgba(220,38,38,.18);}
+    .has-error input,.has-error select,.has-error textarea{border-color:#f85149 !important;
+        box-shadow:0 0 0 3px rgba(248,81,73,.15);}
+    .ferr{color:#f85149;font-size:12px;margin-top:5px;}
+    .staff-card{border-color:rgba(245,158,11,.38);}
+    .voip-banner{display:flex;gap:10px;align-items:center;padding:10px 14px;margin-bottom:16px;
+        border-radius:8px;background:rgba(34,197,94,.10);border:1px solid rgba(34,197,94,.3);
+        color:var(--success);font-size:13px;}
+    .btn{padding:11px 22px;border-radius:8px;border:none;font-size:14px;font-weight:600;cursor:pointer;
+         display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;transition:all .15s;}
+    .btn-primary{background:var(--accent);color:#fff;width:100%;}
+    .btn-primary:hover{background:var(--accent-h);box-shadow:0 4px 16px rgba(22,163,74,.4);}
+    .btn-secondary{background:rgba(255,255,255,.07);color:var(--text);border:1px solid var(--border);}
+    .alert-error{padding:12px 16px;border-radius:8px;margin-bottom:14px;font-size:13px;display:flex;gap:8px;
+        background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#f87171;}
+    .alert-ok{padding:12px 16px;border-radius:8px;margin-bottom:14px;font-size:13px;display:flex;gap:8px;
+        background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);color:#4ade80;}
+
+    /* ── Template gallery ───────────────────────────────────────────────── */
+    .tpl-head{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;}
+    .tpl-head .card-title{margin:0;flex:1;}
+    .tpl-search{max-width:210px;padding:7px 12px !important;font-size:13px !important;}
+    .tpl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px;}
+    .tpl-card{--c:#2ea043;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:6px;
+        padding:12px;border-radius:10px;background:rgba(255,255,255,.04);color:var(--text);
+        border:1px solid var(--border);border-top:3px solid var(--c);font-family:inherit;transition:all .15s;}
+    .tpl-card:hover{transform:translateY(-2px);background:rgba(255,255,255,.08);box-shadow:0 8px 22px rgba(0,0,0,.35);}
+    .tpl-card.active{border-color:var(--c);background:rgba(255,255,255,.1);box-shadow:0 0 0 2px var(--c);}
+    .tpl-ico{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+        font-size:16px;color:var(--c);background:rgba(255,255,255,.08);}
+    @supports (background:color-mix(in srgb,red 10%,transparent)){
+        .tpl-ico{background:color-mix(in srgb,var(--c) 20%,transparent);}}
+    .tpl-name{font-size:13.5px;font-weight:700;}
+    .tpl-desc{font-size:11.5px;color:var(--muted);line-height:1.35;display:-webkit-box;
+        -webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+    .tpl-none{color:var(--dim);font-size:13px;padding:8px 2px;display:none;}
+    .tpl-note{font-size:12px;color:var(--accent-h);margin-top:10px;display:none;}
+
+    /* ── "My requests" tracker ──────────────────────────────────────────── */
+    .mini-req{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);
+        text-decoration:none;color:var(--text);}
+    .mini-req:last-child{border-bottom:none;}
+    .mini-req:hover .mini-title{color:var(--accent-h);}
+    .mini-id{font-size:11px;color:var(--dim);font-family:ui-monospace,monospace;}
+    .mini-title{font-size:13.5px;font-weight:600;}
+    .chip{font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;white-space:nowrap;}
+    .chip.OPEN{background:rgba(59,130,246,.16);color:#60a5fa;}
+    .chip.IN_PROGRESS{background:rgba(245,158,11,.16);color:#fbbf24;}
+    .chip.PENDING,.chip.REOPENED{background:rgba(168,85,247,.16);color:#c084fc;}
+    .chip.RESOLVED,.chip.CLOSED{background:rgba(34,197,94,.16);color:#4ade80;}
+</style>

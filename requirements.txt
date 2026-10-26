@@ -1,6 +1,35 @@
+# ── Core Framework ────────────────────────────────────────────────────────────
 Django==5.2.3
 django-widget-tweaks==1.5.0
+
+# ── Environment ───────────────────────────────────────────────────────────────
 python-dotenv==1.0.1
+
+# ── Database ──────────────────────────────────────────────────────────────────
 psycopg2-binary==2.9.12
+
+# ── Static Files ──────────────────────────────────────────────────────────────
 whitenoise==6.7.0
+
+# ── WebSocket / ASGI (Real-Time Notifications) ───────────────────────────────
+# Replaces WSGI runserver — handles both HTTP and WebSocket connections
+channels==4.3.2
+daphne>=4.1.2
+
+# ── HTTPS / LAN ───────────────────────────────────────────────────────────────
 werkzeug>=3.0.0
+
+# ── MFA ───────────────────────────────────────────────────────────────────────
+pyotp==2.9.0
+qrcode[pil]==7.4.2
+Pillow>=10.0.0
+
+# ── Web Push Notifications (VAPID) ───────────────────────────────────────────
+pywebpush>=2.0.0
+cryptography>=42.0.0
+
+# ── Optional Production ───────────────────────────────────────────────────────
+# gunicorn>=21.0.0        # HTTP-only (no WebSocket)
+# uvicorn[standard]>=0.30 # Alternative ASGI server
+# Optional: lets the Organisation page import .xlsx files (CSV works without it)
+openpyxl>=3.1

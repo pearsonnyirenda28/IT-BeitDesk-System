@@ -1,10 +1,50 @@
-*.pyc
-__pycache__/
-*.pyo
+# Environment / secrets
 .env
-nexusdesk.db
+.env.*
+*.env
+!.env.example
+
+# Certificates / keys
+*.pem
+*.key
+*.crt
+key.txt
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+.nex/
+env/
+
+# Django
 staticfiles/
 media/
+*.sqlite3
+
+# Logs / backups
 *.log
-venv/
-.venv/
+backups/
+error_log.txt
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+nexusdesk.db
+*.db
+*.sqlite3
+nexusdesk.db
+*.db
+*.sqlite3
+*.log
+backups/
+nexusdesk.db
+*.db
+*.sqlite3
+*.log
+backups/

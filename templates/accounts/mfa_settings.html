@@ -1,0 +1,505 @@
+{% extends 'base.html' %}
+{% block title %}MFA Settings{% endblock %}
+{% block page_title %}Security & MFA{% endblock %}
+{% block breadcrumb %}Profile / Security{% endblock %}
+
+{% block content %}
+<div style="max-width:760px;">
+
+<!-- MFA Master Status Banner -->
+{% if profile.mfa_enabled %}
+<div style="background:linear-gradient(135deg,rgba(26,107,48,.2),rgba(26,107,48,.08));
+            border:1px solid rgba(63,185,80,.35);border-radius:10px;
+            padding:14px 20px;margin-bottom:20px;
+            display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+    <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:40px;height:40px;background:rgba(63,185,80,.2);border-radius:50%;
+                    display:flex;align-items:center;justify-content:center;
+                    box-shadow:0 2px 8px rgba(63,185,80,.3);">
+            <i class="fas fa-shield-check" style="color:var(--success-text);font-size:18px;"></i>
+        </div>
+        <div>
+            <div style="font-size:14px;font-weight:700;color:var(--success-text);">
+                MFA is Enabled — Your account is protected
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
+                You will be asked to verify your identity on every login.
+                {% if profile.face_mfa_enabled %}<i class="fas fa-face-viewfinder"></i> Face{% endif %}
+                {% if profile.face_mfa_enabled and profile.totp_enabled %} + {% endif %}
+                {% if profile.totp_enabled %}<i class="fas fa-mobile-screen"></i> Authenticator{% endif %}
+                active.
+            </div>
+        </div>
+    </div>
+    <form method="post"
+          onsubmit="return confirm('Disable MFA? Your account will only be protected by your password.')">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="toggle_mfa">
+        <button type="submit" class="btn btn-sm"
+                style="background:rgba(218,54,51,.15);color:var(--danger-text);
+                       border:1px solid rgba(218,54,51,.3);">
+            <i class="fas fa-shield-slash"></i> Disable MFA
+        </button>
+    </form>
+</div>
+{% else %}
+<div style="background:linear-gradient(135deg,rgba(218,54,51,.12),rgba(218,54,51,.05));
+            border:1px solid rgba(218,54,51,.3);border-radius:10px;
+            padding:14px 20px;margin-bottom:20px;
+            display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+    <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:40px;height:40px;background:rgba(218,54,51,.15);border-radius:50%;
+                    display:flex;align-items:center;justify-content:center;">
+            <i class="fas fa-shield-slash" style="color:var(--danger-text);font-size:18px;"></i>
+        </div>
+        <div>
+            <div style="font-size:14px;font-weight:700;color:var(--danger-text);">
+                MFA is Disabled — Password only
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
+                Set up Face Recognition or an Authenticator App below, then enable MFA.
+            </div>
+        </div>
+    </div>
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="toggle_mfa">
+        <button type="submit" class="btn btn-primary btn-sm">
+            <i class="fas fa-shield-check"></i> Enable MFA
+        </button>
+    </form>
+</div>
+{% endif %}
+
+<!-- Status Overview -->
+<div class="card mb-4">
+    <div class="card-header">
+        <div class="header-icon" style="background:rgba(26,107,48,.2);color:var(--accent-hover);">
+            <i class="fas fa-shield-halved"></i>
+        </div>
+        <h6>Account Security Status</h6>
+        <!-- Master MFA toggle -->
+        <div style="margin-left:auto;">
+            <form method="post" style="display:inline;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="toggle_mfa">
+                {% if profile.mfa_enabled %}
+                <button type="submit"
+                        onclick="return confirm('Disable MFA? Your account will only be protected by your password.')"
+                        class="btn btn-sm"
+                        style="background:rgba(218,54,51,.15);color:var(--danger-text);
+                               border:1px solid rgba(218,54,51,.3);">
+                    <i class="fas fa-shield-slash"></i> Disable MFA
+                </button>
+                {% else %}
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="fas fa-shield-check"></i> Enable MFA
+                </button>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+    <div class="card-body">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;">
+
+            <div style="background:var(--bg-tertiary);border-radius:8px;padding:14px;
+                        border:1px solid {% if profile.face_mfa_enabled %}rgba(63,185,80,.3){% else %}var(--border){% endif %};">
+                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+                    <i class="fas fa-face-viewfinder"></i> Face Recognition
+                </div>
+                {% if profile.face_mfa_enabled %}
+                <div style="color:var(--success-text);font-weight:600;font-size:13px;">
+                    <i class="fas fa-circle-check"></i> Active
+                </div>
+                {% if profile.face_enrolled_at %}
+                <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">
+                    Enrolled {{ profile.face_enrolled_at|date:"d M Y" }}
+                </div>
+                {% endif %}
+                {% else %}
+                <div style="color:var(--text-muted);font-weight:600;font-size:13px;">
+                    <i class="fas fa-circle-xmark"></i> Not set up
+                </div>
+                {% endif %}
+            </div>
+
+            <div style="background:var(--bg-tertiary);border-radius:8px;padding:14px;
+                        border:1px solid {% if profile.totp_enabled %}rgba(63,185,80,.3){% else %}var(--border){% endif %};">
+                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+                    <i class="fas fa-mobile-screen"></i> Authenticator App
+                </div>
+                {% if profile.totp_enabled %}
+                <div style="color:var(--success-text);font-weight:600;font-size:13px;">
+                    <i class="fas fa-circle-check"></i> Active
+                </div>
+                {% else %}
+                <div style="color:var(--text-muted);font-weight:600;font-size:13px;">
+                    <i class="fas fa-circle-xmark"></i> Not set up
+                </div>
+                {% endif %}
+            </div>
+
+            <div style="background:var(--bg-tertiary);border-radius:8px;padding:14px;
+                        border:1px solid {% if profile.mfa_enabled %}rgba(63,185,80,.3){% else %}rgba(218,54,51,.3){% endif %};">
+                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+                    <i class="fas fa-lock"></i> MFA Master Switch
+                </div>
+                {% if profile.mfa_enabled %}
+                <div style="color:var(--success-text);font-weight:600;font-size:13px;">
+                    <i class="fas fa-shield-check"></i> Enabled
+                </div>
+                {% else %}
+                <div style="color:var(--danger-text);font-weight:600;font-size:13px;">
+                    <i class="fas fa-shield-exclamation"></i> Disabled
+                </div>
+                {% endif %}
+            </div>
+
+            {% if profile.face_fail_count > 0 %}
+            <div style="background:rgba(218,54,51,.1);border-radius:8px;padding:14px;
+                        border:1px solid rgba(218,54,51,.3);">
+                <div style="font-size:11px;color:var(--danger-text);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
+                    <i class="fas fa-triangle-exclamation"></i> Face Failures
+                </div>
+                <div style="color:var(--danger-text);font-weight:600;font-size:13px;">
+                    {{ profile.face_fail_count }} failed attempt{{ profile.face_fail_count|pluralize }}
+                </div>
+                {% if profile.face_locked_until %}
+                <div style="font-size:11px;color:var(--danger-text);margin-top:3px;">
+                    Locked until {{ profile.face_locked_until|date:"H:i d M" }}
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+
+<!-- Face Recognition Setup -->
+<div class="card mb-4">
+    <div class="card-header">
+        <div class="header-icon" style="background:rgba(201,162,39,.2);color:var(--gold);">
+            <i class="fas fa-face-viewfinder"></i>
+        </div>
+        <h6>Face Recognition</h6>
+    </div>
+    <div class="card-body">
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">
+            Face recognition lets you log in by looking at your camera — no code needed.
+            Uses browser-based AI (face-api.js) — your face never leaves your device during verification.
+        </p>
+        {% if profile.face_mfa_enabled %}
+        <div style="background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.2);
+                    border-radius:8px;padding:12px 16px;margin-bottom:16px;
+                    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+            <div>
+                <div style="font-weight:600;font-size:13px;color:var(--success-text);">
+                    <i class="fas fa-circle-check"></i> Face recognition is active
+                </div>
+                {% if profile.face_enrolled_at %}
+                <div style="font-size:11px;color:var(--text-muted);">
+                    Enrolled {{ profile.face_enrolled_at|date:"d M Y H:i" }}
+                </div>
+                {% endif %}
+            </div>
+            <div style="display:flex;gap:8px;">
+                <a href="{% url 'face_enroll' %}" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-rotate"></i> Re-enroll
+                </a>
+                <form method="post" style="display:inline;"
+                      onsubmit="return confirm('Disable face recognition? You can re-enroll anytime.')">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="disable_face">
+                    <button type="submit" class="btn btn-danger btn-sm">
+                        <i class="fas fa-xmark"></i> Disable
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% else %}
+        <a href="{% url 'face_enroll' %}" class="btn btn-primary btn-sm">
+            <i class="fas fa-camera"></i> Set Up Face Recognition
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- TOTP Setup -->
+<div class="card mb-4">
+    <div class="card-header">
+        <div class="header-icon" style="background:rgba(88,166,255,.15);color:var(--info-text);">
+            <i class="fas fa-mobile-screen-button"></i>
+        </div>
+        <h6>Authenticator App (TOTP Backup)</h6>
+    </div>
+    <div class="card-body">
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">
+            Use Google Authenticator, Authy, or Microsoft Authenticator as a backup when
+            face recognition is unavailable (poor lighting, no camera, etc.).
+        </p>
+
+        {% if profile.totp_enabled %}
+        <div style="background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.2);
+                    border-radius:8px;padding:12px 16px;margin-bottom:16px;
+                    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+            <div style="font-weight:600;font-size:13px;color:var(--success-text);">
+                <i class="fas fa-circle-check"></i> Authenticator app is active
+            </div>
+            <form method="post"
+                  onsubmit="return confirm('Disable authenticator app? Make sure face recognition is active as backup.')">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="disable_totp">
+                <button type="submit" class="btn btn-danger btn-sm">
+                    <i class="fas fa-xmark"></i> Disable
+                </button>
+            </form>
+        </div>
+        {% endif %}
+
+        <!-- QR Code — server-rendered PNG, no JS library needed -->
+        <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;margin-bottom:16px;">
+            <div style="text-align:center;">
+                <img src="{% url 'qr_image' %}" alt="QR Code"
+                     style="border-radius:8px;border:4px solid #fff;
+                            width:180px;height:180px;display:block;background:#fff;"
+                     onerror="this.alt='QR unavailable - use manual key below'">
+                <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">
+                    {% if profile.totp_enabled %}Re-scan if you changed devices{% else %}Scan with Google Authenticator, Authy or Microsoft Authenticator{% endif %}
+                </div>
+            </div>
+            <div style="flex:1;min-width:200px;">
+                <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Manual entry key:</div>
+                <div class="mono" style="background:var(--bg-tertiary);border:1px solid var(--border);
+                     border-radius:6px;padding:8px;font-size:11px;letter-spacing:3px;
+                     word-break:break-all;color:var(--text-secondary);">
+                    {{ profile.totp_secret }}
+                </div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
+                    Issuer: BeitDesk — Beitbridge Municipality
+                </div>
+                {% if not profile.totp_enabled %}
+                <form method="post" style="margin-top:14px;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="setup_totp">
+                    <div class="form-group" style="max-width:200px;">
+                        <label class="form-label">Enter 6-digit code to activate</label>
+                        <input type="text" name="totp_code" class="form-control"
+                               maxlength="6" placeholder="000000"
+                               inputmode="numeric" autocomplete="one-time-code"
+                               style="letter-spacing:4px;text-align:center;font-size:20px;"
+                               required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="fas fa-check-circle"></i> Confirm & Activate
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Backup Codes — always shown as a separate prominent card -->
+    </div>
+</div>
+
+<!-- Backup Codes Card — standalone, always accessible -->
+<div class="card mb-4" id="backup-codes-section">
+    <div class="card-header">
+        <div class="header-icon" style="background:rgba(201,162,39,.2);color:var(--gold);">
+            <i class="fas fa-key"></i>
+        </div>
+        <h6>Emergency Backup Codes</h6>
+        <span style="margin-left:auto;font-size:11px;padding:2px 10px;border-radius:10px;
+              {% if backup_codes %}background:rgba(63,185,80,.15);color:var(--success-text);border:1px solid rgba(63,185,80,.3);
+              {% else %}background:rgba(218,54,51,.15);color:var(--danger-text);border:1px solid rgba(218,54,51,.3);{% endif %}">
+            {% if backup_codes %}{{ backup_codes|length }} code{{ backup_codes|length|pluralize }} remaining{% else %}No codes generated{% endif %}
+        </span>
+    </div>
+    <div class="card-body">
+        <!-- Warning banner -->
+        <div style="background:rgba(201,162,39,.1);border:1px solid rgba(201,162,39,.3);
+                    border-radius:8px;padding:12px 16px;margin-bottom:16px;
+                    display:flex;gap:10px;align-items:flex-start;">
+            <i class="fas fa-triangle-exclamation" style="color:var(--gold);flex-shrink:0;margin-top:1px;"></i>
+            <div>
+                <div style="font-size:13px;font-weight:600;color:var(--gold);margin-bottom:3px;">
+                    Save these codes in a safe place
+                </div>
+                <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;">
+                    Use a backup code to log in when you cannot access your authenticator app or face recognition.
+                    Each code can only be used <strong>once</strong>. Store them in a password manager, printed paper, or secure notes.
+                    If you lose these codes and cannot access MFA, contact your IT administrator.
+                </div>
+            </div>
+        </div>
+
+        {% if backup_codes %}
+        <!-- Codes grid -->
+        <div id="codesGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;">
+            {% for code in backup_codes %}
+            <div class="mono" style="background:var(--bg-secondary);border:1px solid var(--border);
+                 border-radius:8px;padding:10px;font-size:14px;text-align:center;
+                 letter-spacing:3px;color:var(--text-primary);font-weight:600;
+                 box-shadow:inset 0 1px 3px rgba(0,0,0,.2);">
+                {{ code }}
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Actions -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+            <button onclick="printCodes()" class="btn btn-secondary btn-sm">
+                <i class="fas fa-print"></i> Print Codes
+            </button>
+            <button onclick="copyCodes()" class="btn btn-secondary btn-sm" id="copyBtn">
+                <i class="fas fa-copy"></i> Copy All
+            </button>
+            <form method="post" style="margin-left:auto;"
+                  onsubmit="return confirm('Generate new backup codes?\n\nAll existing codes will stop working immediately.\nMake sure to save the new codes before closing this page.')">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="regen_backup">
+                <button type="submit" class="btn btn-sm"
+                        style="background:rgba(218,54,51,.12);color:var(--danger-text);border:1px solid rgba(218,54,51,.3);">
+                    <i class="fas fa-rotate"></i> Regenerate Codes
+                </button>
+            </form>
+        </div>
+
+        <!-- Print template (hidden) -->
+        <div id="printArea" style="display:none;">
+            <h2>BeitDesk — Emergency Backup Codes</h2>
+            <p>User: {{ request.user.get_full_name|default:request.user.username }} ({{ request.user.username }})</p>
+            <p>Generated: {% now "d M Y H:i" %}</p>
+            <p><strong>Each code can only be used once. Keep this page secure.</strong></p>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:16px 0;">
+                {% for code in backup_codes %}
+                <div style="border:1px solid #ccc;padding:8px;text-align:center;font-family:monospace;font-size:14px;letter-spacing:3px;">{{ code }}</div>
+                {% endfor %}
+            </div>
+            <p style="font-size:11px;color:#666;">Municipality of Beitbridge IT Help Desk — BeitDesk</p>
+        </div>
+
+        {% else %}
+        <!-- No codes yet -->
+        <div style="text-align:center;padding:24px;">
+            <i class="fas fa-key" style="font-size:32px;opacity:.2;display:block;margin-bottom:12px;"></i>
+            <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
+                No backup codes generated yet.<br>
+                Set up the Authenticator App above to generate backup codes.
+            </p>
+            {% if not profile.totp_enabled %}
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="regen_backup">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="fas fa-key"></i> Generate Backup Codes Now
+                </button>
+            </form>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- MFA Audit Log -->
+{% if mfa_logs %}
+<div class="card mb-4">
+    <div class="card-header">
+        <div class="header-icon" style="background:rgba(110,118,129,.2);color:var(--text-secondary);">
+            <i class="fas fa-clock-rotate-left"></i>
+        </div>
+        <h6>Recent MFA Activity</h6>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Method</th>
+                    <th>Result</th>
+                    <th>Confidence</th>
+                    <th>IP Address</th>
+                    <th>Note</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in mfa_logs %}
+                <tr>
+                    <td style="font-size:12px;color:var(--text-muted);">
+                        {{ log.created_at|date:"d M Y H:i" }}
+                    </td>
+                    <td>
+                        {% if log.method == 'FACE' %}
+                        <span style="font-size:12px;"><i class="fas fa-face-viewfinder" style="color:var(--gold);"></i> Face</span>
+                        {% elif log.method == 'TOTP' %}
+                        <span style="font-size:12px;"><i class="fas fa-mobile-screen" style="color:var(--info-text);"></i> Authenticator</span>
+                        {% else %}
+                        <span style="font-size:12px;"><i class="fas fa-key" style="color:var(--text-muted);"></i> Backup</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if log.result == 'PASS' %}
+                        <span class="badge" style="background:rgba(63,185,80,.15);color:var(--success-text);border:1px solid rgba(63,185,80,.3);">
+                            <i class="fas fa-check"></i> Pass
+                        </span>
+                        {% elif log.result == 'LOCKED' %}
+                        <span class="badge" style="background:rgba(248,81,73,.15);color:var(--danger-text);border:1px solid rgba(248,81,73,.3);">
+                            <i class="fas fa-lock"></i> Locked
+                        </span>
+                        {% else %}
+                        <span class="badge" style="background:rgba(210,153,34,.15);color:var(--warning-text);border:1px solid rgba(210,153,34,.3);">
+                            <i class="fas fa-xmark"></i> Fail
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:12px;color:var(--text-muted);">
+                        {% if log.confidence %}{{ log.confidence|floatformat:1 }}%{% else %}—{% endif %}
+                    </td>
+                    <td class="mono" style="font-size:11px;color:var(--text-muted);">
+                        {{ log.ip_address|default:"—" }}
+                    </td>
+                    <td style="font-size:12px;color:var(--text-muted);">
+                        {{ log.note|default:"—"|truncatechars:40 }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+</div>
+
+{% if totp_uri %}
+<script>
+// QR code served as server-side PNG — no JS needed
+</script>
+{% endif %}
+
+<script>
+function printCodes() {
+    var pa = document.getElementById('printArea');
+    if (!pa) return;
+    var w = window.open('','_blank','width=620,height=520');
+    w.document.write('<!DOCTYPE html><html><head><title>BeitDesk Backup Codes</title>');
+    w.document.write('<style>body{font-family:Arial,sans-serif;padding:30px;color:#000;}h2{color:#1a6b30;}');
+    w.document.write('div{break-inside:avoid;}</style></head><body>');
+    w.document.write(pa.innerHTML);
+    w.document.write('</body></html>');
+    w.document.close(); w.focus();
+    setTimeout(function(){ w.print(); }, 400);
+}
+function copyCodes() {
+    var codes=[];
+    document.querySelectorAll('#codesGrid .mono').forEach(function(el){codes.push(el.textContent.trim());});
+    if(!codes.length)return;
+    var text='BeitDesk Emergency Backup Codes\n================================\n'+codes.join('\n')+'\n\nEach code can only be used once.\nMunicipality of Beitbridge IT Help Desk\n';
+    navigator.clipboard.writeText(text).then(function(){
+        var btn=document.getElementById('copyBtn');
+        if(btn){btn.innerHTML='<i class="fas fa-check"></i> Copied!';btn.style.color='var(--success-text)';
+        setTimeout(function(){btn.innerHTML='<i class="fas fa-copy"></i> Copy All';btn.style.color='';},2000);}
+    }).catch(function(){alert('Select and copy the codes manually.');});
+}
+</script>
+{% endblock %}

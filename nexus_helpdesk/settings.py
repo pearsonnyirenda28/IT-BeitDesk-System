@@ -51,6 +51,7 @@ SESSION_COOKIE_SECURE = False   # Set True only if you ALWAYS use HTTPS
 CSRF_COOKIE_SECURE    = False   # Set True only if you ALWAYS use HTTPS
 
 INSTALLED_APPS = [
+    'daphne',                          # Must be FIRST — before staticfiles
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -60,6 +61,7 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     # Third-party
     'widget_tweaks',
+    'channels',
     # Local apps
     'accounts',
     'helpdesk.apps.HelpdeskConfig',
@@ -67,7 +69,12 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    # GZip first — compresses all HTTP responses (HTML, JSON, API)
+    # Reduces payload ~70-80% — critical for slow LAN/legacy machines
+    'django.middleware.gzip.GZipMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    # WhiteNoise — serves static files directly, with compression+caching headers
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     # Year DB router — must come after session so it can read active year
     'helpdesk.db_router.YearDatabaseMiddleware',
@@ -141,6 +148,21 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+# ── WhiteNoise — static file serving over HTTP and HTTPS ─────────────────────
+# Serves static files directly from Django without needing a web server.
+# Works with werkzeug HTTPS server, standard runserver, and production.
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+WHITENOISE_USE_FINDERS  = True       # Find files in STATICFILES_DIRS at runtime
+WHITENOISE_AUTOREFRESH  = True       # Reload changed files without restart (dev)
+WHITENOISE_MAX_AGE      = 31536000   # Cache static files 1 year in browser (3600 in dev if preferred)
+WHITENOISE_KEEP_ONLY_HASHED_FILES = False  # Keep original names for debugging
+# Brotli/gzip compression of static files (CSS, JS) — served pre-compressed
+# pip install whitenoise[brotli] to enable Brotli (smaller than gzip)
+STORAGES = {
+    "default":     {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+}
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -161,3 +183,54 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 # VoIP Settings
 VOIP_DEFAULT_EXTENSION_LENGTH = 4
 VOIP_CALL_TIMEOUT_MINUTES = 60  # Auto-close calls after 60 min
+
+# ── Web Push (VAPID) ──────────────────────────────────────────────────────────
+import os as _os
+from dotenv import load_dotenv as _load
+_load(BASE_DIR / '.env')
+
+VAPID_PUBLIC_KEY  = _os.environ.get('VAPID_PUBLIC_KEY', '')
+VAPID_PRIVATE_KEY = _os.environ.get('VAPID_PRIVATE_KEY', '')
+VAPID_EMAIL       = _os.environ.get('VAPID_EMAIL', 'admin@beitbridge.gov.zw')
+
+# Expose public key to templates
+PUSH_PUBLIC_KEY = VAPID_PUBLIC_KEY
+
+# ── Django Channels (WebSocket real-time notifications) ───────────────────────
+# Uses in-memory channel layer — works on LAN with no Redis required.
+# For multi-server production, swap to RedisChannelLayer.
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    }
+}
+ASGI_APPLICATION = "nexus_helpdesk.asgi.application"
+
+# ── Performance Optimisations ─────────────────────────────────────────────────
+
+# In-memory cache — eliminates repeated identical DB queries within a request
+# For multi-server production, swap to RedisCache or Memcached
+CACHES = {
+    'default': {
+        'BACKEND':  'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'beitdesk-cache',
+        'TIMEOUT':  300,  # 5 minutes
+        'OPTIONS':  {'MAX_ENTRIES': 1000},
+    }
+}
+
+# Session: store in cache for faster reads (avoids DB hit per request)
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+
+# Database connection persistence — reuse DB connections across requests
+# Saves ~1–3ms per request on Windows (avoids socket setup overhead)
+# Set to 0 if using SQLite with concurrent writes (default)
+CONN_MAX_AGE = 0  # Keep 0 for SQLite; set 60 for PostgreSQL
+
+# Gzip compression for all responses (massive bandwidth saving on slow networks)
+# WhiteNoise already compresses static files; this covers HTML responses
+USE_ETAGS = True  # 304 Not Modified for unchanged pages
+
+# Template caching — parse templates once, reuse compiled version
+# Active in production (DEBUG=False). In development, templates reload on change.
+# No config needed — Django does this automatically when DEBUG=False.

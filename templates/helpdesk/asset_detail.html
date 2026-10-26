@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% block title %}{{ asset.asset_tag }}{% endblock %}
+{% block page_title %}Asset Registry{% endblock %}
+{% block breadcrumb %}Assets / {{ asset.asset_tag }}{% endblock %}
+
+{% block content %}
+<div style="max-width:800px;">
+    <div class="flex-between mb-4">
+        <a href="{% url 'asset_list' %}" class="btn btn-secondary btn-sm">
+            <i class="fas fa-arrow-left"></i> Back to Assets
+        </a>
+        <div style="display:flex;gap:8px;">
+            <a href="{% url 'asset_edit' asset.pk %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-pen"></i> Edit
+            </a>
+            {% if request.user.is_superuser %}
+            <form method="post"
+                  onsubmit="return confirm('Delete asset {{ asset.asset_tag }}? This cannot be undone.')">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete">
+                <button type="submit" class="btn btn-danger btn-sm">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="grid grid-2 mb-4">
+        <!-- Main Info -->
+        <div class="card">
+            <div class="card-header">
+                <div class="header-icon" style="background:rgba(201,162,39,.2);color:var(--gold);">
+                    {% if asset.asset_type == 'DESKTOP' %}<i class="fas fa-desktop"></i>
+                    {% elif asset.asset_type == 'LAPTOP' %}<i class="fas fa-laptop"></i>
+                    {% elif asset.asset_type == 'PRINTER' %}<i class="fas fa-print"></i>
+                    {% elif asset.asset_type == 'SERVER' %}<i class="fas fa-server"></i>
+                    {% elif asset.asset_type == 'PHONE' %}<i class="fas fa-phone"></i>
+                    {% elif asset.asset_type == 'TABLET' %}<i class="fas fa-tablet-screen-button"></i>
+                    {% elif asset.asset_type == 'NETWORK' %}<i class="fas fa-network-wired"></i>
+                    {% else %}<i class="fas fa-microchip"></i>{% endif %}
+                </div>
+                <h6>{{ asset.asset_tag }} — {{ asset.name }}</h6>
+            </div>
+            <div class="card-body">
+                <table style="width:100%;border-collapse:collapse;">
+                    {% for label, value in field_rows %}
+                    <tr style="border-bottom:1px solid var(--border-subtle);">
+                        <td style="font-size:11px;color:var(--text-muted);padding:7px 0;width:40%;text-transform:uppercase;letter-spacing:.3px;">{{ label }}</td>
+                        <td style="font-size:13px;padding:7px 0;font-weight:500;">{{ value|default:"—" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="2" style="padding:10px 0;">
+                        <div style="display:flex;flex-direction:column;gap:6px;">
+                            {% if asset.serial_number %}<div style="font-size:12px;"><span style="color:var(--text-muted);">Serial:</span> <span class="mono">{{ asset.serial_number }}</span></div>{% endif %}
+                            {% if asset.manufacturer %}<div style="font-size:12px;"><span style="color:var(--text-muted);">Manufacturer:</span> {{ asset.manufacturer }}</div>{% endif %}
+                            {% if asset.model %}<div style="font-size:12px;"><span style="color:var(--text-muted);">Model:</span> {{ asset.model }}</div>{% endif %}
+                            {% if asset.purchase_date %}<div style="font-size:12px;"><span style="color:var(--text-muted);">Purchased:</span> {{ asset.purchase_date|date:"d M Y" }}</div>{% endif %}
+                            {% if asset.purchase_cost %}<div style="font-size:12px;"><span style="color:var(--text-muted);">Cost:</span> ${{ asset.purchase_cost }}</div>{% endif %}
+                        </div>
+                    </td></tr>
+                    {% endfor %}
+                </table>
+                <!-- Inline fields if no field_rows -->
+                {% if not field_rows %}{% endif %}
+                {% if asset.imei_list %}
+                <div style="margin-top:10px;">
+                    <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px;"><i class="fas fa-sim-card"></i> IMEI</div>
+                    {% for n in asset.imei_list %}<div class="mono" style="font-size:12px;">{{ n }}</div>{% endfor %}
+                </div>
+                {% endif %}
+                <div style="margin-top:10px;">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                        <div>
+                            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px;">Serial No.</div>
+                            <div class="mono" style="font-size:12px;">{{ asset.serial_number|default:"—" }}</div>
+                        </div>
+                        <div>
+                            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px;">Type</div>
+                            <div style="font-size:12px;">{{ asset.get_asset_type_display }}</div>
+                        </div>
+                        <div>
+                            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px;">Manufacturer</div>
+                            <div style="font-size:12px;">{{ asset.manufacturer|default:"—" }}</div>
+                        </div>
+                        <div>
+                            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px;">Model</div>
+                            <div style="font-size:12px;">{{ asset.model|default:"—" }}</div>
+                        </div>
+                        <div>
+                            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px;">Status</div>
+                            <div>
+                                {% if asset.status == 'ACTIVE' %}<span class="badge badge-resolved">Active</span>
+                                {% elif asset.status == 'REPAIR' %}<span class="badge badge-in_progress">Under Repair</span>
+                                {% elif asset.status == 'RETIRED' %}<span class="badge badge-closed">Retired</span>
+                                {% else %}<span class="badge badge-critical">Missing</span>{% endif %}
+                            </div>
+                        </div>
+                        <div>
+                            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px;">Purchase Date</div>
+                            <div style="font-size:12px;">{{ asset.purchase_date|date:"d M Y"|default:"—" }}</div>
+                        </div>
+                        <div>
+                            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px;">Purchase Cost</div>
+                            <div style="font-size:12px;">{% if asset.purchase_cost %}${{ asset.purchase_cost }}{% else %}—{% endif %}</div>
+                        </div>
+                        <div>
+                            <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px;">Warranty Expiry</div>
+                            <div style="font-size:12px;">
+                                {% if asset.warranty_expiry %}
+                                    {% if asset.is_warranty_expired %}
+                                    <span style="color:var(--danger-text);">
+                                        {{ asset.warranty_expiry|date:"d M Y" }} (Expired)
+                                    </span>
+                                    {% else %}
+                                    <span style="color:var(--success-text);">
+                                        {{ asset.warranty_expiry|date:"d M Y" }}
+                                    </span>
+                                    {% endif %}
+                                {% else %}—{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assignment & Location -->
+        <div>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <div class="header-icon" style="background:rgba(88,166,255,.15);color:var(--info-text);">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <h6>Assignment</h6>
+                </div>
+                <div class="card-body">
+                    <div style="font-size:13px;font-weight:500;margin-bottom:6px;">
+                        {% if asset.assigned_to_user %}
+                            {{ asset.assigned_to_user.get_full_name|default:asset.assigned_to_user.username }}
+                        {% elif asset.assigned_to_name %}
+                            {{ asset.assigned_to_name }}
+                        {% else %}
+                            <span class="text-muted">Unassigned</span>
+                        {% endif %}
+                    </div>
+                    {% if asset.department %}
+                    <div style="font-size:12px;color:var(--text-muted);">
+                        <i class="fas fa-building"></i> {{ asset.department }}
+                        {% if asset.section %} › {{ asset.section }}{% endif %}
+                    </div>
+                    {% endif %}
+                    {% if asset.location %}
+                    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
+                        <i class="fas fa-location-dot"></i> {{ asset.location }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% if asset.notes %}
+            <div class="card">
+                <div class="card-header">
+                    <div class="header-icon" style="background:rgba(110,118,129,.2);color:var(--text-secondary);">
+                        <i class="fas fa-note-sticky"></i>
+                    </div>
+                    <h6>Notes</h6>
+                </div>
+                <div class="card-body">
+                    <p style="font-size:13px;color:var(--text-secondary);white-space:pre-wrap;">{{ asset.notes }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

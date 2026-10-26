@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% block title %}{{ target.username }} — Activity{% endblock %}
+{% block page_title %}User Activity{% endblock %}
+{% block breadcrumb %}Users / {{ target.username }} / Activity{% endblock %}
+
+{% block content %}
+<div class="flex-between mb-6">
+    <div>
+        <h1 style="font-size:20px;">
+            <i class="fas fa-user-clock" style="color:var(--gold);margin-right:8px;"></i>
+            {{ target.get_full_name|default:target.username }} — Activity Audit
+        </h1>
+        <p class="text-muted" style="font-size:13px;">
+            {{ total }} action{{ total|pluralize }} recorded
+            {% if target == request.user %}&nbsp;·&nbsp;Your own activity{% endif %}
+        </p>
+    </div>
+    <div style="display:flex;gap:8px;">
+        {% if request.user.is_staff %}
+        <a href="{% url 'user_detail' target.pk %}" class="btn btn-secondary btn-sm">
+            <i class="fas fa-arrow-left"></i> Back to User
+        </a>
+        {% else %}
+        <a href="{% url 'profile' %}" class="btn btn-secondary btn-sm">
+            <i class="fas fa-arrow-left"></i> My Profile
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Summary Cards -->
+{% if action_summary %}
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;">
+    {% for item in action_summary %}
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;
+                padding:10px 16px;display:flex;align-items:center;gap:10px;">
+        <div style="font-size:18px;font-weight:700;color:var(--text-primary);">{{ item.count }}</div>
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;">
+            {{ item.action }}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body" style="padding:12px 16px;">
+        <form method="get" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+            <select name="action" class="form-select" style="min-width:140px;">
+                <option value="">All Actions</option>
+                {% for val, label in action_choices %}
+                <option value="{{ val }}" {% if filters.action == val %}selected{% endif %}>
+                    {{ label }}
+                </option>
+                {% endfor %}
+            </select>
+            <div style="flex:1;min-width:180px;">
+                <input type="text" name="search" class="form-control"
+                       placeholder="Search object, notes..."
+                       value="{{ filters.search }}">
+            </div>
+            <input type="date" name="date_from" class="form-control" style="width:140px;"
+                   value="{{ filters.date_from }}">
+            <input type="date" name="date_to" class="form-control" style="width:140px;"
+                   value="{{ filters.date_to }}">
+            <button type="submit" class="btn btn-primary btn-sm">
+                <i class="fas fa-search"></i> Filter
+            </button>
+            {% if filters.action or filters.search or filters.date_from or filters.date_to %}
+            <a href="{% url 'user_activity' target.pk %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-times"></i> Clear
+            </a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<!-- Activity Log Table -->
+<div class="card">
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Action</th>
+                    <th>Object Type</th>
+                    <th>Object</th>
+                    <th>IP Address</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td style="font-size:11px;color:var(--text-muted);white-space:nowrap;">
+                        {{ log.timestamp|date:"d M Y" }}<br>
+                        <span class="mono">{{ log.timestamp|date:"H:i:s" }}</span>
+                    </td>
+                    <td>
+                        {% if log.action == 'CREATE' %}
+                        <span class="badge badge-open"><i class="fas fa-plus"></i> Create</span>
+                        {% elif log.action == 'UPDATE' %}
+                        <span class="badge badge-in_progress"><i class="fas fa-pen"></i> Update</span>
+                        {% elif log.action == 'DELETE' %}
+                        <span class="badge badge-critical"><i class="fas fa-trash"></i> Delete</span>
+                        {% elif log.action == 'VIEW' %}
+                        <span class="badge" style="background:var(--bg-tertiary);color:var(--text-muted);">
+                            <i class="fas fa-eye"></i> View
+                        </span>
+                        {% elif log.action == 'LOGIN' %}
+                        <span class="badge badge-resolved"><i class="fas fa-sign-in-alt"></i> Login</span>
+                        {% elif log.action == 'LOGOUT' %}
+                        <span class="badge badge-closed"><i class="fas fa-sign-out-alt"></i> Logout</span>
+                        {% elif log.action == 'STATUS_CHANGE' %}
+                        <span class="badge badge-pending"><i class="fas fa-arrows-rotate"></i> Status</span>
+                        {% elif log.action == 'ASSIGN' %}
+                        <span class="badge" style="background:rgba(88,166,255,.15);color:var(--info-text);border:1px solid rgba(88,166,255,.3);">
+                            <i class="fas fa-user-check"></i> Assign
+                        </span>
+                        {% elif log.action == 'COMMENT' %}
+                        <span class="badge" style="background:rgba(26,107,48,.12);color:var(--accent-hover);border:1px solid rgba(26,107,48,.25);">
+                            <i class="fas fa-comment"></i> Comment
+                        </span>
+                        {% else %}
+                        <span class="badge" style="background:var(--bg-tertiary);color:var(--text-muted);">
+                            {{ log.action }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:12px;color:var(--text-muted);">
+                        {{ log.model_name|default:"—" }}
+                    </td>
+                    <td style="font-size:12px;max-width:200px;">
+                        {% if log.object_repr %}
+                        <span title="{{ log.object_repr }}" style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                            {% if log.model_name == 'Ticket' and log.object_id %}
+                            <a href="{% url 'ticket_detail' log.object_id %}"
+                               style="color:var(--accent-hover);font-size:11px;font-weight:600;" class="mono">
+                                {{ log.object_id }}
+                            </a>
+                            <span style="color:var(--text-secondary);font-size:11px;"> — {{ log.object_repr|truncatechars:35 }}</span>
+                            {% else %}
+                            <span style="font-size:11px;">{{ log.object_repr|truncatechars:50 }}</span>
+                            {% endif %}
+                        </span>
+                        {% else %}—{% endif %}
+                    </td>
+                    <td class="mono" style="font-size:11px;color:var(--text-muted);">
+                        {{ log.ip_address|default:"—" }}
+                    </td>
+                    <td style="font-size:11px;color:var(--text-muted);max-width:200px;">
+                        {% if log.changes %}
+                        <details>
+                            <summary style="cursor:pointer;color:var(--accent-hover);">View changes</summary>
+                            <pre style="font-size:10px;margin-top:4px;white-space:pre-wrap;color:var(--text-secondary);">{{ log.changes|truncatechars:200 }}</pre>
+                        </details>
+                        {% elif log.notes %}
+                        {{ log.notes|truncatechars:80 }}
+                        {% else %}—{% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align:center;padding:36px;color:var(--text-muted);">
+                        <i class="fas fa-clock-rotate-left" style="font-size:28px;display:block;margin-bottom:10px;opacity:.3;"></i>
+                        No activity found{% if filters.action or filters.search %} matching your filters{% endif %}.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if logs.has_other_pages %}
+    <div class="card-footer" style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;">
+        <span style="font-size:12px;color:var(--text-muted);">
+            Page {{ logs.number }} of {{ logs.paginator.num_pages }}
+            &nbsp;·&nbsp; {{ total }} total
+        </span>
+        <div style="display:flex;gap:6px;">
+            {% if logs.has_previous %}
+            <a href="?page={{ logs.previous_page_number }}&action={{ filters.action }}&search={{ filters.search }}&date_from={{ filters.date_from }}&date_to={{ filters.date_to }}"
+               class="btn btn-secondary btn-sm"><i class="fas fa-chevron-left"></i></a>
+            {% endif %}
+            {% if logs.has_next %}
+            <a href="?page={{ logs.next_page_number }}&action={{ filters.action }}&search={{ filters.search }}&date_from={{ filters.date_from }}&date_to={{ filters.date_to }}"
+               class="btn btn-secondary btn-sm"><i class="fas fa-chevron-right"></i></a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

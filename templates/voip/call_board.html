@@ -71,7 +71,7 @@
                 <a href="{% url 'call_detail' call.call_uuid %}" class="btn btn-secondary btn-sm" style="flex:1;justify-content:center;">
                     <i class="fas fa-eye"></i> View
                 </a>
-                <a href="/dashboard/tickets/create/?caller={{ call.caller_number }}&source=VOIP" class="btn btn-primary btn-sm" style="flex:1;justify-content:center;">
+                <a href="{% url 'portal_create' %}?caller={{ call.caller_number|urlencode }}&caller_name={{ call.caller_name|urlencode }}&source=VOIP&voip_call={{ call.pk }}" class="btn btn-primary btn-sm" style="flex:1;justify-content:center;">
                     <i class="fas fa-ticket"></i> Ticket
                 </a>
             </div>

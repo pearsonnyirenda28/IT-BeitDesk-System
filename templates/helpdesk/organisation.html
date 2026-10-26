@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block title %}Organisation{% endblock %}
+{% block page_title %}Organisation{% endblock %}
+{% block breadcrumb %}Admin / Organisation{% endblock %}
+
+{% block content %}
+<div class="flex-between mb-4" style="flex-wrap:wrap;gap:12px;">
+    <div>
+        <h1 style="font-size:20px;">Organisation</h1>
+        <div class="text-muted" style="font-size:12px;margin-top:2px;">
+            Record where each person works. IT staff then pick users per office when logging a ticket, and the demand reports group by these.
+            {% if missing %}<b style="color:#e3b341;">{{ missing }} of {{ total }} still have nothing set.</b>{% endif %}</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <input type="text" id="orgFilter" class="form-control" placeholder="Filter people…" style="width:200px;" autocomplete="off">
+        <a href="{% url 'organisation_export' %}" class="btn btn-secondary btn-sm"><i class="fas fa-file-arrow-down"></i> Download list</a>
+        <a href="{% url 'organisation_import' %}" class="btn btn-primary btn-sm"><i class="fas fa-file-arrow-up"></i> Import CSV / Excel</a>
+    </div>
+</div>
+
+{% if backfill and backfill.tickets %}
+<div class="card mb-4" style="border-color:rgba(201,162,39,.4);">
+    <div class="card-body" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+        <i class="fas fa-clock-rotate-left" style="font-size:22px;color:var(--gold);"></i>
+        <div style="flex:1;min-width:240px;font-size:13px;">
+            <b>{{ backfill.tickets }} older ticket{{ backfill.tickets|pluralize }}</b> from {{ backfill.users }} requester{{ backfill.users|pluralize }}
+            {{ backfill.tickets|pluralize:"has,have" }} no office / department / section recorded, but their profiles now do.
+            <div class="text-muted" style="font-size:12px;">Only blank values are filled — anything already on a ticket is never changed.</div>
+        </div>
+        <form method="post" action="{% url 'organisation_backfill' %}" onsubmit="return confirm('Fill in {{ backfill.tickets }} older ticket(s) from people\'s profiles?');">
+            {% csrf_token %}<button class="btn btn-secondary btn-sm" type="submit"><i class="fas fa-wand-magic-sparkles"></i> Fill in older tickets</button>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<form method="post" novalidate>
+    {% csrf_token %}
+    <div class="card"><div class="table-wrapper"><table id="orgTable">
+        <thead><tr><th>Person</th><th>Office</th><th>Department</th><th>Section</th></tr></thead>
+        <tbody>
+        {% for r in rows %}
+        <tr data-name="{{ r.name|lower }} {{ r.user.username|lower }}" class="{% if r.error %}has-error{% endif %}">
+            <td><b>{{ r.name }}</b> {% if r.user.is_superuser %}<span class="badge" style="font-size:9px;">Admin</span>{% elif r.user.is_staff %}<span class="badge" style="font-size:9px;">IT</span>{% endif %}
+                <div class="text-muted" style="font-size:11px;">{{ r.user.username }}</div>
+                {% if r.error %}<div class="field-error">{{ r.error }}</div>{% endif %}</td>
+            <td><input type="text" name="office_{{ r.user.pk }}" value="{{ r.v.office }}" list="dl-office" maxlength="100" class="form-control"></td>
+            <td><input type="text" name="department_{{ r.user.pk }}" value="{{ r.v.department }}" list="dl-dept" maxlength="100" class="form-control"></td>
+            <td><input type="text" name="section_{{ r.user.pk }}" value="{{ r.v.section }}" list="dl-section" maxlength="100" class="form-control"></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table></div></div>
+    <datalist id="dl-office">{% for o in org_choices.office %}<option value="{{ o }}">{% endfor %}</datalist>
+    <datalist id="dl-dept">{% for o in org_choices.department %}<option value="{{ o }}">{% endfor %}</datalist>
+    <datalist id="dl-section">{% for o in org_choices.section %}<option value="{{ o }}">{% endfor %}</datalist>
+    <div style="position:sticky;bottom:0;padding:14px 0;background:linear-gradient(transparent,var(--bg-primary) 40%);">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save changes</button>
+        <span class="text-muted" style="font-size:12px;margin-left:10px;">Use the same spelling each time — the drop-down suggests names already in use.</span>
+    </div>
+</form>
+<script>
+document.getElementById('orgFilter').addEventListener('input', function(){
+    var q = this.value.trim().toLowerCase();
+    document.querySelectorAll('#orgTable tbody tr').forEach(function(tr){
+        tr.style.display = (!q || tr.dataset.name.indexOf(q) !== -1) ? '' : 'none';
+    });
+});
+var bad = document.querySelector('tr.has-error input');
+if (bad){ bad.scrollIntoView({block:'center'}); bad.focus(); }
+</script>
+{% endblock %}

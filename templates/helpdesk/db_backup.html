@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+{% block title %}Database Backup{% endblock %}
+{% block page_title %}Database Backup{% endblock %}
+{% block breadcrumb %}System / DB Backup & Restore{% endblock %}
+
+{% block content %}
+<!-- Stats Row -->
+<div class="grid grid-4 mb-6">
+    <div class="stat-card">
+        <div class="flex-between mb-4">
+            <span class="stat-label">Total Backups</span>
+            <div class="stat-icon" style="background:rgba(26,107,48,.2);color:var(--accent-hover);">
+                <i class="fas fa-server"></i>
+            </div>
+        </div>
+        <div class="stat-value">{{ total }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="flex-between mb-4">
+            <span class="stat-label">Total Size</span>
+            <div class="stat-icon" style="background:rgba(88,166,255,.15);color:var(--info-text);">
+                <i class="fas fa-hard-drive"></i>
+            </div>
+        </div>
+        <div class="stat-value" style="font-size:20px;">
+            {% if total_size < 1048576 %}{{ total_size|filesizeformat }}
+            {% else %}{{ total_size|filesizeformat }}{% endif %}
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="flex-between mb-4">
+            <span class="stat-label">Last Backup</span>
+            <div class="stat-icon" style="background:rgba(201,162,39,.2);color:var(--gold);">
+                <i class="fas fa-clock"></i>
+            </div>
+        </div>
+        <div class="stat-value" style="font-size:16px;">
+            {% with latest=backups.first %}
+            {% if latest %}{{ latest.created_at|date:"d M H:i" }}{% else %}Never{% endif %}
+            {% endwith %}
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="flex-between mb-4">
+            <span class="stat-label">DB Engine</span>
+            <div class="stat-icon" style="background:rgba(110,64,201,.2);color:#9b72ea;">
+                <i class="fas fa-database"></i>
+            </div>
+        </div>
+        <div class="stat-value" style="font-size:14px;">SQLite / PgSQL</div>
+    </div>
+</div>
+
+<!-- Create Backup -->
+<div class="card mb-6">
+    <div class="card-header">
+        <div class="header-icon" style="background:rgba(26,107,48,.2);color:var(--accent-hover);">
+            <i class="fas fa-plus-circle"></i>
+        </div>
+        <h6>Create New Backup</h6>
+    </div>
+    <div class="card-body">
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">
+            Creates a full backup of the current database.
+            For <strong>SQLite</strong> (development): copies the .db file.
+            For <strong>PostgreSQL</strong> (production): uses <span class="mono">pg_dump</span>.
+            Backups are saved to the <span class="mono">backups/</span> folder inside the project directory.
+        </p>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="create">
+            <div class="form-group" style="max-width:400px;">
+                <label class="form-label">Note (optional)</label>
+                <input type="text" name="note" class="form-control"
+                       placeholder="e.g. Before major update, End of month backup">
+            </div>
+            <button type="submit" class="btn btn-primary"
+                    onclick="this.disabled=true;this.innerHTML='<i class=\'fas fa-spinner fa-spin\'></i> Creating backup...';this.form.submit();">
+                <i class="fas fa-database"></i> Create Backup Now
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Backup History -->
+<div class="card">
+    <div class="card-header">
+        <div class="header-icon" style="background:rgba(88,166,255,.15);color:var(--info-text);">
+            <i class="fas fa-clock-rotate-left"></i>
+        </div>
+        <h6>Backup History &amp; Audit Trail</h6>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>File</th>
+                    <th>Action</th>
+                    <th>Status</th>
+                    <th>Size</th>
+                    <th>Database</th>
+                    <th>Performed By</th>
+                    <th>Date &amp; Time</th>
+                    <th>Note</th>
+                    {% if request.user.is_superuser %}<th>Actions</th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for backup in backups %}
+                <tr>
+                    <td class="mono" style="font-size:11px;color:var(--text-muted);">
+                        {{ backup.filename }}
+                    </td>
+                    <td>
+                        {% if backup.action == 'CREATE' %}
+                        <span class="badge badge-open"><i class="fas fa-plus"></i> Created</span>
+                        {% elif backup.action == 'RESTORE' %}
+                        <span class="badge badge-in_progress"><i class="fas fa-rotate-left"></i> Restored</span>
+                        {% else %}
+                        <span class="badge badge-closed"><i class="fas fa-trash"></i> Deleted</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if backup.status == 'OK' %}
+                        <span style="color:var(--success-text);font-size:12px;">
+                            <i class="fas fa-circle-check"></i> OK
+                        </span>
+                        {% else %}
+                        <span style="color:var(--danger-text);font-size:12px;">
+                            <i class="fas fa-circle-exclamation"></i> Failed
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:12px;color:var(--text-muted);">
+                        {{ backup.file_size_display }}
+                    </td>
+                    <td class="mono" style="font-size:11px;color:var(--text-muted);">
+                        {{ backup.db_name|default:"—" }}
+                    </td>
+                    <td style="font-size:12px;">
+                        {{ backup.performed_by.username|default:"—" }}
+                    </td>
+                    <td style="font-size:12px;color:var(--text-muted);">
+                        {{ backup.created_at|date:"d M Y H:i" }}
+                    </td>
+                    <td style="font-size:11px;color:var(--text-muted);max-width:160px;">
+                        {{ backup.note|truncatechars:60|default:"—" }}
+                    </td>
+                    {% if request.user.is_superuser %}
+                    <td>
+                        <div style="display:flex;gap:6px;">
+                            {% if backup.action == 'CREATE' and backup.status == 'OK' %}
+                            <form method="post"
+                                  onsubmit="return confirm('Restore from {{ backup.filename }}?\nThis will OVERWRITE the current database. Back up current data first!')">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="restore">
+                                <input type="hidden" name="backup_id" value="{{ backup.pk }}">
+                                <button type="submit" class="btn btn-secondary btn-sm"
+                                        title="Restore this backup">
+                                    <i class="fas fa-rotate-left"></i>
+                                </button>
+                            </form>
+                            <form method="post"
+                                  onsubmit="return confirm('Delete backup file {{ backup.filename }}? This cannot be undone.')">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="backup_id" value="{{ backup.pk }}">
+                                <button type="submit" class="btn btn-danger btn-sm"
+                                        title="Delete this backup">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="{% if request.user.is_superuser %}9{% else %}8{% endif %}"
+                        style="text-align:center;padding:36px;color:var(--text-muted);">
+                        <i class="fas fa-server" style="font-size:28px;display:block;margin-bottom:10px;opacity:.3;"></i>
+                        No backups yet. Create your first backup above.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Warning -->
+<div style="margin-top:16px;padding:12px 16px;background:rgba(210,153,34,.08);
+            border:1px solid rgba(210,153,34,.25);border-radius:8px;font-size:12px;
+            color:var(--warning-text);display:flex;gap:10px;align-items:flex-start;">
+    <i class="fas fa-triangle-exclamation" style="flex-shrink:0;margin-top:1px;"></i>
+    <div>
+        <strong>Important:</strong> Backups are stored in the <span class="mono">backups/</span>
+        folder on the server. Copy them to an external location regularly.
+        Restore overwrites the current database — always create a backup before restoring.
+        Only administrators (superusers) can restore or delete backups.
+    </div>
+</div>
+{% endblock %}

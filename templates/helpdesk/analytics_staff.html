@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% load pager %}
+{% block title %}IT Staff Performance{% endblock %}
+{% block page_title %}IT Staff Performance{% endblock %}
+{% block breadcrumb %}Insights / Staff performance{% endblock %}
+
+{% block content %}
+<style>
+.bar{height:7px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;min-width:70px;}
+.bar>i{display:block;height:100%;background:var(--accent-hover);border-radius:4px;}
+.rate{font-weight:700;}
+.rate.g{color:var(--success-text);} .rate.a{color:#e3b341;} .rate.r{color:#f85149;}
+.hl{display:flex;gap:12px;align-items:center;}
+.hl .ico{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+th a{color:inherit;text-decoration:none;white-space:nowrap;} th a:hover{color:var(--accent-hover);}
+th .arrow{opacity:.8;font-size:10px;margin-left:3px;}
+</style>
+
+<div class="flex-between mb-4" style="flex-wrap:wrap;gap:12px;">
+    <div>
+        <h1 style="font-size:20px;">IT Staff Performance</h1>
+        <div class="text-muted" style="font-size:12px;margin-top:2px;">{{ period.label }} · tickets created in this period and assigned to each person</div>
+    </div>
+    <form method="get" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input type="hidden" name="sort" value="{{ sort }}"><input type="hidden" name="dir" value="{{ dir }}">
+        {% include 'helpdesk/_period_filter.html' %}
+        <a class="btn btn-secondary btn-sm" href="?{{ request.GET.urlencode }}{% if request.GET %}&{% endif %}export=csv"><i class="fas fa-file-csv"></i> CSV</a>
+    </form>
+</div>
+
+<div class="grid grid-4 mb-4">
+    {% with t=top %}
+    <div class="stat-card"><div class="hl"><div class="ico" style="background:rgba(35,134,54,.2);color:var(--success-text);"><i class="fas fa-trophy"></i></div>
+        <div><div class="stat-label">Most resolved</div>
+        {% if t.most_resolved %}<div style="font-weight:700;">{{ t.most_resolved.name }}</div><div class="text-muted" style="font-size:12px;">{{ t.most_resolved.resolved }} resolved</div>{% else %}<div class="text-muted">—</div>{% endif %}</div></div></div>
+    <div class="stat-card"><div class="hl"><div class="ico" style="background:rgba(88,166,255,.18);color:var(--info-text);"><i class="fas fa-bolt"></i></div>
+        <div><div class="stat-label">Fastest to resolve</div>
+        {% if t.fastest %}<div style="font-weight:700;">{{ t.fastest.name }}</div><div class="text-muted" style="font-size:12px;">avg {{ t.fastest.avg_label }}</div>{% else %}<div class="text-muted" style="font-size:12px;">needs 3+ resolved</div>{% endif %}</div></div></div>
+    <div class="stat-card"><div class="hl"><div class="ico" style="background:rgba(201,162,39,.2);color:var(--gold);"><i class="fas fa-stopwatch"></i></div>
+        <div><div class="stat-label">Best SLA record</div>
+        {% if t.best_sla %}<div style="font-weight:700;">{{ t.best_sla.name }}</div><div class="text-muted" style="font-size:12px;">{{ t.best_sla.sla_rate }}% within SLA</div>{% else %}<div class="text-muted" style="font-size:12px;">needs 5+ tickets</div>{% endif %}</div></div></div>
+    <div class="stat-card"><div class="hl"><div class="ico" style="background:rgba(240,136,62,.18);color:#f0883e;"><i class="fas fa-layer-group"></i></div>
+        <div><div class="stat-label">Busiest right now</div>
+        {% if t.busiest %}<div style="font-weight:700;">{{ t.busiest.name }}</div><div class="text-muted" style="font-size:12px;">{{ t.busiest.open_now }} open</div>{% else %}<div class="text-muted">—</div>{% endif %}</div></div></div>
+    {% endwith %}
+</div>
+
+<div class="card mb-4"><div class="card-body" style="display:flex;gap:28px;flex-wrap:wrap;font-size:13px;">
+    <div><span class="text-muted">Assigned</span> <b>{{ team.total }}</b></div>
+    <div><span class="text-muted">Resolved</span> <b>{{ team.resolved }}</b>{% if team.resolution_rate != None %} <span class="text-muted">({{ team.resolution_rate }}%)</span>{% endif %}</div>
+    <div><span class="text-muted">Within SLA</span> <b>{% if team.sla_rate != None %}{{ team.sla_rate }}%{% else %}—{% endif %}</b></div>
+    <div><span class="text-muted">Avg resolution</span> <b>{{ team.avg_label }}</b></div>
+    <div><span class="text-muted">Open now</span> <b>{{ team.open_now }}</b></div>
+    <div><span class="text-muted">Unassigned</span> <b>{{ team.unassigned }}</b> in period · <a href="{% url 'new_requests' %}?view=unassigned"><b>{{ team.unassigned_open }}</b> open now →</a></div>
+</div></div>
+
+<div class="card"><div class="table-wrapper"><table>
+    <thead><tr>
+        {% sort_url 'name' sort dir 'asc' as u_name %}{% sort_url 'total' sort dir as u_total %}{% sort_url 'resolved' sort dir as u_res %}
+        {% sort_url 'rate' sort dir as u_rate %}{% sort_url 'sla' sort dir as u_sla %}{% sort_url 'avg' sort dir 'asc' as u_avg %}
+        {% sort_url 'open' sort dir as u_open %}{% sort_url 'comments' sort dir as u_com %}
+        <th><a href="{{ u_name }}">Staff{% if sort == 'name' %}<span class="arrow">{% if dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a></th>
+        <th><a href="{{ u_total }}">Assigned{% if sort == 'total' %}<span class="arrow">{% if dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a></th>
+        <th><a href="{{ u_res }}">Resolved{% if sort == 'resolved' %}<span class="arrow">{% if dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a></th>
+        <th><a href="{{ u_rate }}">Resolution %{% if sort == 'rate' %}<span class="arrow">{% if dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a></th>
+        <th><a href="{{ u_sla }}">Within SLA{% if sort == 'sla' %}<span class="arrow">{% if dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a></th>
+        <th><a href="{{ u_avg }}">Avg resolution{% if sort == 'avg' %}<span class="arrow">{% if dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a></th>
+        <th><a href="{{ u_open }}">Open now{% if sort == 'open' %}<span class="arrow">{% if dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a></th>
+        <th>High / Crit</th>
+        <th><a href="{{ u_com }}">Comments{% if sort == 'comments' %}<span class="arrow">{% if dir == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a></th>
+        <th>Sign-offs</th>
+    </tr></thead>
+    <tbody>
+    {% for r in rows %}
+    <tr>
+        <td><b>{{ r.name }}</b>{% if r.is_admin %} <span class="badge" style="font-size:9px;">Admin</span>{% endif %}</td>
+        <td style="min-width:120px;"><div style="display:flex;gap:8px;align-items:center;"><span style="min-width:22px;">{{ r.total }}</span>
+            <div class="bar"><i style="width:{% widthratio r.total max_total 100 %}%;"></i></div></div></td>
+        <td>{{ r.resolved }}</td>
+        <td>{% if r.resolution_rate != None %}<span class="rate {% if r.resolution_rate >= 80 %}g{% elif r.resolution_rate >= 50 %}a{% else %}r{% endif %}">{{ r.resolution_rate }}%</span>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+        <td>{% if r.sla_rate != None %}<span class="rate {% if r.sla_rate >= 90 %}g{% elif r.sla_rate >= 70 %}a{% else %}r{% endif %}">{{ r.sla_rate }}%</span>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+        <td>{{ r.avg_label }}</td>
+        <td>{% if r.open_now %}<b>{{ r.open_now }}</b>{% else %}<span class="text-muted">0</span>{% endif %}</td>
+        <td>{{ r.urgent }}</td><td>{{ r.comments }}</td><td>{{ r.signoffs }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="10" class="text-muted" style="text-align:center;padding:30px;">No IT staff accounts found.</td></tr>
+    {% endfor %}
+    </tbody>
+</table></div></div>
+<p class="text-muted" style="font-size:11.5px;margin-top:12px;">
+    Resolution % = resolved or closed ÷ assigned. Within SLA = tickets not flagged as breached. Avg resolution is measured on resolved tickets only.
+    "Open now" is current workload regardless of the period. Comments and sign-offs are counted by when they were made.
+</p>
+{% endblock %}

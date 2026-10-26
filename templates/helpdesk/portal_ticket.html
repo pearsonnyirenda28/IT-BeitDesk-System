@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ ticket.ticket_id }} — BeitDesk Portal</title>
+    <link rel="stylesheet" href="/static/fontawesome/css/all.min.css">
+    <style>
+        :root{--bg:#0a0f1a;--card:#111827;--card2:#1a2235;--border:#1e2d45;
+              --accent:#16a34a;--accent-h:#22c55e;--gold:#f59e0b;
+              --text:#f1f5f9;--muted:#94a3b8;--dim:#64748b;
+              --danger:#ef4444;--success:#22c55e;--warning:#f59e0b;--info:#3b82f6;
+              color-scheme:dark;}
+        *{box-sizing:border-box;margin:0;padding:0;}
+        body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);}
+        .nav{background:rgba(17,24,39,.95);border-bottom:1px solid var(--border);
+             padding:0 24px;display:flex;align-items:center;height:60px;gap:12px;}
+        .nav img{width:32px;height:32px;border-radius:7px;}
+        .nav-title{flex:1;font-size:15px;font-weight:700;}
+        .nav-id{font-size:11px;font-family:monospace;color:var(--gold);font-weight:700;
+                background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2);
+                padding:3px 10px;border-radius:6px;}
+        .main{max-width:760px;margin:0 auto;padding:24px 20px;}
+        .card{background:var(--card);border:1px solid var(--border);
+              border-radius:12px;padding:20px;margin-bottom:14px;}
+        /* Status hero */
+        .status-hero{border-radius:12px;padding:24px;margin-bottom:14px;text-align:center;
+                     position:relative;overflow:hidden;}
+        .status-hero.open{background:linear-gradient(135deg,#0c1a3a,#0d2137);
+                          border:1px solid rgba(59,130,246,.3);}
+        .status-hero.inprog{background:linear-gradient(135deg,#1a1200,#201800);
+                            border:1px solid rgba(245,158,11,.3);}
+        .status-hero.resolved{background:linear-gradient(135deg,#0a1f10,#0d2916);
+                              border:1px solid rgba(34,197,94,.3);}
+        .status-hero.closed{background:linear-gradient(135deg,#0f1318,#141b22);
+                            border:1px solid var(--border);}
+        .status-icon{font-size:40px;margin-bottom:12px;display:block;}
+        .status-title{font-size:18px;font-weight:800;margin-bottom:6px;}
+        .status-sub{font-size:13px;color:var(--muted);}
+        /* Ticket meta */
+        .meta-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:14px;}
+        .meta-item{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:12px;}
+        .meta-label{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+        .meta-value{font-size:13px;font-weight:600;color:var(--text);}
+        /* Timeline */
+        .timeline{position:relative;padding-left:24px;}
+        .timeline::before{content:'';position:absolute;left:7px;top:0;bottom:0;
+                          width:2px;background:var(--border);}
+        .tl-item{position:relative;margin-bottom:16px;}
+        .tl-dot{position:absolute;left:-24px;top:3px;width:14px;height:14px;
+                border-radius:50%;border:2px solid var(--border);background:var(--bg);}
+        .tl-dot.staff{border-color:var(--accent-h);background:rgba(34,197,94,.2);}
+        .tl-dot.user{border-color:var(--info);background:rgba(59,130,246,.2);}
+        .tl-dot.system{border-color:var(--dim);background:var(--bg);}
+        .tl-time{font-size:11px;color:var(--dim);margin-bottom:4px;}
+        .tl-bubble{background:var(--card2);border:1px solid var(--border);
+                   border-radius:10px;padding:12px 14px;}
+        .tl-bubble.staff{border-color:rgba(34,197,94,.2);background:rgba(34,197,94,.05);}
+        .tl-bubble.user{border-color:rgba(59,130,246,.2);background:rgba(59,130,246,.05);}
+        .tl-author{font-size:11px;font-weight:700;margin-bottom:5px;}
+        .tl-author.staff{color:var(--accent-h);}
+        .tl-author.user{color:#60a5fa;}
+        .tl-author.system{color:var(--dim);}
+        .tl-body{font-size:13px;line-height:1.6;white-space:pre-wrap;color:var(--text);}
+        /* Comment form */
+        label{display:block;font-size:12px;font-weight:600;color:var(--muted);
+              text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;}
+        textarea{width:100%;padding:10px 13px;background:var(--card2);
+                 border:2px solid var(--border);border-radius:8px;color:var(--text);
+                 font-size:14px;font-family:inherit;color-scheme:dark;
+                 resize:vertical;min-height:90px;line-height:1.6;}
+        textarea:focus{outline:none;border-color:var(--accent);
+                       box-shadow:0 0 0 3px rgba(22,163,74,.15);}
+        textarea::placeholder{color:var(--dim);font-size:13px;}
+        .btn{padding:10px 20px;border-radius:8px;border:none;font-size:13px;font-weight:600;
+             cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+             text-decoration:none;transition:all .15s;}
+        .btn-primary{background:var(--accent);color:#fff;}
+        .btn-primary:hover{background:var(--accent-h);}
+        .btn-secondary{background:rgba(255,255,255,.07);color:var(--text);
+                       border:1px solid var(--border);}
+        .btn-sm{padding:6px 14px;font-size:12px;}
+        .badge{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;
+               display:inline-flex;align-items:center;gap:4px;}
+        .b-open{background:rgba(59,130,246,.2);color:#60a5fa;border:1px solid rgba(59,130,246,.3);}
+        .b-inprog{background:rgba(245,158,11,.15);color:#fbbf24;border:1px solid rgba(245,158,11,.3);}
+        .b-resolved{background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.3);}
+        .b-closed{background:rgba(100,116,139,.15);color:#94a3b8;border:1px solid rgba(100,116,139,.3);}
+        .alert-success{padding:12px 16px;border-radius:8px;margin-bottom:14px;font-size:13px;
+                       display:flex;gap:8px;background:rgba(34,197,94,.1);
+                       border:1px solid rgba(34,197,94,.3);color:#4ade80;}
+        .journey{display:flex;align-items:flex-start;margin:4px 0 2px;}
+        .jstep{flex:1;text-align:center;position:relative;font-size:11.5px;color:var(--dim);}
+        .jstep::before{content:'';position:absolute;top:13px;left:-50%;width:100%;height:3px;background:rgba(255,255,255,.1);}
+        .jstep:first-child::before{display:none;}
+        .jstep .dot{width:28px;height:28px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;
+            background:#1a2235;border:2px solid rgba(255,255,255,.14);position:relative;z-index:1;font-size:11px;}
+        .jstep.done{color:var(--text);} .jstep.done::before{background:var(--accent-h);}
+        .jstep.done .dot{background:var(--accent-h);border-color:var(--accent-h);color:#052e12;}
+        .jstep.now{color:var(--gold);font-weight:700;} .jstep.now::before{background:var(--accent-h);}
+        .jstep.now .dot{border-color:var(--gold);color:var(--gold);}
+    </style>
+</head>
+<body>
+<nav class="nav">
+    <a href="{% url 'portal' %}" style="color:var(--muted);text-decoration:none;font-size:15px;">
+        <i class="fas fa-arrow-left"></i>
+    </a>
+    <img src="/static/img/beitbridge_logo.jpg" alt="">
+    <div class="nav-title">Request Detail</div>
+    <span class="nav-id">{{ ticket.ticket_id }}</span>
+</nav>
+
+<div class="main">
+    {% for msg in messages %}
+    <div class="alert-success"><i class="fas fa-circle-check"></i> {{ msg }}</div>
+    {% endfor %}
+
+    <!-- Status Hero -->
+    {% if ticket.status == 'RESOLVED' or ticket.status == 'CLOSED' %}
+    <div class="status-hero resolved">
+        <span class="status-icon">✅</span>
+        <div class="status-title" style="color:#4ade80;">Request Resolved</div>
+        <div class="status-sub">
+            {% if ticket.resolved_at %}Resolved {{ ticket.resolved_at|date:"d M Y H:i" }}{% endif %}
+            <br>If the issue persists, add a comment below.
+        </div>
+    </div>
+    {% elif ticket.status == 'IN_PROGRESS' %}
+    <div class="status-hero inprog">
+        <span class="status-icon">⚙️</span>
+        <div class="status-title" style="color:#fbbf24;">IT Team is Working on This</div>
+        <div class="status-sub">Your request is actively being handled. We'll update you here and by email.</div>
+    </div>
+    {% else %}
+    <div class="status-hero open">
+        <span class="status-icon">🕐</span>
+        <div class="status-title" style="color:#60a5fa;">Request Received — In Queue</div>
+        <div class="status-sub">
+            IT Help Desk hours: Monday–Friday 08:00–17:00.<br>
+            Your request will be picked up shortly.
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Ticket Summary -->
+    <div class="card">
+        <div class="journey" title="Where your request is">
+            {% for s in stages %}<div class="jstep {% if forloop.counter < stage or stage == 4 %}done{% elif forloop.counter == stage %}now{% endif %}"><div class="dot">{% if forloop.counter < stage or stage == 4 %}<i class="fas fa-check"></i>{% else %}{{ forloop.counter }}{% endif %}</div>{{ s }}</div>{% endfor %}
+        </div>
+        {% if ticket.assigned_to %}<div style="text-align:center;font-size:12px;color:var(--muted);margin-top:10px;">Being handled by {{ ticket.assigned_to.get_full_name|default:ticket.assigned_to.username }}</div>{% endif %}
+    </div>
+
+    <div class="card">
+        <div style="font-size:18px;font-weight:700;margin-bottom:14px;line-height:1.3;">
+            {{ ticket.title }}
+        </div>
+        <div class="meta-grid">
+            <div class="meta-item">
+                <div class="meta-label">Status</div>
+                <div class="meta-value">
+                    {% if ticket.status == 'OPEN' %}<span class="badge b-open"><i class="fas fa-clock"></i> Open</span>
+                    {% elif ticket.status == 'IN_PROGRESS' %}<span class="badge b-inprog"><i class="fas fa-spinner"></i> In Progress</span>
+                    {% elif ticket.status == 'RESOLVED' %}<span class="badge b-resolved"><i class="fas fa-check"></i> Resolved</span>
+                    {% else %}<span class="badge b-closed">Closed</span>{% endif %}
+                </div>
+            </div>
+            <div class="meta-item">
+                <div class="meta-label">Priority</div>
+                <div class="meta-value" style="{% if ticket.priority == 'HIGH' or ticket.priority == 'CRITICAL' %}color:#f87171;{% elif ticket.priority == 'MEDIUM' %}color:#fbbf24;{% else %}color:#4ade80;{% endif %}">
+                    {{ ticket.priority|capfirst }}
+                </div>
+            </div>
+            <div class="meta-item">
+                <div class="meta-label">Submitted</div>
+                <div class="meta-value" style="font-size:12px;">{{ ticket.created_at|date:"d M Y H:i" }}</div>
+            </div>
+            {% if ticket.assigned_to %}
+            <div class="meta-item">
+                <div class="meta-label">IT Assigned</div>
+                <div class="meta-value" style="font-size:12px;color:var(--accent-h);">
+                    <i class="fas fa-headset" style="margin-right:4px;"></i>
+                    {{ ticket.assigned_to.get_full_name|default:ticket.assigned_to.username }}
+                </div>
+            </div>
+            {% endif %}
+            {% if ticket.category %}
+            <div class="meta-item">
+                <div class="meta-label">Category</div>
+                <div class="meta-value" style="font-size:12px;">{{ ticket.category.name }}</div>
+            </div>
+            {% endif %}
+            {% if ticket.requester_section %}
+            <div class="meta-item">
+                <div class="meta-label">Your Location</div>
+                <div class="meta-value" style="font-size:12px;">{{ ticket.requester_section }}</div>
+            </div>
+            {% endif %}
+        </div>
+        {% if ticket.description %}
+        <div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;
+                    padding:14px;font-size:13px;line-height:1.7;white-space:pre-wrap;">
+            {{ ticket.description }}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Timeline / Comments -->
+    <div class="card">
+        <div style="font-size:14px;font-weight:700;margin-bottom:18px;
+                    display:flex;align-items:center;gap:8px;">
+            <i class="fas fa-comments" style="color:var(--accent-h);"></i>
+            Updates & Comments
+        </div>
+
+        <div class="timeline">
+            <!-- Submission event -->
+            <div class="tl-item">
+                <div class="tl-dot system"></div>
+                <div class="tl-time">{{ ticket.created_at|date:"d M Y H:i" }}</div>
+                <div class="tl-bubble">
+                    <div class="tl-author system">
+                        <i class="fas fa-circle-plus"></i> Request Submitted
+                    </div>
+                    <div class="tl-body" style="color:var(--muted);font-size:12px;">
+                        Your request [{{ ticket.ticket_id }}] was received by the IT Help Desk.
+                    </div>
+                </div>
+            </div>
+
+            {% for comment in comments %}
+            <div class="tl-item">
+                <div class="tl-dot {% if comment.author.is_staff %}staff{% else %}user{% endif %}"></div>
+                <div class="tl-time">{{ comment.created_at|date:"d M Y H:i" }}</div>
+                <div class="tl-bubble {% if comment.author.is_staff %}staff{% else %}user{% endif %}">
+                    <div class="tl-author {% if comment.author.is_staff %}staff{% else %}user{% endif %}">
+                        {% if comment.author.is_staff %}
+                        <i class="fas fa-headset"></i> IT Team — {{ comment.author.get_full_name|default:comment.author.username }}
+                        {% else %}
+                        <i class="fas fa-user"></i> You
+                        {% endif %}
+                    </div>
+                    <div class="tl-body">{{ comment.body }}</div>
+                </div>
+            </div>
+            {% endfor %}
+
+            {% if ticket.status == 'RESOLVED' or ticket.status == 'CLOSED' %}
+            <div class="tl-item">
+                <div class="tl-dot" style="border-color:#4ade80;background:rgba(34,197,94,.3);"></div>
+                <div class="tl-time">{% if ticket.resolved_at %}{{ ticket.resolved_at|date:"d M Y H:i" }}{% endif %}</div>
+                <div class="tl-bubble" style="border-color:rgba(34,197,94,.3);background:rgba(34,197,94,.05);">
+                    <div class="tl-author" style="color:#4ade80;">
+                        <i class="fas fa-circle-check"></i> Request Resolved
+                    </div>
+                    <div class="tl-body" style="color:var(--muted);font-size:12px;">
+                        This request has been marked as resolved. If the problem continues, add a comment below.
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Add Comment -->
+    {% if ticket.status != 'CLOSED' %}
+    <div class="card">
+        <div style="font-size:14px;font-weight:700;margin-bottom:14px;">
+            <i class="fas fa-reply" style="color:var(--accent-h);margin-right:6px;"></i>
+            Add a Comment
+        </div>
+        <form method="post">
+            {% csrf_token %}
+            <div style="margin-bottom:10px;">
+                <label>Your Message</label>
+                <textarea name="comment"
+                          placeholder="e.g. The issue is now happening on two computers...&#10;Provide any additional information that helps."></textarea>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="fas fa-paper-plane"></i> Send Comment
+                </button>
+                <span style="font-size:11px;color:var(--dim);">
+                    IT team will be notified
+                </span>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+
+    <div style="text-align:center;margin-top:8px;">
+        <a href="{% url 'portal' %}" class="btn btn-secondary btn-sm">
+            <i class="fas fa-arrow-left"></i> Back to My Requests
+        </a>
+    </div>
+</div>
+</body>
+</html>

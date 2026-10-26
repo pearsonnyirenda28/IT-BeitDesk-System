@@ -11,7 +11,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         from helpdesk.models import Ticket
-        from helpdesk.notifications import notify_sla_escalation
+        from helpdesk.notifications import notify_sla_breach as notify_sla_escalation
         dry_run = options['dry_run']
         warning_hrs = options['warning_hours']
         now = timezone.now()

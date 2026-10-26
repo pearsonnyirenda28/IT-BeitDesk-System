@@ -1,0 +1,27 @@
+{% load pager %}
+{# Usage: {% include 'helpdesk/_pagination.html' with page_obj=tickets param='page' noun='ticket' %} #}
+{% if page_obj.paginator.num_pages > 1 %}
+<div class="card-footer" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+    <span class="text-muted" style="font-size:12px;">
+        Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }} {{ noun|default:'item' }}{{ page_obj.paginator.count|pluralize }}
+    </span>
+    <div style="display:flex;gap:4px;align-items:center;">
+        {% if page_obj.has_previous %}
+        <a href="{% page_url param page_obj.previous_page_number %}" class="btn btn-secondary btn-sm" title="Previous"><i class="fas fa-chevron-left"></i></a>
+        {% endif %}
+        {% page_window page_obj as pages %}
+        {% for n in pages %}
+            {% if n is None %}
+                <span class="text-muted" style="padding:0 4px;">…</span>
+            {% elif n == page_obj.number %}
+                <span class="btn btn-primary btn-sm" style="cursor:default;">{{ n }}</span>
+            {% else %}
+                <a href="{% page_url param n %}" class="btn btn-secondary btn-sm">{{ n }}</a>
+            {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <a href="{% page_url param page_obj.next_page_number %}" class="btn btn-secondary btn-sm" title="Next"><i class="fas fa-chevron-right"></i></a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}

@@ -75,7 +75,7 @@
                         {% if call.ticket_created %}
                         <span class="badge badge-resolved" style="font-size:9px;"><i class="fas fa-check"></i> Yes</span>
                         {% else %}
-                        <a href="/dashboard/tickets/create/?caller={{ call.caller_number }}&source=VOIP&voip_call={{ call.pk }}"
+                        <a href="{% url 'portal_create' %}?caller={{ call.caller_number|urlencode }}&caller_name={{ call.caller_name|urlencode }}&source=VOIP&voip_call={{ call.pk }}"
                            class="btn btn-secondary btn-sm" style="font-size:10px;padding:3px 7px;">
                             <i class="fas fa-plus"></i> Create
                         </a>

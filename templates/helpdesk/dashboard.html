@@ -219,6 +219,7 @@
                 </tbody>
             </table>
         </div>
+        {% include 'helpdesk/_pagination.html' with page_obj=recent_tickets param='tpage' noun='ticket' %}
     </div>
 
     <!-- Active VoIP Calls -->

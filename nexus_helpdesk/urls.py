@@ -7,6 +7,7 @@ from django.shortcuts import render
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import FileResponse, HttpResponse, Http404
 import os
+from helpdesk import quicklinks
 
 
 @staff_member_required
@@ -49,9 +50,15 @@ urlpatterns = [
     path('admin/howto/', admin_howto, name='admin_howto'),
     path('admin/', admin.site.urls),
     path('', RedirectView.as_view(url='/dashboard/', permanent=False)),
+    # Favicon — browsers always request /favicon.ico at root
+    path('favicon.ico', RedirectView.as_view(
+        url='/static/img/favicon.ico', permanent=True), name='favicon'),
     # PWA routes — must be at root scope
     path('sw.js', service_worker, name='service_worker'),
     path('manifest.json', pwa_manifest, name='pwa_manifest'),
+    # Public quick-request links (no login — the page itself demands password / MFA)
+    path('r/<str:token>/', quicklinks.quick_request, name='quick_request'),
+    path('r/<str:token>/done/', quicklinks.quick_request_done, name='quick_request_done'),
     path('dashboard/', include('helpdesk.urls')),
     path('voip/', include('voip.urls')),
     path('accounts/', include('accounts.urls')),

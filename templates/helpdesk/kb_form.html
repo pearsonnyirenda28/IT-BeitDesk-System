@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_title %}Knowledge Base{% endblock %}
+{% block breadcrumb %}KB / {{ page_title }}{% endblock %}
+
+{% block content %}
+<div style="max-width:760px;">
+    <div class="flex-between mb-6">
+        <h1 style="font-size:20px;">{{ page_title }}</h1>
+        <a href="{% if article %}{% url 'kb_detail' article.pk %}{% else %}{% url 'kb_list' %}{% endif %}"
+           class="btn btn-secondary btn-sm">
+            <i class="fas fa-arrow-left"></i> Cancel
+        </a>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="header-icon" style="background:rgba(26,107,48,.2);color:var(--accent-hover);">
+                    <i class="fas fa-book-bookmark"></i>
+                </div>
+                <h6>Article Details</h6>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label class="form-label">Title *</label>
+                    <input type="text" name="title" class="form-control"
+                           value="{{ article.title|default:'' }}"
+                           placeholder="e.g. How to reset a user's password"
+                           required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">
+                        Summary
+                        <span style="font-size:10px;color:var(--text-muted);font-weight:400;">
+                            (one-line description shown in search results)
+                        </span>
+                    </label>
+                    <input type="text" name="summary" class="form-control"
+                           value="{{ article.summary|default:'' }}"
+                           placeholder="Brief description of what this article covers">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Content *</label>
+                    <textarea name="content" class="form-control" rows="16"
+                              placeholder="Write the full solution steps here...
+              
+Example:
+1. Open the Control Panel
+2. Navigate to User Accounts
+3. Click 'Change password for another user'
+..."
+                              required>{{ article.content|default:'' }}</textarea>
+                    <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
+                        <i class="fas fa-circle-info"></i>
+                        Plain text. Use numbered lists for step-by-step guides.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="header-icon" style="background:rgba(88,166,255,.15);color:var(--info-text);">
+                    <i class="fas fa-tags"></i>
+                </div>
+                <h6>Categorisation</h6>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-2 gap-3">
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        <select name="category" class="form-select">
+                            <option value="">No Category</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat.id }}"
+                                {% if article.category_id == cat.id %}selected{% endif %}>
+                                {{ cat.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            Tags
+                            <span style="font-size:10px;color:var(--text-muted);font-weight:400;">
+                                (comma-separated)
+                            </span>
+                        </label>
+                        <input type="text" name="tags" class="form-control"
+                               value="{{ article.tags|default:'' }}"
+                               placeholder="e.g. password, reset, user, active-directory">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                        <input type="checkbox" name="is_published"
+                               {% if article.is_published or not article %}checked{% endif %}
+                               style="accent-color:var(--accent);width:16px;height:16px;">
+                        <span style="font-size:13px;">Published (visible to all users)</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div style="display:flex;gap:10px;">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i>
+                {% if article %}Update Article{% else %}Publish Article{% endif %}
+            </button>
+            <a href="{% if article %}{% url 'kb_detail' article.pk %}{% else %}{% url 'kb_list' %}{% endif %}"
+               class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

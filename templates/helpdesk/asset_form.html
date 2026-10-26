@@ -1,0 +1,226 @@
+{% extends 'base.html' %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_title %}Asset Registry{% endblock %}
+{% block breadcrumb %}Assets / {{ page_title }}{% endblock %}
+
+{% block content %}
+<div style="max-width:760px;">
+    <div class="flex-between mb-6">
+        <h1 style="font-size:20px;">{{ page_title }}</h1>
+        <a href="{% if asset %}{% url 'asset_detail' asset.pk %}{% else %}{% url 'asset_list' %}{% endif %}"
+           class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Cancel</a>
+    </div>
+    <form method="post">
+        {% csrf_token %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="header-icon" style="background:rgba(201,162,39,.2);color:var(--gold);">
+                    <i class="fas fa-computer"></i>
+                </div>
+                <h6>Asset Identification</h6>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-2 gap-3">
+                    <div class="form-group {% if errors.asset_tag %}has-error{% endif %}" id="grp-asset_tag">
+                        <label class="form-label">Asset Tag *
+                            <span style="font-size:10px;font-weight:400;color:var(--text-muted);">e.g. BM-PC-001</span>
+                        </label>
+                        <input type="text" name="asset_tag" class="form-control mono"
+                               value="{{ v.asset_tag }}"
+                               placeholder="BM-PC-001" required
+                               {% if asset %}readonly style="opacity:.7;"{% endif %}>
+                        {% if errors.asset_tag %}<div class="field-error" data-focus><i class="fas fa-circle-exclamation"></i> {{ errors.asset_tag }}</div>{% endif %}
+                    </div>
+                    <div class="form-group {% if errors.name %}has-error{% endif %}" id="grp-name">
+                        <label class="form-label">Asset Name *</label>
+                        <input type="text" name="name" class="form-control"
+                               value="{{ v.name }}"
+                               placeholder="e.g. Dell OptiPlex 7090" required>
+                        {% if errors.name %}<div class="field-error" data-focus><i class="fas fa-circle-exclamation"></i> {{ errors.name }}</div>{% endif %}
+                    </div>
+                    <div class="form-group {% if errors.asset_type %}has-error{% endif %}" id="grp-asset_type">
+                        <label class="form-label">Type</label>
+                        <select name="asset_type" class="form-select">
+                            {% for val, label in type_choices %}
+                            <option value="{{ val }}"
+                                {% if v.asset_type == val %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% if errors.asset_type %}<div class="field-error" data-focus><i class="fas fa-circle-exclamation"></i> {{ errors.asset_type }}</div>{% endif %}
+                    </div>
+                    <div class="form-group {% if errors.status %}has-error{% endif %}" id="grp-status">
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-select">
+                            {% for val, label in status_choices %}
+                            <option value="{{ val }}"
+                                {% if v.status == val %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% if errors.status %}<div class="field-error" data-focus><i class="fas fa-circle-exclamation"></i> {{ errors.status }}</div>{% endif %}
+                    </div>
+                    <div class="form-group {% if errors.serial_number %}has-error{% endif %}" id="grp-serial_number">
+                        <label class="form-label">Serial Number</label>
+                        <input type="text" name="serial_number" class="form-control mono"
+                               value="{{ v.serial_number }}" placeholder="SN-XXXX" id="serialInput" autocomplete="off">
+                        {% if errors.serial_number %}<div class="field-error" data-focus><i class="fas fa-circle-exclamation"></i> {{ errors.serial_number }}</div>{% endif %}
+                    </div>
+                    <div class="form-group {% if errors.manufacturer %}has-error{% endif %}" id="grp-manufacturer">
+                        <label class="form-label">Manufacturer</label>
+                        <input type="text" name="manufacturer" class="form-control"
+                               value="{{ v.manufacturer }}" placeholder="e.g. Dell, HP, Lenovo">
+                        {% if errors.manufacturer %}<div class="field-error" data-focus><i class="fas fa-circle-exclamation"></i> {{ errors.manufacturer }}</div>{% endif %}
+                    </div>
+                    <div class="form-group {% if errors.model %}has-error{% endif %}" id="grp-model">
+                        <label class="form-label">Model</label>
+                        <input type="text" name="model" class="form-control"
+                               value="{{ v.model }}" placeholder="e.g. OptiPlex 7090">
+                        {% if errors.model %}<div class="field-error" data-focus><i class="fas fa-circle-exclamation"></i> {{ errors.model }}</div>{% endif %}
+                    </div>
+                    <div class="form-group {% if errors.location %}has-error{% endif %}" id="grp-location">
+                        <label class="form-label">Location</label>
+                        <input type="text" name="location" class="form-control"
+                               value="{{ v.location }}" placeholder="e.g. Finance Office, Room 3">
+                        {% if errors.location %}<div class="field-error" data-focus><i class="fas fa-circle-exclamation"></i> {{ errors.location }}</div>{% endif %}
+                    </div>
+                <div style="margin-top:16px;">
+                    <label class="form-label"><i class="fas fa-sim-card"></i> IMEI numbers
+                        <span class="text-muted" style="font-weight:400;">— phones &amp; tablets, up to three. Enter them exactly as recorded (a “/01” suffix is fine).</span></label>
+                    <div class="grid grid-3 gap-3">
+                        <div class="form-group {% if errors.imei %}has-error{% endif %}" id="grp-imei" style="margin:0;">
+                            <input type="text" name="imei" class="form-control mono" value="{{ v.imei }}" placeholder="IMEI 1" maxlength="40" autocomplete="off" inputmode="numeric">
+                            {% if errors.imei %}<div class="field-error" data-focus><i class="fas fa-circle-exclamation"></i> {{ errors.imei }}</div>{% endif %}
+                        </div>
+                        <div class="form-group {% if errors.imei2 %}has-error{% endif %}" id="grp-imei2" style="margin:0;">
+                            <input type="text" name="imei2" class="form-control mono" value="{{ v.imei2 }}" placeholder="IMEI 2" maxlength="40" autocomplete="off" inputmode="numeric">
+                            {% if errors.imei2 %}<div class="field-error" data-focus><i class="fas fa-circle-exclamation"></i> {{ errors.imei2 }}</div>{% endif %}
+                        </div>
+                        <div class="form-group {% if errors.imei3 %}has-error{% endif %}" id="grp-imei3" style="margin:0;">
+                            <input type="text" name="imei3" class="form-control mono" value="{{ v.imei3 }}" placeholder="IMEI 3" maxlength="40" autocomplete="off" inputmode="numeric">
+                            {% if errors.imei3 %}<div class="field-error" data-focus><i class="fas fa-circle-exclamation"></i> {{ errors.imei3 }}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="header-icon" style="background:rgba(88,166,255,.15);color:var(--info-text);">
+                    <i class="fas fa-user"></i>
+                </div>
+                <h6>Assignment &amp; Department</h6>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-2 gap-3">
+                    <div class="form-group {% if errors.assigned_to_name %}has-error{% endif %}" id="grp-assigned_to_name">
+                        <label class="form-label">Assigned To (Name)</label>
+                        <input type="text" name="assigned_to_name" class="form-control"
+                               value="{{ v.assigned_to_name }}"
+                               placeholder="Full name of assigned user">
+                        {% if errors.assigned_to_name %}<div class="field-error" data-focus><i class="fas fa-circle-exclamation"></i> {{ errors.assigned_to_name }}</div>{% endif %}
+                    </div>
+                    <div class="form-group {% if errors.department %}has-error{% endif %}" id="grp-department">
+                        <label class="form-label">Department</label>
+                        <input type="text" name="department" class="form-control"
+                               value="{{ v.department }}"
+                               placeholder="e.g. Revenue Department">
+                        {% if errors.department %}<div class="field-error" data-focus><i class="fas fa-circle-exclamation"></i> {{ errors.department }}</div>{% endif %}
+                    </div>
+                    <div class="form-group {% if errors.section %}has-error{% endif %}" id="grp-section">
+                        <label class="form-label">Section</label>
+                        <input type="text" name="section" class="form-control"
+                               value="{{ v.section }}"
+                               placeholder="e.g. Accounts Payable">
+                        {% if errors.section %}<div class="field-error" data-focus><i class="fas fa-circle-exclamation"></i> {{ errors.section }}</div>{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="header-icon" style="background:rgba(35,134,54,.2);color:var(--success-text);">
+                    <i class="fas fa-receipt"></i>
+                </div>
+                <h6>Purchase &amp; Warranty</h6>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-3 gap-3">
+                    <div class="form-group {% if errors.purchase_date %}has-error{% endif %}" id="grp-purchase_date">
+                        <label class="form-label">Purchase Date</label>
+                        <input type="date" name="purchase_date" class="form-control"
+                               value="{{ v.purchase_date }}">
+                        {% if errors.purchase_date %}<div class="field-error" data-focus><i class="fas fa-circle-exclamation"></i> {{ errors.purchase_date }}</div>{% endif %}
+                    </div>
+                    <div class="form-group {% if errors.purchase_cost %}has-error{% endif %}" id="grp-purchase_cost">
+                        <label class="form-label">Purchase Cost (USD)</label>
+                        <input type="number" name="purchase_cost" class="form-control"
+                               step="0.01" min="0"
+                               value="{{ v.purchase_cost }}" placeholder="0.00">
+                        {% if errors.purchase_cost %}<div class="field-error" data-focus><i class="fas fa-circle-exclamation"></i> {{ errors.purchase_cost }}</div>{% endif %}
+                    </div>
+                    <div class="form-group {% if errors.warranty_expiry %}has-error{% endif %}" id="grp-warranty_expiry">
+                        <label class="form-label">Warranty Expiry</label>
+                        <input type="date" name="warranty_expiry" class="form-control"
+                               value="{{ v.warranty_expiry }}">
+                        {% if errors.warranty_expiry %}<div class="field-error" data-focus><i class="fas fa-circle-exclamation"></i> {{ errors.warranty_expiry }}</div>{% endif %}
+                    </div>
+                </div>
+                <div class="form-group {% if errors.notes %}has-error{% endif %}" id="grp-notes">
+                    <label class="form-label">Notes</label>
+                    <textarea name="notes" class="form-control" rows="3"
+                              placeholder="Any additional notes about this asset...">{{ v.notes }}</textarea>
+                    {% if errors.notes %}<div class="field-error" data-focus><i class="fas fa-circle-exclamation"></i> {{ errors.notes }}</div>{% endif %}
+                    </div>
+            </div>
+        </div>
+
+        <div style="display:flex;gap:10px;">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i>
+                {% if asset %}Update Asset{% else %}Register Asset{% endif %}
+            </button>
+            <a href="{% if asset %}{% url 'asset_detail' asset.pk %}{% else %}{% url 'asset_list' %}{% endif %}"
+               class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+    var serial=document.getElementById('serialInput'); if(!serial) return;
+    var grp=document.getElementById('grp-serial_number');
+    var notice=document.createElement('div');
+    notice.className='field-error'; notice.style.display='none'; grp.appendChild(notice);
+    var excludePk='{{ asset.pk|default:"" }}';
+    var timer=null;
+    function check(){
+        var val=serial.value.trim();
+        if(!val){notice.style.display='none';return;}
+        fetch('{% url "api_check_serial" %}?serial='+encodeURIComponent(val)+'&exclude='+excludePk,
+              {credentials:'same-origin'})
+          .then(function(r){return r.json();})
+          .then(function(d){
+              if(d.duplicate){
+                  notice.innerHTML='<i class="fas fa-triangle-exclamation"></i> Already registered to '
+                      +d.asset_tag.replace(/</g,'&lt;')+' ('+d.name.replace(/</g,'&lt;')+'). It will be rejected on save.';
+                  notice.style.display='flex'; grp.classList.add('has-error');
+              } else {notice.style.display='none'; if(!grp.querySelector('[data-focus]')) grp.classList.remove('has-error');}
+          }).catch(function(){});
+    }
+    serial.addEventListener('input',function(){clearTimeout(timer);timer=setTimeout(check,400);});
+    serial.addEventListener('blur',check);
+
+    // After a rejected submit, put the cursor in the first field that needs attention
+    var first=document.querySelector('.has-error input,.has-error select,.has-error textarea');
+    if(first){first.scrollIntoView({block:'center'});first.focus();}
+})();
+</script>
+{% endblock %}

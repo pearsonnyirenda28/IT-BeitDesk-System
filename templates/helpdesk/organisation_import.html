@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% block title %}Import organisation{% endblock %}
+{% block page_title %}Import organisation{% endblock %}
+{% block breadcrumb %}Admin / Organisation / Import{% endblock %}
+
+{% block content %}
+<style>
+.diff-old{color:var(--text-muted);text-decoration:line-through;} .diff-new{color:var(--success-text);font-weight:600;}
+.pill{font-size:12px;padding:3px 12px;border-radius:12px;background:rgba(255,255,255,.08);}
+.pill.g{background:rgba(35,134,54,.2);color:var(--success-text);} .pill.y{background:rgba(227,179,65,.18);color:#e3b341;}
+.pill.r{background:rgba(248,81,73,.18);color:#f85149;}
+code.hdr{display:block;background:var(--bg-tertiary);padding:10px 14px;border-radius:6px;font-size:12.5px;margin:8px 0;}
+</style>
+<div style="max-width:880px;">
+<div class="flex-between mb-4"><h1 style="font-size:20px;">Import offices, departments and sections</h1>
+    <a href="{% url 'organisation' %}" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Back</a></div>
+
+{% if not preview %}
+<div class="card mb-4"><div class="card-body">
+    {% if error %}<div class="form-alert"><i class="fas fa-circle-exclamation"></i> {{ error }}</div>{% endif %}
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-group {% if error %}has-error{% endif %}">
+            <label class="form-label">CSV or Excel file *</label>
+            <input type="file" name="file" class="form-control" accept=".csv,.xlsx,.xlsm,text/csv" required>
+        </div>
+        <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer;font-size:13px;margin-bottom:16px;">
+            <input type="checkbox" name="clear_blanks" {% if clear %}checked{% endif %} style="accent-color:var(--accent);margin-top:3px;">
+            <span>Blank cells should <b>clear</b> the existing value
+                <span class="text-muted" style="display:block;font-size:12px;">Off by default: a blank cell leaves that person's current value alone.</span></span>
+        </label>
+        <button class="btn btn-primary" type="submit"><i class="fas fa-magnifying-glass"></i> Check the file</button>
+        <span class="text-muted" style="font-size:12px;margin-left:10px;">Nothing is changed until you confirm on the next screen.</span>
+    </form>
+</div></div>
+<div class="card"><div class="card-body" style="font-size:13px;line-height:1.7;">
+    <b>How to prepare the file</b>
+    <ol style="margin:8px 0 0 18px;">
+        <li>Click <a href="{% url 'organisation_export' %}">Download list</a> — it has everyone's username, name and current details.</li>
+        <li>Fill in the <b>office</b>, <b>department</b> and <b>section</b> columns in Excel.</li>
+        <li>Save as CSV (or keep it as .xlsx) and upload it here.</li>
+    </ol>
+    <code class="hdr">username, office, department, section</code>
+    People are matched by <b>username</b>. Columns can be in any order and you can leave out ones you don't need.
+    Limit: {{ max_rows }} rows, {{ max_mb }} MB.
+</div></div>
+
+{% else %}
+<div class="card mb-4"><div class="card-body">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:6px;">
+        <span class="text-muted" style="font-size:12px;"><i class="fas fa-file"></i> {{ file_name }}</span>
+        <span class="pill g">{{ plan.updates|length }} to update</span>
+        <span class="pill">{{ plan.unchanged }} already correct</span>
+        {% if plan.unknown %}<span class="pill y">{{ plan.unknown|length }} username{{ plan.unknown|length|pluralize }} not found</span>{% endif %}
+        {% if plan.inactive %}<span class="pill y">{{ plan.inactive|length }} inactive</span>{% endif %}
+        {% if plan.errors %}<span class="pill r">{{ plan.errors|length }} problem{{ plan.errors|length|pluralize }}</span>{% endif %}
+    </div>
+    <div class="text-muted" style="font-size:12px;">Columns found: {{ columns|join:", " }}. {% if clear %}Blank cells will <b>clear</b> existing values.{% else %}Blank cells are ignored.{% endif %}</div>
+</div></div>
+
+{% if plan.errors %}<div class="form-alert">{% for e in plan.errors %}<div>{{ e }}</div>{% endfor %}<div style="margin-top:6px;">Those rows will be skipped.</div></div>{% endif %}
+{% if warnings or plan.duplicates %}<div class="text-muted" style="font-size:12px;margin-bottom:12px;">
+    {% for w in warnings|slice:":5" %}<div>⚠ {{ w }}</div>{% endfor %}{% if warnings|length > 5 %}<div>…and {{ warnings|length|add:"-5" }} more.</div>{% endif %}
+    {% if plan.duplicates %}<div>⚠ {{ plan.duplicates }} username{{ plan.duplicates|pluralize }} appeared more than once — the last row for each was used.</div>{% endif %}</div>{% endif %}
+{% if plan.unknown %}<div class="card mb-4" style="border-color:rgba(227,179,65,.4);"><div class="card-body" style="font-size:12.5px;">
+    <b>Not found in BeitDesk (skipped):</b> {{ plan.unknown|slice:":40"|join:", " }}{% if plan.unknown|length > 40 %} …and {{ plan.unknown|length|add:"-40" }} more{% endif %}.
+    Check the spelling, or create these users first.</div></div>{% endif %}
+{% if plan.inactive %}<div class="text-muted" style="font-size:12px;margin-bottom:12px;">Inactive accounts skipped: {{ plan.inactive|slice:":20"|join:", " }}.</div>{% endif %}
+
+{% if shown %}
+<div class="card mb-4"><div class="table-wrapper"><table>
+    <thead><tr><th>Person</th>{% for c in columns %}<th>{{ c|title }}</th>{% endfor %}</tr></thead>
+    <tbody>
+    {% for u in shown %}
+    <tr><td><b>{{ u.name }}</b><div class="text-muted" style="font-size:11px;">{{ u.user.username }}</div></td>
+        {% for c in columns %}<td>{% for f, pair in u.changes.items %}{% if f == c %}{% if pair.0 %}<span class="diff-old">{{ pair.0 }}</span><br>{% endif %}<span class="diff-new">{{ pair.1|default:"(cleared)" }}</span>{% endif %}{% endfor %}</td>{% endfor %}
+    </tr>
+    {% endfor %}
+    </tbody>
+</table></div>
+{% if more %}<div class="card-footer text-muted" style="font-size:12px;">…and {{ more }} more not shown here (all will be applied).</div>{% endif %}
+</div>
+
+<form method="post">
+    {% csrf_token %}<input type="hidden" name="payload" value="{{ payload }}">
+    {% if backfill and backfill.tickets %}
+    <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer;font-size:13px;margin-bottom:14px;">
+        <input type="checkbox" name="also_backfill" checked style="accent-color:var(--accent);margin-top:3px;">
+        <span>Also fill in older tickets that have no office recorded
+            <span class="text-muted" style="display:block;font-size:12px;">About {{ backfill.tickets }} ticket{{ backfill.tickets|pluralize }} would be filled in using the details above. Only blank values; nothing already recorded is overwritten.</span></span>
+    </label>
+    {% endif %}
+    <button class="btn btn-primary" type="submit"><i class="fas fa-check"></i> Apply {{ plan.updates|length }} change{{ plan.updates|length|pluralize }}</button>
+    <a href="{% url 'organisation_import' %}" class="btn btn-secondary">Cancel</a>
+</form>
+{% else %}
+<div class="card"><div class="card-body text-muted" style="text-align:center;padding:30px;">Nothing to change — everything in the file already matches.</div></div>
+<div style="margin-top:14px;"><a href="{% url 'organisation_import' %}" class="btn btn-secondary">Try another file</a></div>
+{% endif %}
+{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+{% block title %}Asset Registry{% endblock %}
+{% block page_title %}IT Asset Registry{% endblock %}
+{% block breadcrumb %}Assets — {{ total }} registered{% endblock %}
+
+{% block content %}
+<div class="flex-between mb-6">
+    <div>
+        <h1>IT Asset Registry</h1>
+        <p class="text-muted" style="font-size:13px;">{{ total }} asset{{ total|pluralize }} registered</p>
+    </div>
+    {% if request.user.is_staff %}
+    <div style="display:flex;gap:8px;">
+        <a href="{% url 'export_assets_csv' %}{% if filters.type %}?type={{ filters.type }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if filters.department %}&department={{ filters.department }}{% endif %}"
+           class="btn btn-secondary btn-sm">
+            <i class="fas fa-file-csv"></i> Export CSV
+        </a>
+        <a href="{% url 'asset_import' %}" class="btn btn-secondary btn-sm">
+            <i class="fas fa-file-arrow-up"></i> Import CSV / Excel
+        </a>
+        <a href="{% url 'asset_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Register Asset
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Filters -->
+<div class="card mb-6">
+    <div class="card-body" style="padding:14px 16px;">
+        <form method="get" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+            <div style="flex:1;min-width:180px;">
+                <input type="text" name="search" class="form-control"
+                       placeholder="Tag, name, serial, location, assignee..."
+                       value="{{ filters.search }}">
+            </div>
+            <select name="type" class="form-select" style="min-width:140px;">
+                <option value="">All Types</option>
+                {% for val, label in type_choices %}
+                <option value="{{ val }}" {% if filters.type == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <select name="status" class="form-select" style="min-width:130px;">
+                <option value="">All Statuses</option>
+                {% for val, label in status_choices %}
+                <option value="{{ val }}" {% if filters.status == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <input type="text" name="department" class="form-control" style="min-width:150px;"
+                   placeholder="Department..." value="{{ filters.department }}">
+            <button type="submit" class="btn btn-primary btn-sm">
+                <i class="fas fa-search"></i> Filter
+            </button>
+            {% if filters.search or filters.type or filters.status or filters.department %}
+            <a href="{% url 'asset_list' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-times"></i> Clear
+            </a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<!-- Asset Table -->
+<div class="card">
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Tag</th>
+                    <th>Name / Model</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Department</th>
+                    <th>Assigned To</th>
+                    <th>Location</th>
+                    <th>Warranty</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for asset in assets %}
+                <tr>
+                    <td>
+                        <a href="{% url 'asset_detail' asset.pk %}"
+                           class="mono" style="font-weight:600;color:var(--gold);">
+                            {{ asset.asset_tag }}
+                        </a>
+                    </td>
+                    <td>
+                        <div style="font-weight:500;font-size:13px;">{{ asset.name }}</div>
+                        {% if asset.manufacturer or asset.model %}
+                        <div style="font-size:11px;color:var(--text-muted);">
+                            {{ asset.manufacturer }} {{ asset.model }}
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span style="font-size:12px;">
+                            {% if asset.asset_type == 'DESKTOP' %}<i class="fas fa-desktop" style="color:var(--info-text);"></i>
+                            {% elif asset.asset_type == 'LAPTOP' %}<i class="fas fa-laptop" style="color:var(--info-text);"></i>
+                            {% elif asset.asset_type == 'PRINTER' %}<i class="fas fa-print" style="color:var(--warning-text);"></i>
+                            {% elif asset.asset_type == 'PHONE' %}<i class="fas fa-phone" style="color:var(--success-text);"></i>
+                {% elif asset.asset_type == 'TABLET' %}<i class="fas fa-tablet-screen-button" style="color:var(--success-text);"></i>
+                            {% elif asset.asset_type == 'SERVER' %}<i class="fas fa-server" style="color:var(--danger-text);"></i>
+                            {% elif asset.asset_type == 'NETWORK' %}<i class="fas fa-network-wired" style="color:var(--gold);"></i>
+                            {% else %}<i class="fas fa-microchip" style="color:var(--text-muted);"></i>{% endif %}
+                            {{ asset.get_asset_type_display }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if asset.status == 'ACTIVE' %}
+                        <span class="badge badge-resolved">Active</span>
+                        {% elif asset.status == 'REPAIR' %}
+                        <span class="badge badge-in_progress">Repair</span>
+                        {% elif asset.status == 'RETIRED' %}
+                        <span class="badge badge-closed">Retired</span>
+                        {% else %}
+                        <span class="badge badge-critical">Missing</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:12px;">
+                        {{ asset.department|default:"—" }}
+                        {% if asset.section %}<div style="font-size:10px;color:var(--text-muted);">{{ asset.section }}</div>{% endif %}
+                    </td>
+                    <td style="font-size:12px;">
+                        {% if asset.assigned_to_user %}{{ asset.assigned_to_user.get_full_name|default:asset.assigned_to_user.username }}
+                        {% elif asset.assigned_to_name %}{{ asset.assigned_to_name }}
+                        {% else %}<span class="text-muted">Unassigned</span>{% endif %}
+                    </td>
+                    <td style="font-size:12px;color:var(--text-muted);">{{ asset.location|default:"—" }}</td>
+                    <td>
+                        {% if asset.warranty_expiry %}
+                            {% if asset.is_warranty_expired %}
+                            <span class="badge badge-critical" style="font-size:10px;">Expired</span>
+                            {% else %}
+                            <span style="font-size:11px;color:var(--success-text);">
+                                {{ asset.warranty_expiry|date:"d M Y" }}
+                            </span>
+                            {% endif %}
+                        {% else %}
+                        <span class="text-muted" style="font-size:11px;">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'asset_detail' asset.pk %}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" style="text-align:center;padding:36px;color:var(--text-muted);">
+                        <i class="fas fa-computer" style="font-size:28px;display:block;margin-bottom:10px;opacity:.3;"></i>
+                        No assets found. <a href="{% url 'asset_create' %}">Register the first one</a> or <a href="{% url 'asset_import' %}">import an inventory file</a>.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if assets.has_other_pages %}
+    <div class="card-footer" style="display:flex;justify-content:center;gap:8px;padding:12px;">
+        {% if assets.has_previous %}
+        <a href="?page={{ assets.previous_page_number }}&{{ request.GET.urlencode }}" class="btn btn-secondary btn-sm"><i class="fas fa-chevron-left"></i></a>
+        {% endif %}
+        <span style="font-size:13px;color:var(--text-muted);padding:6px 12px;">
+            Page {{ assets.number }} of {{ assets.paginator.num_pages }}
+        </span>
+        {% if assets.has_next %}
+        <a href="?page={{ assets.next_page_number }}&{{ request.GET.urlencode }}" class="btn btn-secondary btn-sm"><i class="fas fa-chevron-right"></i></a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

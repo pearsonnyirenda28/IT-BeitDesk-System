@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load pager %}
 {% block title %}Tickets{% endblock %}
 {% block page_title %}Ticket Queue{% endblock %}
 {% block breadcrumb %}Help Desk / All Tickets{% endblock %}
@@ -51,14 +52,8 @@
         <p>{{ total_count }} ticket{{ total_count|pluralize }} found</p>
     </div>
     <div style="display:flex;gap:8px;">
-        {% if request.user.is_superuser %}
-        <a href="{% url 'print_tickets' %}{% if filters.status %}?status={{ filters.status }}{% endif %}{% if filters.priority %}&priority={{ filters.priority }}{% endif %}"
-           target="_blank" class="btn btn-secondary">
-            <i class="fas fa-print"></i> Print Tickets
-        </a>
-        {% endif %}
         {% if not is_past_year %}
-        <a href="{% url 'ticket_create' %}" class="btn btn-primary">
+        <a href="{% url 'portal_create' %}" class="btn btn-primary">
             <i class="fas fa-plus"></i> Create Ticket
         </a>
         {% else %}
@@ -116,15 +111,15 @@
                     <i class="fas fa-calendar-days"></i> Date:
                 </span>
                 <!-- Presets -->
-                <a href="?{% if filters.search %}search={{ filters.search }}&{% endif %}{% if filters.status %}status={{ filters.status }}&{% endif %}{% if filters.priority %}priority={{ filters.priority }}&{% endif %}date_preset=today"
+                <a href="{{ preset_urls.today }}"
                    class="btn btn-sm {% if filters.date_preset == 'today' %}btn-primary{% else %}btn-secondary{% endif %}">
                     Today
                 </a>
-                <a href="?{% if filters.search %}search={{ filters.search }}&{% endif %}{% if filters.status %}status={{ filters.status }}&{% endif %}{% if filters.priority %}priority={{ filters.priority }}&{% endif %}date_preset=week"
+                <a href="{{ preset_urls.week }}"
                    class="btn btn-sm {% if filters.date_preset == 'week' %}btn-primary{% else %}btn-secondary{% endif %}">
                     Last 7 Days
                 </a>
-                <a href="?{% if filters.search %}search={{ filters.search }}&{% endif %}{% if filters.status %}status={{ filters.status }}&{% endif %}{% if filters.priority %}priority={{ filters.priority }}&{% endif %}date_preset=month"
+                <a href="{{ preset_urls.month }}"
                    class="btn btn-sm {% if filters.date_preset == 'month' %}btn-primary{% else %}btn-secondary{% endif %}">
                     Last 30 Days
                 </a>
@@ -145,7 +140,39 @@
                     </a>
                 </div>
             </div>
+
+            {% if request.user.is_staff %}
+            <!-- Row: organisation -->
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;
+                        padding-top:10px;border-top:1px solid var(--border-subtle);">
+                <span style="font-size:11px;color:var(--text-muted);"><i class="fas fa-building"></i> Requester's:</span>
+                {% for key, label in org_fields %}
+                <select name="{{ key }}" class="form-select" style="width:auto;min-width:150px;" onchange="this.form.submit()">
+                    <option value="">All {{ label }}s</option>
+                    <option value="{{ none_token }}" {% if filters|get_item:key == none_token %}selected{% endif %}>(not set)</option>
+                    {% for val in org_lists|get_item:key %}
+                    <option value="{{ val }}" {% if filters|get_item:key|lower == val|lower %}selected{% endif %}>{{ val }}</option>
+                    {% endfor %}
+                </select>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% if filters.requester %}<input type="hidden" name="requester" value="{{ filters.requester }}">{% endif %}
+            {% if filters.since %}<input type="hidden" name="since" value="{{ filters.since }}">{% endif %}
+            {% if filters.until %}<input type="hidden" name="until" value="{{ filters.until }}">{% endif %}
         </form>
+
+        <!-- Filters applied from a report link (each can be removed) -->
+        {% if chips %}
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+            <span style="font-size:11px;color:var(--text-muted);">Filtered by:</span>
+            {% for c in chips %}
+            <a href="{{ c.remove }}" class="badge badge-open" style="text-decoration:none;" title="Remove this filter">
+                {{ c.label }} <i class="fas fa-xmark" style="margin-left:4px;"></i></a>
+            {% endfor %}
+            <span style="font-size:11px;color:var(--text-muted);">· {{ total_count }} ticket{{ total_count|pluralize }}</span>
+        </div>
+        {% endif %}
 
         <!-- Active date filter badges -->
         {% if filters.date_from or filters.date_to or filters.date_preset %}
@@ -168,6 +195,35 @@
             <span style="font-size:11px;color:var(--text-muted);">
                 — {{ total_count }} ticket{{ total_count|pluralize }}
             </span>
+        </div>
+        {% endif %}
+
+        <!-- Row 3: Tag filter -->
+        {% if all_tags %}
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border-subtle);
+                    display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+            <span style="font-size:11px;color:var(--text-muted);flex-shrink:0;">
+                <i class="fas fa-tags"></i> Filter by tag:
+            </span>
+            {% if filters.tag %}
+            <a href="{% url 'ticket_list' %}"
+               style="font-size:11px;padding:2px 10px;border-radius:10px;
+                      background:rgba(218,54,51,.15);color:var(--danger-text);
+                      border:1px solid rgba(218,54,51,.3);text-decoration:none;">
+                <i class="fas fa-times"></i> Clear tag
+            </a>
+            {% endif %}
+            {% for tag in all_tags %}
+            <a href="?tag={{ tag.name }}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if filters.priority %}&priority={{ filters.priority }}{% endif %}{% if filters.search %}&search={{ filters.search }}{% endif %}"
+               style="font-size:11px;padding:2px 10px;border-radius:10px;font-weight:600;
+                      text-decoration:none;
+                      background:{% if filters.tag == tag.name %}{{ tag.color }}33{% else %}{{ tag.color }}11{% endif %};
+                      color:{{ tag.color }};
+                      border:1px solid {% if filters.tag == tag.name %}{{ tag.color }}66{% else %}{{ tag.color }}33{% endif %};">
+                #{{ tag.name }}
+                {% if tag.tc %}<span style="opacity:.7;">({{ tag.tc }})</span>{% endif %}
+            </a>
+            {% endfor %}
         </div>
         {% endif %}
     </div>
@@ -217,10 +273,25 @@
                         <span class="badge badge-critical" style="margin-left:4px;font-size:9px;">OVERDUE</span>
                         {% endif %}
                     </td>
-                    <td style="max-width:250px;">
+                    <td style="max-width:260px;">
                         <a href="{% url 'ticket_detail' ticket.ticket_id %}" style="color:var(--text-primary);font-weight:500;">
                             {{ ticket.title|truncatechars:50 }}
                         </a>
+                        {% with ticket.tags.all as ttags %}
+                        {% if ttags %}
+                        <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px;">
+                            {% for tag in ttags %}
+                            <a href="?tag={{ tag.name }}"
+                               style="font-size:10px;padding:1px 7px;border-radius:8px;
+                                      font-weight:600;text-decoration:none;
+                                      background:{{ tag.color }}22;color:{{ tag.color }};
+                                      border:1px solid {{ tag.color }}44;">
+                                #{{ tag.name }}
+                            </a>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        {% endwith %}
                     </td>
                     <td>
                         {% if ticket.category %}
@@ -274,20 +345,6 @@
     </div>
 
     <!-- PAGINATION -->
-    {% if tickets.has_other_pages %}
-    <div class="card-footer" style="display:flex;justify-content:space-between;align-items:center;">
-        <span class="text-muted" style="font-size:12px;">
-            Page {{ tickets.number }} of {{ tickets.paginator.num_pages }}
-        </span>
-        <div style="display:flex;gap:4px;">
-            {% if tickets.has_previous %}
-            <a href="?page={{ tickets.previous_page_number }}&status={{ filters.status }}&priority={{ filters.priority }}&search={{ filters.search }}" class="btn btn-secondary btn-sm"><i class="fas fa-chevron-left"></i></a>
-            {% endif %}
-            {% if tickets.has_next %}
-            <a href="?page={{ tickets.next_page_number }}&status={{ filters.status }}&priority={{ filters.priority }}&search={{ filters.search }}" class="btn btn-secondary btn-sm"><i class="fas fa-chevron-right"></i></a>
-            {% endif %}
-        </div>
-    </div>
-    {% endif %}
+    {% include 'helpdesk/_pagination.html' with page_obj=tickets param='page' noun='ticket' %}
 </div>
 {% endblock %}

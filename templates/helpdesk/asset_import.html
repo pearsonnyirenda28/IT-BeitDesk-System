@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% block title %}Import assets{% endblock %}
+{% block page_title %}Import assets{% endblock %}
+{% block breadcrumb %}Assets / Import{% endblock %}
+
+{% block content %}
+<style>
+.pill{font-size:12px;padding:3px 12px;border-radius:12px;background:rgba(255,255,255,.08);}
+.pill.g{background:rgba(35,134,54,.2);color:var(--success-text);} .pill.y{background:rgba(227,179,65,.18);color:#e3b341;}
+.pill.r{background:rgba(248,81,73,.18);color:#f85149;}
+code.hdr{display:block;background:var(--bg-tertiary);padding:10px 14px;border-radius:6px;font-size:12.5px;margin:8px 0;overflow-x:auto;}
+.warnrow{font-size:11.5px;color:#e3b341;}
+</style>
+<div style="max-width:980px;">
+<div class="flex-between mb-4"><h1 style="font-size:20px;">Import assets from a spreadsheet</h1>
+    <a href="{% url 'asset_list' %}" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Back to registry</a></div>
+
+{% if not preview %}
+<div class="card mb-4"><div class="card-body">
+    {% if error %}<div class="form-alert"><i class="fas fa-circle-exclamation"></i> {{ error }}</div>{% endif %}
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-group {% if error %}has-error{% endif %}">
+            <label class="form-label">CSV or Excel file *</label>
+            <input type="file" name="file" class="form-control" accept=".csv,.xlsx,.xlsm,text/csv" required>
+        </div>
+        <div class="form-group" style="max-width:340px;">
+            <label class="form-label">Asset tag prefix for new items</label>
+            <input type="text" name="prefix" class="form-control" value="{{ prefix }}" maxlength="20">
+            <div class="text-muted" style="font-size:11.5px;margin-top:4px;">Items without a tag get <b>{{ prefix }}-001</b>, <b>{{ prefix }}-002</b> … continuing after any already in the registry.</div>
+        </div>
+        <button class="btn btn-primary" type="submit"><i class="fas fa-magnifying-glass"></i> Check the file</button>
+        <span class="text-muted" style="font-size:12px;margin-left:10px;">Nothing is added until you confirm on the next screen.</span>
+    </form>
+</div></div>
+<div class="card"><div class="card-body" style="font-size:13px;line-height:1.7;">
+    <b>What the file needs</b>
+    <p style="margin:6px 0;">A header row, then one row per device. The only required column is <b>Serial number</b> or <b>Device name</b>; these are also understood:</p>
+    <code class="hdr">Serial number · Device name · Type · Date · Owner · IMEI 1 · IMEI 2 · IMEI 3 · Asset tag · Manufacturer · Model · Department · Section · Location · Status · Purchase cost · Warranty expiry · Notes</code>
+    <ul style="margin:8px 0 0 18px;">
+        <li><b>Type</b> is matched to the registry's types (Laptop, Desktop, Printer, Phone, Tablet, Network, Server, Monitor, Other). "Mobile" becomes Phone, or Tablet for iPads and Galaxy Tabs.</li>
+        <li><b>Dates</b> are read day-first (15/03/2024 = 15 March). Excel dates work as they are.</li>
+        <li><b>Duplicates are never overwritten.</b> A serial number that is already registered (or repeated in the file) is skipped and listed in the preview. Placeholders like “N/A” may repeat.</li>
+        <li>Manufacturer is worked out from the device name when you don't give one. Up to three IMEI numbers go into their own columns exactly as written.</li>
+    </ul>
+    <p style="margin:10px 0 0;"><a href="{% url 'asset_import_template' %}"><i class="fas fa-file-arrow-down"></i> Download a template</a>
+        · Limit {{ max_rows }} rows, {{ max_mb }} MB. Excel files need <code>openpyxl</code> on the server; otherwise save as CSV.</p>
+</div></div>
+
+{% else %}
+<div class="card mb-4"><div class="card-body">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:6px;">
+        <span class="text-muted" style="font-size:12px;"><i class="fas fa-file"></i> {{ file_name }}</span>
+        <span class="pill g">{{ plan.new|length }} to add</span>
+        {% if plan.duplicates %}<span class="pill y">{{ plan.duplicates|length }} already registered / duplicate</span>{% endif %}
+        {% if plan.errors %}<span class="pill r">{{ plan.errors|length }} invalid</span>{% endif %}
+        {% if flagged_total %}<span class="pill y">{{ flagged_total }} need a look</span>{% endif %}
+    </div>
+    <div class="text-muted" style="font-size:12px;">
+        {% for t, n in plan.by_type.items %}{{ n }} × {{ t|title }}{% if not forloop.last %} · {% endif %}{% endfor %}
+        {% if first_tag %}· tags {{ first_tag }}{% if last_tag != first_tag %} … {{ last_tag }}{% endif %}{% endif %}
+    </div>
+</div></div>
+{% if plan.errors %}<div class="form-alert">{% for e in plan.errors %}<div>{{ e }}</div>{% endfor %}<div style="margin-top:6px;">Those rows will be skipped.</div></div>{% endif %}
+{% if notices %}<div class="text-muted" style="font-size:12px;margin-bottom:10px;">{% for w in notices|slice:":5" %}<div>⚠ {{ w }}</div>{% endfor %}</div>{% endif %}
+
+{% if duplicates_shown %}
+<div class="card mb-4" style="border-color:rgba(227,179,65,.4);"><div class="card-body" style="font-size:12.5px;">
+    <b>Skipped — nothing already in the registry is changed</b>
+    <table style="width:100%;margin-top:8px;font-size:12px;"><tbody>
+    {% for d in duplicates_shown %}<tr><td style="padding:3px 8px 3px 0;white-space:nowrap;">Row {{ d.row.line }}</td><td style="padding:3px 8px;"><b>{{ d.row.serial|default:d.row.name }}</b></td><td class="text-muted" style="padding:3px 0;">{{ d.reason }}</td></tr>{% endfor %}
+    </tbody></table>
+    {% if plan.duplicates|length > 50 %}<div class="text-muted" style="margin-top:6px;">…and {{ plan.duplicates|length|add:"-50" }} more.</div>{% endif %}
+</div></div>
+{% endif %}
+{% if flagged %}
+<div class="card mb-4"><div class="card-body" style="font-size:12.5px;">
+    <b>Worth a quick look</b> <span class="text-muted">(these will still be added)</span>
+    {% for r in flagged %}<div class="warnrow">Row {{ r.line }} · {{ r.serial|default:r.name }}: {{ r.warnings|join:"; " }}</div>{% endfor %}
+    {% if flagged_total > 15 %}<div class="text-muted" style="margin-top:4px;">…and {{ flagged_total|add:"-15" }} more.</div>{% endif %}
+</div></div>
+{% endif %}
+
+{% if shown %}
+<div class="card mb-4"><div class="table-wrapper"><table>
+    <thead><tr><th>Tag</th><th>Serial</th><th>Device</th><th>Type</th><th>IMEI</th><th>Maker</th><th>Owner</th><th>Date</th></tr></thead>
+    <tbody>
+    {% for r in shown %}
+    <tr><td style="white-space:nowrap;"><b>{{ r.tag }}</b></td><td style="font-family:monospace;font-size:12px;">{{ r.serial|default:"—" }}</td>
+        <td>{{ r.name }}</td><td>{{ r.type|title }}</td><td style="font-family:monospace;font-size:11.5px;">{{ r.imei|default:"—" }}{% if r.imei2 %}<br>{{ r.imei2 }}{% endif %}{% if r.imei3 %}<br>{{ r.imei3 }}{% endif %}</td><td>{{ r.manufacturer|default:"—" }}</td><td>{{ r.owner|default:"—" }}</td>
+        <td style="white-space:nowrap;">{{ r.date|default:"—" }}</td></tr>
+    {% endfor %}
+    </tbody>
+</table></div>
+{% if more %}<div class="card-footer text-muted" style="font-size:12px;">…and {{ more }} more not shown here (all will be added).</div>{% endif %}
+</div>
+<form method="post">
+    {% csrf_token %}<input type="hidden" name="payload" value="{{ payload }}">
+    <button class="btn btn-primary" type="submit"><i class="fas fa-check"></i> Add {{ plan.new|length }} asset{{ plan.new|length|pluralize }} to the registry</button>
+    <a href="{% url 'asset_import' %}" class="btn btn-secondary">Cancel</a>
+</form>
+{% else %}
+<div class="card"><div class="card-body text-muted" style="text-align:center;padding:30px;">Nothing new to add — everything in this file is already registered.</div></div>
+<div style="margin-top:14px;"><a href="{% url 'asset_import' %}" class="btn btn-secondary">Try another file</a></div>
+{% endif %}
+{% endif %}
+</div>
+{% endblock %}

@@ -146,30 +146,6 @@ def call_detail(request, call_uuid):
             messages.success(request, 'Notes updated.')
             return redirect('call_detail', call_uuid=call_uuid)
 
-        elif action == 'create_ticket':
-            ticket = Ticket.objects.create(
-                title=f'VoIP Call from {call.caller_number} - {call.caller_name or "Unknown"}',
-                description=(f'Ticket created from VoIP call.\n\n'
-                             f'Caller: {call.caller_number} ({call.caller_name})\n'
-                             f'Duration: {call.talk_duration_display}\n'
-                             f'Date: {call.initiated_at}\n\nNotes: {call.notes}'),
-                source=Ticket.SOURCE_VOIP,
-                requester_phone=call.caller_number,
-                requester_name=call.caller_name or call.caller_number,
-                requester=request.user,
-                voip_call=call,
-            )
-            call.ticket_created = True
-            call.save()
-            AuditLog.objects.create(
-                user=request.user, action=AuditLog.ACTION_CREATE, model_name='Ticket',
-                object_id=ticket.ticket_id, object_repr=str(ticket),
-                ip_address=get_client_ip(request),
-                notes=f'Created from VoIP call {call_uuid}',
-            )
-            messages.success(request, f'Ticket {ticket.ticket_id} created.')
-            return redirect('ticket_detail', ticket_id=ticket.ticket_id)
-
         elif action == 'end_call':
             if call.status in ['RINGING', 'ACTIVE', 'ON_HOLD']:
                 call.status = VoIPCall.STATUS_COMPLETED if call.answered_at else VoIPCall.STATUS_MISSED
@@ -242,7 +218,11 @@ def log_call(request):
         messages.success(request, f'Call from {caller_number} logged successfully.')
 
         if request.POST.get('create_ticket'):
-            return redirect(f'/dashboard/tickets/create/?caller={caller_number}&caller_name={caller_name}&source=VOIP&voip_call={call.pk}')
+            from urllib.parse import urlencode
+            from django.urls import reverse
+            qs = urlencode({'caller': caller_number, 'caller_name': caller_name,
+                            'source': 'VOIP', 'voip_call': call.pk})
+            return redirect(f"{reverse('portal_create')}?{qs}")
         return redirect('call_log')
 
     return render(request, 'voip/log_call.html', {

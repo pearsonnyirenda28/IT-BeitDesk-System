@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My quick links — BeitDesk</title>
+    <link rel="stylesheet" href="/static/fontawesome/css/all.min.css">
+    {% include 'helpdesk/_req_page_css.html' %}
+    <style>
+        .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+        .chip-btn{padding:5px 13px;border-radius:16px;border:1px solid var(--border);background:rgba(255,255,255,.05);
+            color:var(--muted);font-size:12px;cursor:pointer;font-family:inherit;}
+        .chip-btn:hover{border-color:var(--accent);color:var(--text);}
+        .urlbox{display:flex;gap:8px;}
+        .urlbox input{font-family:ui-monospace,monospace;font-size:12.5px;}
+        table{width:100%;border-collapse:collapse;font-size:13px;}
+        th{text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.4px;padding:8px 10px;border-bottom:1px solid var(--border);}
+        td{padding:11px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+        tr:last-child td{border-bottom:none;}
+        .st{font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;}
+        .st.active{background:rgba(34,197,94,.16);color:#4ade80;} .st.expired{background:rgba(148,163,184,.16);color:#94a3b8;}
+        .st.revoked{background:rgba(239,68,68,.16);color:#f87171;}
+        .fresh{border-color:rgba(34,197,94,.55);box-shadow:0 0 0 1px rgba(34,197,94,.25),0 10px 40px rgba(0,0,0,.4);}
+        .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:6px;}
+        @media(max-width:620px){.steps{grid-template-columns:1fr;} .urlbox{flex-direction:column;}}
+        .step{font-size:12.5px;color:var(--muted);line-height:1.5;} .step b{color:var(--text);display:block;margin-bottom:2px;}
+        .btn-sm{padding:6px 12px;font-size:12px;} .btn-danger{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.35);}
+    </style>
+</head>
+<body>
+<nav class="nav">
+    <a href="{% if is_staff %}{% url 'dashboard' %}{% else %}{% url 'portal' %}{% endif %}" class="back-link"><i class="fas fa-arrow-left"></i></a>
+    <img src="/static/img/beitbridge_logo.jpg" alt="">
+    <h1>My quick links</h1>
+</nav>
+<div class="main">
+    <div class="hero">
+        <h2>Raise requests without signing in</h2>
+        <p>Make a personal link, choose how long it works, and open it from any device.</p>
+    </div>
+
+    {% for msg in messages %}<div class="{% if 'not' in msg|lower %}alert-error{% else %}alert-ok{% endif %}"><i class="fas fa-circle-info"></i> {{ msg }}</div>{% endfor %}
+
+    {% if fresh %}
+    <div class="card fresh">
+        <div class="card-title"><i class="fas fa-circle-check" style="color:var(--success);"></i> Your new link{% if fresh.link %} — “{{ fresh.link.label }}”{% endif %}</div>
+        <div class="urlbox">
+            <input type="text" id="freshUrl" value="{{ fresh.url }}" readonly onclick="this.select()">
+            <button type="button" class="btn btn-secondary" onclick="copyLink()" id="copyBtn"><i class="fas fa-copy"></i> Copy</button>
+        </div>
+        <div class="hint" style="color:#fbbf24;margin-top:10px;"><i class="fas fa-triangle-exclamation"></i>
+            Copy it now — for your security the full link is shown only once. If you lose it, revoke it and make a new one.</div>
+        {% if fresh.qr %}<div style="margin-top:14px;display:flex;gap:14px;align-items:center;">
+            <img src="{{ fresh.qr }}" alt="QR code for the link" style="width:120px;height:120px;border-radius:8px;background:#fff;padding:6px;">
+            <div class="hint">Scan with a phone to open it there.{% if fresh.link %}<br>Expires {{ fresh.link.expires_at|date:"j M Y, H:i" }}.{% endif %}</div></div>{% endif %}
+    </div>
+    {% endif %}
+
+    <div class="card">
+        <div class="card-title"><i class="fas fa-circle-info" style="color:var(--info);"></i> How it works</div>
+        <div class="steps">
+            <div class="step"><b>1. Create a link</b>Name it and pick the date it should stop working.</div>
+            <div class="step"><b>2. Open it anywhere</b>You'll see the request form — no sign-in screen.</div>
+            <div class="step"><b>3. Confirm it's you</b>Enter your password{% if mfa_need == 'totp' %} and authenticator code{% endif %} each time you submit.</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title"><i class="fas fa-link" style="color:var(--accent-h);"></i> Create a new link</div>
+        {% if mfa_need == 'blocked' %}
+        <div class="alert-error"><i class="fas fa-triangle-exclamation"></i> Your account uses face recognition only, which can't be checked from a link. Add an authenticator app in MFA settings to use quick links.</div>
+        {% endif %}
+        {% if errors.general %}<div class="alert-error"><i class="fas fa-circle-exclamation"></i> {{ errors.general }}</div>{% endif %}
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="form-grid">
+                <div class="form-group {% if errors.label %}has-error{% endif %}" style="margin:0;">
+                    <label>Name *</label>
+                    <input type="text" name="label" value="{{ v.label }}" maxlength="100" placeholder="e.g. My phone, Front desk PC">
+                    {% if errors.label %}<div class="ferr">{{ errors.label }}</div>{% endif %}
+                </div>
+                <div class="form-group {% if errors.expires_at %}has-error{% endif %}" style="margin:0;">
+                    <label>Expires on *</label>
+                    <input type="datetime-local" name="expires_at" id="expiresAt" value="{{ default_expiry }}" min="{{ minimum }}" max="{{ maximum }}">
+                    {% if errors.expires_at %}<div class="ferr">{{ errors.expires_at }}</div>{% endif %}
+                </div>
+            </div>
+            <div class="chips">
+                <span class="hint" style="align-self:center;margin:0;">Quick pick:</span>
+                <button type="button" class="chip-btn" data-days="1">1 day</button>
+                <button type="button" class="chip-btn" data-days="7">1 week</button>
+                <button type="button" class="chip-btn" data-days="30">30 days</button>
+                <button type="button" class="chip-btn" data-days="90">90 days</button>
+            </div>
+            <div class="hint" style="margin:10px 0 14px;">Up to {{ max_days }} days. You can revoke a link at any time, and you can have {{ max_active }} active at once.</div>
+            <button type="submit" class="btn btn-primary" {% if mfa_need == 'blocked' %}disabled style="opacity:.5;"{% endif %}><i class="fas fa-plus"></i> Create link</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="card-title"><i class="fas fa-list" style="color:var(--info);"></i> Your links</div>
+        {% if links %}
+        <div style="overflow-x:auto;"><table>
+            <thead><tr><th>Name</th><th>Status</th><th>Expires</th><th>Last used</th><th>Uses</th><th></th></tr></thead>
+            <tbody>
+            {% for l in links %}
+            <tr>
+                <td><b>{{ l.label }}</b><div class="mini-id">…{{ l.token_hint }}</div></td>
+                <td><span class="st {{ l.status }}">{{ l.status|title }}</span>{% if l.is_locked %}<div class="hint" style="margin:3px 0 0;">Locked until {{ l.locked_until|time:"H:i" }}</div>{% endif %}
+                    {% if l.revoked_note and l.status == 'revoked' %}<div class="hint" style="margin:3px 0 0;">{{ l.revoked_note }}</div>{% endif %}</td>
+                <td style="white-space:nowrap;">{{ l.expires_at|date:"j M Y, H:i" }}</td>
+                <td style="white-space:nowrap;">{% if l.last_used_at %}{{ l.last_used_at|date:"j M, H:i" }}{% else %}<span class="hint">never</span>{% endif %}</td>
+                <td>{{ l.use_count }}</td>
+                <td style="text-align:right;">{% if l.status == 'active' %}
+                    <form method="post" action="{% url 'quick_link_revoke' l.pk %}" onsubmit="return confirm('Switch off “{{ l.label|escapejs }}”? Anyone using it will be stopped.');">
+                        {% csrf_token %}<button class="btn btn-danger btn-sm" type="submit"><i class="fas fa-ban"></i> Revoke</button></form>{% endif %}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table></div>
+        {% else %}<p class="hint" style="margin:0;">You haven't made a link yet.</p>{% endif %}
+    </div>
+</div>
+<script>
+document.querySelectorAll('.chip-btn').forEach(function(b){
+    b.addEventListener('click', function(){
+        var d = new Date(Date.now() + (+b.dataset.days) * 86400000), p = function(n){ return (n < 10 ? '0' : '') + n; };
+        document.getElementById('expiresAt').value = d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());
+    });
+});
+function copyLink(){
+    var i = document.getElementById('freshUrl'), b = document.getElementById('copyBtn');
+    i.select();
+    (navigator.clipboard ? navigator.clipboard.writeText(i.value) : Promise.reject()).catch(function(){ document.execCommand('copy'); })
+        .then(function(){ b.innerHTML = '<i class="fas fa-check"></i> Copied'; });
+}
+var e = document.querySelector('.has-error input'); if (e){ e.scrollIntoView({block:'center'}); e.focus(); }
+</script>
+</body>
+</html>

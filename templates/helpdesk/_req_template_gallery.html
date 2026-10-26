@@ -1,0 +1,27 @@
+{# Template picker. Needs: templates (queryset/list). Pairs with _req_page_js.html #}
+<div class="card" id="tplCard">
+    <div class="tpl-head">
+        <div class="card-title"><i class="fas fa-bolt" style="color:var(--gold);"></i> Choose a template
+            <span style="font-size:11px;font-weight:400;color:var(--dim);">or start blank</span></div>
+        {% if templates|length > 6 %}
+        <input type="text" class="tpl-search" id="tplSearch" placeholder="Search templates…" autocomplete="off">
+        {% endif %}
+    </div>
+    <div class="tpl-grid" id="tplGrid">
+        <button type="button" class="tpl-card" data-id="" style="--c:#64748b;">
+            <span class="tpl-ico"><i class="fas fa-pen"></i></span>
+            <span class="tpl-name">Blank request</span>
+            <span class="tpl-desc">Describe your issue in your own words.</span>
+        </button>
+        {% for t in templates %}
+        <button type="button" class="tpl-card" data-id="{{ t.pk }}" data-search="{{ t.name|lower }} {{ t.description|lower }}"
+                style="--c:{{ t.color }};">
+            <span class="tpl-ico"><i class="{{ t.icon }}"></i></span>
+            <span class="tpl-name">{{ t.name }}</span>
+            {% if t.description %}<span class="tpl-desc">{{ t.description }}</span>{% endif %}
+        </button>
+        {% endfor %}
+    </div>
+    <div class="tpl-none" id="tplNone">No template matches your search.</div>
+    <div class="tpl-note" id="tplNote"><i class="fas fa-circle-check"></i> Template applied — adjust anything below before you submit.</div>
+</div>

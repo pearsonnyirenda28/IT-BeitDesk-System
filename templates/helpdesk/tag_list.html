@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% block title %}Tags{% endblock %}
+{% block page_title %}Tag Management{% endblock %}
+{% block breadcrumb %}Tickets / Tags{% endblock %}
+
+{% block content %}
+<div class="flex-between mb-6">
+    <div>
+        <h1>Tags</h1>
+        <p class="text-muted" style="font-size:13px;">
+            {{ total }} tag{{ total|pluralize }} — used to label and group tickets across categories
+        </p>
+    </div>
+</div>
+
+<!-- Create Tag -->
+<div class="card mb-6">
+    <div class="card-header">
+        <div class="header-icon" style="background:rgba(26,107,48,.2);color:var(--accent-hover);">
+            <i class="fas fa-plus"></i>
+        </div>
+        <h6>Create New Tag</h6>
+    </div>
+    <div class="card-body">
+        <form method="post" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="create">
+            <div class="form-group" style="flex:1;min-width:160px;margin-bottom:0;">
+                <label class="form-label">Tag Name</label>
+                <input type="text" name="name" class="form-control"
+                       placeholder="e.g. waiting-on-user (auto-lowercased, spaces → hyphens)"
+                       required>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Colour</label>
+                <input type="color" name="color" value="#1a6b30"
+                       style="width:48px;height:38px;border:2px solid var(--border);
+                              border-radius:var(--radius);background:var(--form-bg);
+                              cursor:pointer;padding:2px;">
+            </div>
+            <div class="form-group" style="flex:2;min-width:200px;margin-bottom:0;">
+                <label class="form-label">Description (when to use)</label>
+                <input type="text" name="description" class="form-control"
+                       placeholder="e.g. Waiting for user to respond or provide info">
+            </div>
+            <button type="submit" class="btn btn-primary" style="align-self:flex-end;">
+                <i class="fas fa-plus"></i> Create Tag
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Tag Grid -->
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">
+    {% for tag in tags %}
+    <div class="card" style="border-left:3px solid {{ tag.color }};">
+        <div class="card-body" style="padding:14px 16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
+                <a href="{% url 'tag_tickets' tag.name %}"
+                   style="font-size:15px;font-weight:700;text-decoration:none;color:{{ tag.color }};">
+                    #{{ tag.name }}
+                </a>
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <span style="font-size:11px;padding:2px 8px;border-radius:10px;
+                                 background:{{ tag.color }}22;color:{{ tag.color }};
+                                 border:1px solid {{ tag.color }}44;font-weight:600;">
+                        {{ tag.ticket_count }} ticket{{ tag.ticket_count|pluralize }}
+                    </span>
+                    {% if request.user.is_superuser %}
+                    <form method="post" style="display:inline;"
+                          onsubmit="return confirm('Delete tag #{{ tag.name }}? It will be removed from all tickets.')">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="tag_id" value="{{ tag.pk }}">
+                        <button type="submit" style="background:none;border:none;color:var(--danger-text);
+                                cursor:pointer;font-size:13px;padding:2px 4px;opacity:.6;"
+                                title="Delete tag">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% if tag.description %}
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;line-height:1.4;">
+                {{ tag.description }}
+            </p>
+            {% endif %}
+            <div style="font-size:10px;color:var(--text-muted);">
+                Used {{ tag.use_count }} time{{ tag.use_count|pluralize }} total
+                &nbsp;·&nbsp;
+                <a href="{% url 'tag_tickets' tag.name %}"
+                   style="color:var(--accent-hover);text-decoration:none;">
+                    View tickets →
+                </a>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="card" style="grid-column:1/-1;">
+        <div class="card-body" style="text-align:center;padding:40px;">
+            <i class="fas fa-tags" style="font-size:32px;display:block;margin-bottom:12px;opacity:.2;"></i>
+            No tags yet. Create the first one above.
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- How to use -->
+<div style="margin-top:24px;padding:16px 20px;background:rgba(26,107,48,.06);
+            border:1px solid rgba(26,107,48,.15);border-radius:10px;font-size:13px;
+            color:var(--text-secondary);line-height:1.7;">
+    <strong style="color:var(--accent-hover);"><i class="fas fa-lightbulb"></i> How to use tags:</strong>
+    Open any ticket → scroll to the Details sidebar → click <strong>+ Add Tag</strong> to label it.
+    Tags appear as coloured chips on the ticket row in the ticket list.
+    Click any tag chip to filter all tickets with that tag.
+    Use tags for cross-category patterns like <em>#waiting-on-user</em>, <em>#network-outage</em>, or <em>#vip</em>.
+</div>
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_title %}Recurring Tickets{% endblock %}
+{% block breadcrumb %}Recurring / {{ page_title }}{% endblock %}
+
+{% block content %}
+<div style="max-width:680px;">
+    <div class="flex-between mb-6">
+        <h1 style="font-size:20px;">{{ page_title }}</h1>
+        <a href="{% url 'recurring_list' %}" class="btn btn-secondary btn-sm">
+            <i class="fas fa-arrow-left"></i> Cancel
+        </a>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="header-icon" style="background:rgba(26,107,48,.2);color:var(--accent-hover);">
+                    <i class="fas fa-calendar-plus"></i>
+                </div>
+                <h6>Schedule Settings</h6>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label class="form-label">Schedule Name *</label>
+                    <input type="text" name="name" class="form-control"
+                           placeholder="e.g. Daily Server Check, Weekly IT Report"
+                           value="{{ schedule.name|default:'' }}" required>
+                </div>
+                <div class="grid grid-2 gap-3">
+                    <div class="form-group">
+                        <label class="form-label">Frequency *</label>
+                        <select name="frequency" class="form-select" id="freqSelect"
+                                onchange="toggleDayField()">
+                            {% for val,label in freq_choices %}
+                            <option value="{{ val }}" {% if schedule.frequency == val %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group" id="dayOfMonthRow" style="display:none;">
+                        <label class="form-label">Day of Month (1–28)</label>
+                        <input type="number" name="day_of_month" class="form-control"
+                               min="1" max="28"
+                               value="{{ schedule.day_of_month|default:'1' }}">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                        <input type="checkbox" name="is_active"
+                               {% if not schedule or schedule.is_active %}checked{% endif %}
+                               style="accent-color:var(--accent);">
+                        <span style="font-size:13px;">Active (will create tickets when due)</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="header-icon" style="background:rgba(88,166,255,.15);color:var(--info-text);">
+                    <i class="fas fa-ticket"></i>
+                </div>
+                <h6>Ticket Template</h6>
+            </div>
+            <div class="card-body">
+                <div style="background:rgba(201,162,39,.08);border:1px solid rgba(201,162,39,.2);
+                            border-radius:6px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--warning-text);">
+                    <i class="fas fa-lightbulb"></i> Use
+                    <code style="background:var(--bg-tertiary);padding:1px 5px;border-radius:3px;">{date}</code>,
+                    <code style="background:var(--bg-tertiary);padding:1px 5px;border-radius:3px;">{week}</code>,
+                    <code style="background:var(--bg-tertiary);padding:1px 5px;border-radius:3px;">{month}</code>
+                    as placeholders — they'll be replaced with actual values when the ticket is created.
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Ticket Title *</label>
+                    <input type="text" name="title_template" class="form-control"
+                           placeholder="e.g. Daily Server Check — {date}"
+                           value="{{ schedule.title_template|default:'' }}" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea name="description_template" class="form-control" rows="4"
+                              placeholder="Describe the recurring task. Use {date}, {week}, {month} as needed.">{{ schedule.description_template|default:'' }}</textarea>
+                </div>
+                <div class="grid grid-3 gap-3">
+                    <div class="form-group">
+                        <label class="form-label">Priority</label>
+                        <select name="priority" class="form-select">
+                            {% for val,label in priority_choices %}
+                            <option value="{{ val }}"
+                                {% if schedule.priority == val %}selected{% elif not schedule and val == 'medium' %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        <select name="category" class="form-select">
+                            <option value="">No Category</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat.pk }}"
+                                {% if schedule.category_id == cat.pk %}selected{% endif %}>
+                                {{ cat.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Auto-Assign To</label>
+                        <select name="assigned_to" class="form-select">
+                            <option value="">Unassigned</option>
+                            {% for u in staff_users %}
+                            <option value="{{ u.pk }}"
+                                {% if schedule.assigned_to_id == u.pk %}selected{% endif %}>
+                                {{ u.get_full_name|default:u.username }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="display:flex;gap:10px;">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Create Schedule
+            </button>
+            <a href="{% url 'recurring_list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<script>
+function toggleDayField() {
+    var freq = document.getElementById('freqSelect').value;
+    var row  = document.getElementById('dayOfMonthRow');
+    if (row) row.style.display = freq === 'MONTHLY' ? 'block' : 'none';
+}
+toggleDayField();
+</script>
+{% endblock %}

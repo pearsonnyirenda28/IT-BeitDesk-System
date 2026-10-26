@@ -112,11 +112,8 @@
                 <div class="header-icon" style="background:rgba(13,65,157,.2);color:var(--info-text);"><i class="fas fa-ticket"></i></div>
                 <h6>Linked Tickets ({{ linked_tickets.count }})</h6>
                 {% if not call.ticket_created %}
-                <form method="post" style="margin-left:auto;">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" value="create_ticket">
-                    <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Create Ticket</button>
-                </form>
+                <a href="{% url 'portal_create' %}?caller={{ call.caller_number|urlencode }}&caller_name={{ call.caller_name|urlencode }}&source=VOIP&voip_call={{ call.pk }}"
+                   class="btn btn-primary btn-sm" style="margin-left:auto;"><i class="fas fa-plus"></i> Create Ticket</a>
                 {% endif %}
             </div>
             <div class="card-body">

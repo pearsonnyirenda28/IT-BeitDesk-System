@@ -31,6 +31,29 @@ def clear_current_db_alias():
     _thread_locals.db_alias = 'default'
 
 
+def register_year_alias(year, db_name):
+    """
+    Make sure the database for `year` is registered in settings.DATABASES under the
+    alias ``year_<year>`` (cloned from the default config) and return that alias.
+    Shared by the request middleware and by management commands.
+    """
+    import copy
+    import os
+    from django.db.utils import DEFAULT_DB_ALIAS
+    alias = f'year_{year}'
+    if alias not in settings.DATABASES:
+        base = copy.deepcopy(settings.DATABASES[DEFAULT_DB_ALIAS])
+        base.update({
+            'NAME':     db_name,
+            'USER':     os.environ.get('DB_USER', base.get('USER', '')),
+            'PASSWORD': os.environ.get('DB_PASSWORD', base.get('PASSWORD', '')),
+            'HOST':     os.environ.get('DB_HOST', base.get('HOST', 'localhost')),
+            'PORT':     os.environ.get('DB_PORT', base.get('PORT', '5432')),
+        })
+        settings.DATABASES[alias] = base
+    return alias
+
+
 class YearDatabaseRouter:
     """
     Routes all read/write operations to the year-selected database when active.
@@ -44,7 +67,8 @@ class YearDatabaseRouter:
     DEFAULT_ONLY_APPS = {'auth', 'contenttypes', 'sessions', 'admin'}
 
     # Models within helpdesk that must always stay on default DB
-    DEFAULT_ONLY_MODELS = {'databaseyear', 'glossaryterm', 'auditlog', 'category', 'tag'}
+    DEFAULT_ONLY_MODELS = {'databaseyear', 'glossaryterm', 'auditlog', 'category', 'tag',
+                           'quickrequestlink'}
 
     def _use_default(self, model):
         if model._meta.app_label in self.DEFAULT_ONLY_APPS:
@@ -87,23 +111,7 @@ class YearDatabaseMiddleware:
         active_db_name = request.session.get('active_db_name')
 
         if active_year and active_db_name:
-            alias = f'year_{active_year}'
-
-            # Register the DB config if not already done
-            if alias not in settings.DATABASES:
-                import os
-                from django.db.utils import DEFAULT_DB_ALIAS
-                # Start with Django's full default config so all required keys are present
-                import copy
-                base = copy.deepcopy(settings.DATABASES[DEFAULT_DB_ALIAS])
-                base.update({
-                    'NAME':     active_db_name,
-                    'USER':     os.environ.get('DB_USER', base.get('USER', '')),
-                    'PASSWORD': os.environ.get('DB_PASSWORD', base.get('PASSWORD', '')),
-                    'HOST':     os.environ.get('DB_HOST', base.get('HOST', 'localhost')),
-                    'PORT':     os.environ.get('DB_PORT', base.get('PORT', '5432')),
-                })
-                settings.DATABASES[alias] = base
+            alias = register_year_alias(active_year, active_db_name)
 
             set_current_db_alias(alias)
         else:

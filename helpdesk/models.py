@@ -21,7 +21,14 @@ class Category(models.Model):
 
 
 class Tag(models.Model):
-    name = models.CharField(max_length=50, unique=True)
+    name        = models.CharField(max_length=50, unique=True)
+    color       = models.CharField(max_length=7, default='#1a6b30')
+    description = models.CharField(max_length=200, blank=True)
+    use_count   = models.PositiveIntegerField(default=0)
+    created_at  = models.DateTimeField(auto_now_add=True, null=True)
+
+    class Meta:
+        ordering = ['name']
 
     def __str__(self):
         return self.name
@@ -63,11 +70,14 @@ class Ticket(models.Model):
     SOURCE_VOIP = 'VOIP'
 
     SOURCE_CHOICES = [
-        (SOURCE_EMAIL, 'Email'),
-        (SOURCE_PHONE, 'Phone'),
+        (SOURCE_EMAIL,   'Email'),
+        (SOURCE_PHONE,   'Phone'),
         (SOURCE_WALK_IN, 'Walk-In'),
-        (SOURCE_WEB, 'Web Portal'),
-        (SOURCE_VOIP, 'VoIP Call'),
+        (SOURCE_WEB,     'Web Portal'),
+        (SOURCE_VOIP,    'VoIP Call'),
+        ('PORTAL',       'Requester Portal'),
+        ('LINK',         'Quick Link'),
+        ('RECURRING',    'Recurring Schedule'),
     ]
 
     ticket_id = models.CharField(max_length=20, unique=True, editable=False)
@@ -85,6 +95,14 @@ class Ticket(models.Model):
     requester_name = models.CharField(max_length=150, blank=True, help_text='If requester is not a system user')
     requester_email = models.EmailField(blank=True)
     requester_phone = models.CharField(max_length=30, blank=True)
+    # Who physically entered it (differs from `requester` for phone / walk-in / VoIP
+    # callers who are not system users — `requester` is then left empty so demand
+    # reports are not credited to the staff member who typed it in).
+    logged_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
+                                  related_name='tickets_logged')
+    # Organisation snapshot taken when the ticket is raised, so reports stay correct
+    # even if the person later moves office.
+    requester_office     = models.CharField(max_length=100, blank=True, db_index=True)
     requester_department = models.CharField(max_length=100, blank=True,
                                             help_text='e.g. Revenue Department, Finance')
     requester_section    = models.CharField(max_length=100, blank=True,
@@ -109,6 +127,15 @@ class Ticket(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status'], name='ticket_status_idx'),
+            models.Index(fields=['priority'], name='ticket_priority_idx'),
+            models.Index(fields=['assigned_to'], name='ticket_assigned_idx'),
+            models.Index(fields=['requester'], name='ticket_requester_idx'),
+            models.Index(fields=['created_at'], name='ticket_created_idx'),
+            models.Index(fields=['status','priority'], name='ticket_status_pri_idx'),
+            models.Index(fields=['source'], name='ticket_source_idx'),
+        ]
 
     def save(self, *args, **kwargs):
         if not self.ticket_id:
@@ -250,6 +277,10 @@ class KnowledgeBase(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['is_published'], name='kb_published_idx'),
+            models.Index(fields=['created_at'], name='kb_created_idx'),
+        ]
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -418,8 +449,358 @@ class PendingNotification(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="pending_notifications")
     payload = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
-    delivered = models.BooleanField(default=False)
+    delivered = models.BooleanField(default=False)   # pushed to the browser (✓✓ grey)
+    read_at   = models.DateTimeField(null=True, blank=True)   # actually seen by the person (✓✓ blue)
+    conversation = models.CharField(max_length=40, blank=True, db_index=True)  # ticket_id — groups like a chat thread
+
     class Meta:
         ordering = ["created_at"]
+
     def __str__(self):
         return f"Notification for {self.user.username}"
+
+    @property
+    def is_read(self):
+        return self.read_at is not None
+
+
+# ── Knowledge Base ────────────────────────────────────────────────────────────
+
+class KBArticle(models.Model):
+    title        = models.CharField(max_length=200)
+    slug         = models.SlugField(max_length=220, unique=True, blank=True)
+    summary      = models.CharField(max_length=300, blank=True)
+    content      = models.TextField()
+    category     = models.ForeignKey('Category', on_delete=models.SET_NULL,
+                                     null=True, blank=True, related_name='kb_articles')
+    tags         = models.CharField(max_length=200, blank=True,
+                                    help_text='Comma-separated tags')
+    views        = models.PositiveIntegerField(default=0)
+    helpful      = models.PositiveIntegerField(default=0)
+    not_helpful  = models.PositiveIntegerField(default=0)
+    author       = models.ForeignKey(User, on_delete=models.SET_NULL,
+                                     null=True, related_name='kb_articles')
+    is_published = models.BooleanField(default=True)
+    created_at   = models.DateTimeField(auto_now_add=True)
+    updated_at   = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-views', '-created_at']
+        verbose_name = 'KB Article'
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            from django.utils.text import slugify
+            self.slug = slugify(self.title)[:220]
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.title
+
+
+# ── IT Asset Registry ─────────────────────────────────────────────────────────
+
+class Asset(models.Model):
+    TYPE_CHOICES = [('DESKTOP','Desktop PC'),('LAPTOP','Laptop'),
+                    ('PRINTER','Printer'),('PHONE','Phone/VoIP'),
+                    ('TABLET','Tablet'),
+                    ('NETWORK','Network Equipment'),('SERVER','Server'),
+                    ('MONITOR','Monitor'),('OTHER','Other')]
+    STATUS_CHOICES = [('ACTIVE','Active'),('REPAIR','Under Repair'),
+                      ('RETIRED','Retired'),('MISSING','Missing')]
+
+    asset_tag        = models.CharField(max_length=30, unique=True)
+    name             = models.CharField(max_length=150)
+    asset_type       = models.CharField(max_length=20, choices=TYPE_CHOICES, default='DESKTOP')
+    status           = models.CharField(max_length=10, choices=STATUS_CHOICES, default='ACTIVE')
+    serial_number    = models.CharField(max_length=100, blank=True)
+    # Phones and tablets carry up to three IMEI numbers (dual-SIM / eSIM). Kept exactly as recorded,
+    # including any "/01" software-version suffix.
+    imei             = models.CharField('IMEI 1', max_length=40, blank=True, db_index=True)
+    imei2            = models.CharField('IMEI 2', max_length=40, blank=True)
+    imei3            = models.CharField('IMEI 3', max_length=40, blank=True)
+    manufacturer     = models.CharField(max_length=100, blank=True)
+    model            = models.CharField(max_length=100, blank=True)
+    department       = models.CharField(max_length=100, blank=True)
+    section          = models.CharField(max_length=100, blank=True)
+    location         = models.CharField(max_length=150, blank=True)
+    assigned_to_user = models.ForeignKey(User, on_delete=models.SET_NULL,
+                                          null=True, blank=True,
+                                          related_name='assigned_assets')
+    assigned_to_name = models.CharField(max_length=150, blank=True)
+    purchase_date    = models.DateField(null=True, blank=True)
+    purchase_cost    = models.DecimalField(max_digits=10, decimal_places=2,
+                                           null=True, blank=True)
+    warranty_expiry  = models.DateField(null=True, blank=True)
+    notes            = models.TextField(blank=True)
+    created_by       = models.ForeignKey(User, on_delete=models.SET_NULL,
+                                          null=True, related_name='created_assets')
+    created_at       = models.DateTimeField(auto_now_add=True)
+    updated_at       = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['asset_tag']
+        verbose_name = 'IT Asset'
+
+    def __str__(self):
+        return f'{self.asset_tag} — {self.name}'
+
+    @property
+    def imei_list(self):
+        """The IMEI numbers that have been recorded, in order."""
+        return [x for x in (self.imei, self.imei2, self.imei3) if x]
+
+    @property
+    def is_warranty_expired(self):
+        from django.utils import timezone
+        return bool(self.warranty_expiry and timezone.now().date() > self.warranty_expiry)
+
+
+# ── Ticket Templates ──────────────────────────────────────────────────────────
+
+class TicketTemplate(models.Model):
+    name                 = models.CharField(max_length=100)
+    description          = models.CharField(max_length=200, blank=True)
+    icon                 = models.CharField(max_length=60, default='fas fa-ticket')
+    color                = models.CharField(max_length=7, default='#2ea043',
+                                            help_text='Hex colour used for the template tile')
+    title_template       = models.CharField(max_length=255)
+    description_template = models.TextField()
+    category             = models.ForeignKey('Category', on_delete=models.SET_NULL,
+                                              null=True, blank=True)
+    priority             = models.CharField(max_length=10, default='MEDIUM')
+    is_active            = models.BooleanField(default=True)
+    use_count            = models.PositiveIntegerField(default=0)
+    created_by           = models.ForeignKey(User, on_delete=models.SET_NULL,
+                                              null=True, related_name='ticket_templates')
+    created_at           = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-use_count', 'name']
+        verbose_name = 'Ticket Template'
+
+    def __str__(self):
+        return self.name
+
+
+# ── Recurring Tickets ─────────────────────────────────────────────────────────
+
+class RecurringTicket(models.Model):
+    FREQ_CHOICES = [('DAILY','Daily'),('WEEKLY','Weekly'),('MONTHLY','Monthly')]
+
+    name                 = models.CharField(max_length=100)
+    frequency            = models.CharField(max_length=10, choices=FREQ_CHOICES, default='MONTHLY')
+    day_of_week          = models.PositiveSmallIntegerField(null=True, blank=True,
+                                                            help_text='0=Mon…6=Sun')
+    day_of_month         = models.PositiveSmallIntegerField(null=True, blank=True,
+                                                             help_text='1-28')
+    title_template       = models.CharField(max_length=255)
+    description_template = models.TextField()
+    category             = models.ForeignKey('Category', on_delete=models.SET_NULL,
+                                              null=True, blank=True)
+    priority             = models.CharField(max_length=10, default='MEDIUM')
+    assigned_to          = models.ForeignKey(User, on_delete=models.SET_NULL,
+                                              null=True, blank=True,
+                                              related_name='recurring_assignments')
+    is_active            = models.BooleanField(default=True)
+    last_created_at      = models.DateTimeField(null=True, blank=True)
+    next_due_at          = models.DateTimeField(null=True, blank=True)
+    created_by           = models.ForeignKey(User, on_delete=models.SET_NULL,
+                                              null=True, related_name='recurring_tickets')
+    created_at           = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['name']
+        verbose_name = 'Recurring Ticket'
+
+    def __str__(self):
+        return f'{self.name} ({self.frequency})'
+
+
+# ── Database Backup Registry ──────────────────────────────────────────────────
+
+class DatabaseBackup(models.Model):
+    """Tracks database backups created, restored, or deleted by staff."""
+    ACTION_CREATE  = 'CREATE'
+    ACTION_RESTORE = 'RESTORE'
+    ACTION_DELETE  = 'DELETE'
+    ACTION_CHOICES = [(ACTION_CREATE,'Created'),(ACTION_RESTORE,'Restored'),
+                      (ACTION_DELETE,'Deleted')]
+
+    STATUS_OK    = 'OK'
+    STATUS_FAIL  = 'FAIL'
+    STATUS_CHOICES = [(STATUS_OK,'Success'),(STATUS_FAIL,'Failed')]
+
+    filename    = models.CharField(max_length=255)
+    file_path   = models.CharField(max_length=500, blank=True)
+    file_size   = models.PositiveIntegerField(default=0,
+                                              help_text='Size in bytes')
+    action      = models.CharField(max_length=10, choices=ACTION_CHOICES)
+    status      = models.CharField(max_length=6, choices=STATUS_CHOICES, default=STATUS_OK)
+    db_name     = models.CharField(max_length=100, blank=True,
+                                   help_text='Database that was backed up')
+    note        = models.TextField(blank=True)
+    performed_by = models.ForeignKey(User, on_delete=models.SET_NULL,
+                                     null=True, related_name='db_backups')
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Database Backup'
+
+    def __str__(self):
+        return f'{self.action} — {self.filename}'
+
+    @property
+    def file_size_display(self):
+        if self.file_size < 1024:
+            return f'{self.file_size} B'
+        elif self.file_size < 1024**2:
+            return f'{self.file_size/1024:.1f} KB'
+        else:
+            return f'{self.file_size/1024**2:.1f} MB'
+
+
+# ── Ticket Approval / E-Signature ─────────────────────────────────────────────
+
+class TicketApproval(models.Model):
+    """
+    An electronic sign-off (Approve / Reject) on a ticket. Replaces the old
+    print-and-sign workflow.
+
+    Records are append-only: a later decision supersedes an earlier one but the
+    earlier one is kept as history. `document_hash` fingerprints the ticket's
+    immutable content together with the decision and signature, so any later
+    tampering with the stored record can be detected via `is_intact`.
+    """
+    DECISION_APPROVED = 'APPROVED'
+    DECISION_REJECTED = 'REJECTED'
+    DECISION_CHOICES = [
+        (DECISION_APPROVED, 'Approved'),
+        (DECISION_REJECTED, 'Rejected'),
+    ]
+
+    ticket          = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='approvals')
+    decision        = models.CharField(max_length=10, choices=DECISION_CHOICES)
+    reason          = models.TextField(blank=True, help_text='Required when rejecting')
+    signer          = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='ticket_signatures')
+    signer_name     = models.CharField(max_length=150)   # snapshot — survives user deletion/rename
+    signer_title    = models.CharField(max_length=100, blank=True)
+    signature_image = models.TextField(help_text='PNG data URL of the drawn signature')
+    document_hash   = models.CharField(max_length=64, editable=False)
+    ip_address      = models.GenericIPAddressField(null=True, blank=True)
+    signed_at       = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        ordering = ['-signed_at', '-id']
+        indexes = [models.Index(fields=['ticket', 'signed_at'], name='approval_ticket_idx')]
+
+    def __str__(self):
+        return f'{self.ticket.ticket_id} {self.get_decision_display()} by {self.signer_name}'
+
+    def compute_hash(self):
+        import hashlib
+        sig = hashlib.sha256((self.signature_image or '').encode()).hexdigest()
+        parts = [
+            self.ticket.ticket_id, self.ticket.title, self.ticket.description,
+            self.decision, self.reason, str(self.signer_id or ''), self.signer_name,
+            self.signed_at.isoformat(), sig,
+        ]
+        return hashlib.sha256('\x1f'.join(parts).encode()).hexdigest()
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            raise ValueError('Signed approvals are immutable and cannot be modified.')
+        self.document_hash = self.compute_hash()
+        super().save(*args, **kwargs)
+
+    @property
+    def is_intact(self):
+        return self.document_hash == self.compute_hash()
+
+
+
+# ── Quick Request Links ───────────────────────────────────────────────────────
+
+class QuickRequestLink(models.Model):
+    """
+    A personal, expiring link that lets a user raise a request WITHOUT a full
+    login. The page behind it still demands the owner's password (and their
+    authenticator / backup code when MFA is enabled) every time a request is
+    submitted — the link only identifies the account, it never authenticates it.
+
+    Only a SHA-256 hash of the token is stored, so a database leak does not leak
+    usable links; the full URL is shown to the owner exactly once.
+    Lives on the default database (like users), not the per-year ticket databases.
+    """
+    MAX_FAILED = 5          # consecutive wrong credentials before a temporary lock
+    LOCK_MINUTES = 15
+    MAX_LOCKS = 3           # lockouts before the link is disabled for good
+
+    user          = models.ForeignKey(User, on_delete=models.CASCADE, related_name='quick_links')
+    label         = models.CharField(max_length=100)
+    token_hash    = models.CharField(max_length=64, unique=True, editable=False)
+    token_hint    = models.CharField(max_length=8, editable=False)
+    created_at    = models.DateTimeField(default=timezone.now)
+    created_ip    = models.GenericIPAddressField(null=True, blank=True)
+    expires_at    = models.DateTimeField()
+    revoked_at    = models.DateTimeField(null=True, blank=True)
+    revoked_note  = models.CharField(max_length=120, blank=True)
+    last_used_at  = models.DateTimeField(null=True, blank=True)
+    use_count     = models.PositiveIntegerField(default=0)
+    failed_attempts = models.PositiveSmallIntegerField(default=0)
+    lock_count    = models.PositiveSmallIntegerField(default=0)
+    locked_until  = models.DateTimeField(null=True, blank=True)
+    last_totp_step = models.BigIntegerField(default=0)   # one-time use of each authenticator code
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.user.username}: {self.label} ({self.token_hint}…)'
+
+    @staticmethod
+    def hash_token(raw):
+        import hashlib
+        return hashlib.sha256(raw.encode()).hexdigest()
+
+    @classmethod
+    def issue(cls, user, label, expires_at, ip=None):
+        """Create a link; returns (link, raw_token). The raw token is never stored."""
+        import secrets
+        raw = secrets.token_urlsafe(32)
+        link = cls.objects.create(user=user, label=label[:100], expires_at=expires_at,
+                                  token_hash=cls.hash_token(raw), token_hint=raw[:6],
+                                  created_ip=ip)
+        return link, raw
+
+    @classmethod
+    def find(cls, raw):
+        if not raw or len(raw) > 100:
+            return None
+        return cls.objects.select_related('user').filter(token_hash=cls.hash_token(raw)).first()
+
+    @property
+    def status(self):
+        now = timezone.now()
+        if self.revoked_at:
+            return 'revoked'
+        if self.expires_at <= now:
+            return 'expired'
+        if not self.user.is_active:
+            return 'revoked'
+        return 'active'
+
+    @property
+    def is_active(self):
+        return self.status == 'active'
+
+    @property
+    def is_locked(self):
+        return bool(self.locked_until and self.locked_until > timezone.now())
+
+    def revoke(self, note=''):
+        if not self.revoked_at:
+            self.revoked_at = timezone.now()
+            self.revoked_note = note[:120]
+            self.save(update_fields=['revoked_at', 'revoked_note'])

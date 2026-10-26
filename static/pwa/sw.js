@@ -1,155 +1,76 @@
-/**
- * BeitDesk Service Worker
- * Municipality of Beitbridge IT Help Desk
- *
- * Strategy:
- * - Static assets (CSS, JS, images, fonts): Cache-first, then network
- * - Dashboard pages: Network-first, fallback to cache
- * - Offline fallback page shown when network unavailable and no cache
- */
-
-const CACHE_NAME      = 'beitdesk-v1';
-const OFFLINE_URL     = '/static/pwa/offline.html';
-
-// Assets to pre-cache on install
-const PRECACHE_ASSETS = [
-  '/static/pwa/offline.html',
-  '/static/pwa/manifest.json',
-  '/static/pwa/icon-192.png',
-  '/static/pwa/icon-512.png',
-  '/static/img/beitbridge_logo.jpg',
-  '/static/img/beitbridge_bg.png',
-  '/static/img/favicon.svg',
-];
-
-// Pages to cache for offline access
-const CACHE_PAGES = [
-  '/dashboard/',
-  '/dashboard/tickets/',
-  '/dashboard/glossary/',
-];
+/* BeitDesk Service Worker — PWA + Web Push */
+const CACHE  = 'beitdesk-v3';
+const OFFLINE = '/static/pwa/offline.html';
+const ASSETS  = [OFFLINE, '/static/img/beitbridge_logo.jpg'];
 
 // ── Install ───────────────────────────────────────────────────────────────────
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(PRECACHE_ASSETS).catch(err => {
-        console.warn('[BeitDesk SW] Pre-cache partial failure:', err);
-      });
-    }).then(() => self.skipWaiting())
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())
   );
 });
 
 // ── Activate ──────────────────────────────────────────────────────────────────
-self.addEventListener('activate', event => {
-  event.waitUntil(
+self.addEventListener('activate', e => {
+  e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-      )
+      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
     ).then(() => self.clients.claim())
   );
 });
 
-// ── Fetch ─────────────────────────────────────────────────────────────────────
-self.addEventListener('fetch', event => {
-  const { request } = event;
-  const url = new URL(request.url);
-
-  // Only handle same-origin requests
-  if (url.origin !== location.origin) return;
-
-  // Skip non-GET and API/admin requests (must always be fresh)
-  if (request.method !== 'GET') return;
-  if (url.pathname.startsWith('/api/') ||
-      url.pathname.startsWith('/dashboard/api/') ||
-      url.pathname.startsWith('/admin/')) return;
-
-  // Static assets — Cache first, then network, update cache in background
-  if (url.pathname.startsWith('/static/')) {
-    event.respondWith(
-      caches.match(request).then(cached => {
-        const networkFetch = fetch(request).then(response => {
-          if (response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then(c => c.put(request, clone));
-          }
-          return response;
-        }).catch(() => cached);
-        return cached || networkFetch;
-      })
-    );
-    return;
-  }
-
-  // Fonts from Google — Cache first
-  if (url.hostname.includes('fonts.')) {
-    event.respondWith(
-      caches.match(request).then(cached => cached || fetch(request).then(response => {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then(c => c.put(request, clone));
-        return response;
-      }))
-    );
-    return;
-  }
-
-  // HTML pages — Network first, fallback to cache, then offline page
-  event.respondWith(
-    fetch(request)
-      .then(response => {
-        // Cache successful page responses
-        if (response.ok && response.status === 200) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(c => c.put(request, clone));
-        }
-        return response;
-      })
-      .catch(() =>
-        caches.match(request).then(cached => {
-          if (cached) return cached;
-          // Show offline fallback
-          return caches.match(OFFLINE_URL);
-        })
-      )
+// ── Fetch (offline fallback) ──────────────────────────────────────────────────
+self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
+  if (e.request.url.includes('/api/') || e.request.url.includes('/accounts/')) return;
+  e.respondWith(
+    fetch(e.request).catch(() =>
+      caches.match(e.request).then(r => r || caches.match(OFFLINE))
+    )
   );
 });
 
-// ── Background sync for offline ticket creation (future) ─────────────────────
-self.addEventListener('sync', event => {
-  if (event.tag === 'sync-tickets') {
-    event.waitUntil(syncOfflineTickets());
-  }
-});
+// ── Push Notifications ────────────────────────────────────────────────────────
+self.addEventListener('push', e => {
+  let data = { title: 'BeitDesk', body: 'You have a new notification', url: '/dashboard/' };
+  try {
+    if (e.data) data = { ...data, ...e.data.json() };
+  } catch (_) {}
 
-async function syncOfflineTickets() {
-  // Placeholder for future offline ticket queue sync
-  console.log('[BeitDesk SW] Syncing offline tickets...');
-}
-
-// ── Push notifications (future) ───────────────────────────────────────────────
-self.addEventListener('push', event => {
-  if (!event.data) return;
-  const data = event.data.json();
-  event.waitUntil(
-    self.registration.showNotification(data.title || 'BeitDesk', {
-      body:    data.body || 'You have a new notification',
-      icon:    '/static/pwa/icon-192.png',
-      badge:   '/static/pwa/icon-72.png',
-      tag:     data.tag || 'beitdesk',
-      data:    { url: data.url || '/dashboard/' },
-      actions: [
-        { action: 'open',    title: 'Open BeitDesk' },
-        { action: 'dismiss', title: 'Dismiss' },
-      ],
+  // WhatsApp-style: one OS notification per ticket (shared `tag`) that updates
+  // and re-alerts as new messages arrive, and no OS popup while the app is
+  // already open and focused (the in-page toast covers that case).
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      if (list.some(c => c.focused && c.visibilityState === 'visible')) return;
+      return self.registration.showNotification(data.title, {
+        body:      data.body,
+        icon:      data.icon  || '/static/pwa/icon-192.png',
+        badge:     data.badge || '/static/pwa/icon-72.png',
+        tag:       data.tag   || 'beitdesk',
+        renotify:  !!data.renotify,
+        timestamp: Date.now(),
+        data:      { url: data.url || '/dashboard/' },
+        vibrate:   [100, 50, 100],
+        requireInteraction: false,
+      });
     })
   );
 });
 
-self.addEventListener('notificationclick', event => {
-  event.notification.close();
-  if (event.action !== 'dismiss') {
-    const url = event.notification.data?.url || '/dashboard/';
-    event.waitUntil(clients.openWindow(url));
-  }
+// ── Notification click — open/focus tab ───────────────────────────────────────
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || '/dashboard/';
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      for (const c of list) {
+        if (c.url.includes(self.location.origin) && 'focus' in c) {
+          c.navigate(url);
+          return c.focus();
+        }
+      }
+      if (clients.openWindow) return clients.openWindow(url);
+    })
+  );
 });

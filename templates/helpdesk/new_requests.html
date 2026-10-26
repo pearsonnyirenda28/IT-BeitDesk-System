@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load pager %}
+{% block title %}New Requests{% endblock %}
+{% block page_title %}New Requests{% endblock %}
+{% block breadcrumb %}Tickets / New requests{% endblock %}
+
+{% block content %}
+<style>
+.seg{display:inline-flex;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.seg a{padding:7px 16px;font-size:13px;color:var(--text-muted);text-decoration:none;border-right:1px solid var(--border);display:flex;gap:8px;align-items:center;}
+.seg a:last-child{border-right:none;} .seg a.on{background:rgba(26,107,48,.25);color:var(--accent-hover);font-weight:600;}
+.seg .n{background:rgba(255,255,255,.1);border-radius:10px;padding:0 8px;font-size:11px;}
+.pri{font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:10px;}
+.pri.CRITICAL{background:rgba(248,81,73,.18);color:#f85149;} .pri.HIGH{background:rgba(240,136,62,.18);color:#f0883e;}
+.pri.MEDIUM{background:rgba(227,179,65,.16);color:#e3b341;} .pri.LOW{background:rgba(63,185,80,.16);color:#3fb950;}
+.src{font-size:10.5px;color:var(--text-muted);border:1px solid var(--border);border-radius:10px;padding:1px 8px;}
+.src.LINK{color:#a371f7;border-color:rgba(163,113,247,.4);}
+.sub{font-size:11px;color:var(--text-muted);}
+.assign-form{display:flex;gap:6px;align-items:center;}
+.assign-form select{min-width:150px;padding:5px 8px;font-size:12px;}
+.old{color:#f0883e;}
+</style>
+
+<div class="flex-between mb-4" style="flex-wrap:wrap;gap:12px;">
+    <div>
+        <h1 style="font-size:20px;">New Requests</h1>
+        <div class="text-muted" style="font-size:12px;margin-top:2px;">Open requests waiting to be picked up — most urgent first, then oldest.
+            {% if request.user.is_superuser %}You can assign them from here.{% else %}Take an unassigned request to start working on it.{% endif %}</div>
+    </div>
+    <div class="seg">
+        <a href="?view=new" class="{% if view == 'new' %}on{% endif %}">All open <span class="n">{{ counts.new }}</span></a>
+        <a href="?view=unassigned" class="{% if view == 'unassigned' %}on{% endif %}">Unassigned <span class="n">{{ counts.unassigned }}</span></a>
+        <a href="?view=mine" class="{% if view == 'mine' %}on{% endif %}">Assigned to me <span class="n">{{ counts.mine }}</span></a>
+    </div>
+</div>
+
+<div class="card"><div class="table-wrapper"><table>
+    <thead><tr><th>Request</th><th>From</th><th>Urgency</th><th>Via</th><th>Waiting</th><th>Assigned to</th></tr></thead>
+    <tbody>
+    {% for t in tickets %}
+    <tr>
+        <td style="max-width:320px;"><a href="{% url 'ticket_detail' t.ticket_id %}"><b>{{ t.ticket_id }}</b></a>
+            <div style="font-size:13px;">{{ t.title|truncatechars:70 }}</div>
+            {% if t.category %}<div class="sub">{{ t.category.name }}</div>{% endif %}</td>
+        <td>{% if t.requester_name %}{{ t.requester_name }}{% elif t.requester %}{{ t.requester.get_full_name|default:t.requester.username }}{% else %}—{% endif %}
+            <div class="sub">{{ t.requester_office|default:"" }}{% if t.requester_department %}{% if t.requester_office %} · {% endif %}{{ t.requester_department }}{% endif %}{% if t.requester_section %} · {{ t.requester_section }}{% endif %}</div></td>
+        <td><span class="pri {{ t.priority }}">{{ t.get_priority_display }}</span></td>
+        <td><span class="src {{ t.source }}">{{ t.get_source_display }}</span></td>
+        <td style="white-space:nowrap;"><span {% if t.priority == 'CRITICAL' or t.priority == 'HIGH' %}class="old"{% endif %}>{{ t.created_at|timesince }}</span></td>
+        <td>
+            {% if request.user.is_superuser %}
+            <form method="post" action="{% url 'queue_assign' t.ticket_id %}" class="assign-form">
+                {% csrf_token %}<input type="hidden" name="view" value="{{ view }}"><input type="hidden" name="page" value="{{ tickets.number }}">
+                <select name="agent_id" class="form-select">
+                    <option value="">— Unassigned —</option>
+                    {% for a in agents %}<option value="{{ a.pk }}" {% if t.assigned_to_id == a.pk %}selected{% endif %}>{{ a.get_full_name|default:a.username }}</option>{% endfor %}
+                </select>
+                <button class="btn btn-primary btn-sm" type="submit">Assign</button>
+            </form>
+            {% elif t.assigned_to %}
+                {{ t.assigned_to.get_full_name|default:t.assigned_to.username }}
+            {% else %}
+            <form method="post" action="{% url 'queue_take' t.ticket_id %}">
+                {% csrf_token %}<input type="hidden" name="view" value="{{ view }}"><input type="hidden" name="page" value="{{ tickets.number }}">
+                <button class="btn btn-secondary btn-sm" type="submit"><i class="fas fa-hand"></i> Take it</button>
+            </form>
+            {% endif %}
+        </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6" style="text-align:center;padding:36px;" class="text-muted">
+        <i class="fas fa-inbox" style="font-size:28px;display:block;margin-bottom:10px;opacity:.25;"></i>
+        {% if view == 'unassigned' %}Every open request has someone assigned. Nice.{% elif view == 'mine' %}Nothing assigned to you is waiting.{% else %}No new requests right now.{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+</table></div>
+{% include 'helpdesk/_pagination.html' with page_obj=tickets param='page' noun='request' %}
+</div>
+{% endblock %}

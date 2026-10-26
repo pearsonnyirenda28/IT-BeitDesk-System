@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}#{{ tag.name }} Tickets{% endblock %}
+{% block page_title %}Tag: #{{ tag.name }}{% endblock %}
+{% block breadcrumb %}Tags / #{{ tag.name }}{% endblock %}
+
+{% block content %}
+<div class="flex-between mb-6">
+    <div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+            <span style="display:inline-flex;align-items:center;gap:6px;
+                         font-size:20px;font-weight:800;
+                         padding:4px 16px;border-radius:20px;
+                         background:{{ tag.color }}22;color:{{ tag.color }};
+                         border:1px solid {{ tag.color }}55;">
+                <i class="fas fa-tag"></i> #{{ tag.name }}
+            </span>
+        </div>
+        {% if tag.description %}
+        <p class="text-muted" style="font-size:13px;">{{ tag.description }}</p>
+        {% endif %}
+        <p class="text-muted" style="font-size:12px;margin-top:4px;">
+            {{ total }} ticket{{ total|pluralize }}
+        </p>
+    </div>
+    <a href="{% url 'tag_list' %}" class="btn btn-secondary btn-sm">
+        <i class="fas fa-arrow-left"></i> All Tags
+    </a>
+</div>
+
+<div class="card">
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Ticket ID</th>
+                    <th>Title</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th>Category</th>
+                    <th>Assigned To</th>
+                    <th>Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ticket in tickets %}
+                <tr>
+                    <td>
+                        <a href="{% url 'ticket_detail' ticket.ticket_id %}"
+                           class="mono" style="font-weight:700;color:var(--gold);">
+                            {{ ticket.ticket_id }}
+                        </a>
+                    </td>
+                    <td style="max-width:260px;">
+                        <a href="{% url 'ticket_detail' ticket.ticket_id %}"
+                           style="color:var(--text-primary);font-weight:500;">
+                            {{ ticket.title|truncatechars:55 }}
+                        </a>
+                    </td>
+                    <td>
+                        <span class="badge badge-{{ ticket.status|lower }}">
+                            {{ ticket.get_status_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge badge-{{ ticket.priority|lower }}">
+                            {{ ticket.priority|capfirst }}
+                        </span>
+                    </td>
+                    <td style="font-size:12px;color:var(--text-muted);">
+                        {{ ticket.category.name|default:"—" }}
+                    </td>
+                    <td style="font-size:12px;">
+                        {% if ticket.assigned_to %}
+                        {{ ticket.assigned_to.get_full_name|default:ticket.assigned_to.username }}
+                        {% else %}<span class="text-muted">Unassigned</span>{% endif %}
+                    </td>
+                    <td style="font-size:12px;color:var(--text-muted);">
+                        {{ ticket.created_at|date:"d M Y" }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" style="text-align:center;padding:36px;color:var(--text-muted);">
+                        <i class="fas fa-tag" style="font-size:28px;display:block;margin-bottom:10px;opacity:.2;"></i>
+                        No tickets with tag #{{ tag.name }} yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

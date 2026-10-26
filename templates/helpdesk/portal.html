@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BeitDesk — IT Self-Service Portal</title>
+    <link rel="stylesheet" href="/static/fontawesome/css/all.min.css">
+    <style>
+        :root{
+            --bg:#0a0f1a;--card:#111827;--card2:#1a2235;--border:#1e2d45;
+            --accent:#16a34a;--accent-h:#22c55e;--gold:#f59e0b;
+            --text:#f1f5f9;--muted:#94a3b8;--dim:#64748b;
+            --danger:#ef4444;--success:#22c55e;--warning:#f59e0b;--info:#3b82f6;
+            --radius:12px;--radius-sm:8px;
+            color-scheme:dark;
+        }
+        *{box-sizing:border-box;margin:0;padding:0;}
+        body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;
+             background:var(--bg);color:var(--text);min-height:100vh;}
+
+        /* ── TOP NAV ──────────────────────────────────────────────────────── */
+        .nav{background:rgba(17,24,39,.95);backdrop-filter:blur(12px);
+             border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;
+             padding:0 24px;display:flex;align-items:center;height:60px;gap:16px;}
+        .nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none;}
+        .nav-brand img{width:36px;height:36px;border-radius:8px;
+                       border:2px solid rgba(245,158,11,.3);}
+        .nav-brand span{font-size:17px;font-weight:700;color:var(--text);}
+        .nav-brand small{font-size:11px;color:var(--muted);display:block;margin-top:-2px;}
+        .nav-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
+        .nav-user{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px;}
+        .nav-avatar{width:32px;height:32px;border-radius:50%;
+                    background:linear-gradient(135deg,var(--accent),var(--gold));
+                    display:flex;align-items:center;justify-content:center;
+                    font-size:13px;font-weight:700;color:#fff;flex-shrink:0;}
+        .nav-link{font-size:12px;color:var(--muted);text-decoration:none;padding:5px 10px;
+                  border-radius:6px;transition:all .15s;}
+        .nav-link:hover{background:rgba(255,255,255,.06);color:var(--text);}
+
+        /* ── HERO ─────────────────────────────────────────────────────────── */
+        .hero{background:linear-gradient(135deg,#0a1628 0%,#0d2137 50%,#0a1628 100%);
+              padding:40px 24px;text-align:center;position:relative;overflow:hidden;}
+        .hero::before{content:'';position:absolute;inset:0;
+                      background:radial-gradient(ellipse at 50% 0%,rgba(22,163,74,.15) 0%,transparent 70%);}
+        .hero-content{position:relative;z-index:1;max-width:600px;margin:0 auto;}
+        .hero h1{font-size:28px;font-weight:800;margin-bottom:8px;
+                 background:linear-gradient(135deg,var(--text),var(--accent-h));
+                 -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+        .hero p{font-size:15px;color:var(--muted);margin-bottom:24px;line-height:1.6;}
+        .hero-stats{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;}
+        .hero-stat{text-align:center;}
+        .hero-stat-num{font-size:26px;font-weight:800;color:var(--accent-h);}
+        .hero-stat-lbl{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;}
+
+        /* ── MAIN LAYOUT ─────────────────────────────────────────────────── */
+        .main{max-width:1100px;margin:0 auto;padding:28px 20px;}
+
+        /* ── NEW REQUEST SECTION ─────────────────────────────────────────── */
+        .section-title{font-size:13px;font-weight:700;color:var(--muted);
+                       text-transform:uppercase;letter-spacing:.6px;
+                       margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+        .section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+        /* Service category grid */
+        .service-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:28px;}
+        .service-btn{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+                     padding:18px 14px;text-align:center;cursor:pointer;text-decoration:none;
+                     color:var(--text);transition:all .2s;display:flex;flex-direction:column;
+                     align-items:center;gap:10px;}
+        .service-btn:hover{border-color:var(--accent);background:rgba(22,163,74,.08);
+                           transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3);}
+        .service-btn.active{border-color:var(--accent-h);background:rgba(22,163,74,.12);}
+        .service-icon{width:44px;height:44px;border-radius:10px;display:flex;
+                      align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+        .service-label{font-size:12px;font-weight:600;color:var(--text);line-height:1.3;}
+        .service-count{font-size:10px;color:var(--dim);margin-top:2px;}
+
+        /* Quick request form panel */
+        .quick-panel{background:var(--card);border:1px solid var(--border);
+                     border-radius:var(--radius);padding:22px;margin-bottom:28px;
+                     display:none;}
+        .quick-panel.show{display:block;}
+        .quick-panel h3{font-size:15px;font-weight:700;margin-bottom:16px;
+                        display:flex;align-items:center;gap:8px;}
+        .panel-badge{padding:3px 10px;border-radius:20px;font-size:11px;
+                     font-weight:600;background:rgba(22,163,74,.2);color:var(--accent-h);
+                     border:1px solid rgba(22,163,74,.3);}
+        label{display:block;font-size:12px;font-weight:600;color:var(--muted);
+              text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;}
+        input[type=text],textarea,select{width:100%;padding:10px 13px;
+            background:#1a2235;border:2px solid var(--border);
+            border-radius:var(--radius-sm);color:var(--text);font-size:14px;
+            font-family:inherit;color-scheme:dark;transition:border-color .15s;}
+        input:focus,textarea:focus,select:focus{
+            outline:none;border-color:var(--accent);
+            box-shadow:0 0 0 3px rgba(22,163,74,.15);}
+        input::placeholder,textarea::placeholder{color:var(--dim);font-size:13px;}
+        textarea{resize:vertical;min-height:100px;line-height:1.6;}
+        select option{background:#1a2235;color:var(--text);}
+        .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+        .form-group{margin-bottom:12px;}
+        .priority-pills{display:flex;gap:8px;flex-wrap:wrap;}
+        .priority-pill{padding:7px 16px;border-radius:20px;border:2px solid var(--border);
+                       font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;
+                       background:none;color:var(--muted);}
+        .priority-pill.p-low.selected{border-color:var(--success);color:var(--success);background:rgba(34,197,94,.1);}
+        .priority-pill.p-medium.selected{border-color:var(--warning);color:var(--warning);background:rgba(245,158,11,.1);}
+        .priority-pill.p-high.selected{border-color:var(--danger);color:var(--danger);background:rgba(239,68,68,.1);}
+        .priority-pill:hover{border-color:var(--accent);color:var(--text);}
+
+        /* ── BUTTONS ─────────────────────────────────────────────────────── */
+        .btn{padding:11px 22px;border-radius:var(--radius-sm);border:none;font-size:14px;
+             font-weight:600;cursor:pointer;display:inline-flex;align-items:center;
+             gap:8px;text-decoration:none;transition:all .15s;}
+        .btn-primary{background:var(--accent);color:#fff;}
+        .btn-primary:hover{background:var(--accent-h);box-shadow:0 4px 16px rgba(22,163,74,.4);}
+        .btn-secondary{background:rgba(255,255,255,.07);color:var(--text);
+                       border:1px solid var(--border);}
+        .btn-secondary:hover{background:rgba(255,255,255,.11);}
+        .btn-sm{padding:7px 14px;font-size:12px;}
+        .req-filters{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;}
+        .req-seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+        .req-seg a{padding:7px 16px;font-size:12.5px;color:var(--muted);text-decoration:none;border-right:1px solid var(--border);}
+        .req-seg a:last-child{border-right:none;} .req-seg a.on{background:rgba(22,163,74,.2);color:var(--accent-h);font-weight:700;}
+        .req-search{flex:1;min-width:180px;max-width:300px;padding:7px 12px;background:#1a2235;border:1px solid var(--border);
+            border-radius:8px;color:var(--text);font-size:13px;}
+        .track{display:flex;gap:4px;margin-top:9px;align-items:center;max-width:360px;}
+        .track i{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.1);display:block;}
+        .track i.on{background:var(--accent-h);} .track i.now{background:var(--gold);}
+        .track-label{font-size:11px;color:var(--muted);margin-top:4px;}
+        .card-footer{margin-top:18px;padding-top:14px;border-top:1px solid var(--border);}
+        .text-muted{color:var(--muted);}
+        .btn-ghost{background:none;color:var(--muted);border:1px solid transparent;}
+        .btn-ghost:hover{background:rgba(255,255,255,.05);color:var(--text);}
+
+        /* ── MY REQUESTS TABLE ───────────────────────────────────────────── */
+        .requests-grid{display:flex;flex-direction:column;gap:8px;}
+        .req-card{background:var(--card);border:1px solid var(--border);
+                  border-radius:var(--radius-sm);padding:14px 18px;
+                  display:flex;align-items:center;gap:16px;cursor:pointer;
+                  text-decoration:none;color:inherit;transition:all .15s;}
+        .req-card:hover{border-color:var(--accent);background:rgba(22,163,74,.04);}
+        .req-card.urgent{border-left:3px solid var(--danger);}
+        .req-card.warn{border-left:3px solid var(--warning);}
+        .req-card.ok{border-left:3px solid var(--success);}
+        .req-card.neutral{border-left:3px solid var(--dim);}
+        .req-icon{width:40px;height:40px;border-radius:10px;display:flex;
+                  align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+        .req-info{flex:1;min-width:0;}
+        .req-id{font-size:10px;font-family:monospace;color:var(--gold);font-weight:700;margin-bottom:2px;}
+        .req-title{font-size:13px;font-weight:600;white-space:nowrap;
+                   overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;}
+        .req-meta{font-size:11px;color:var(--dim);}
+        .req-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;}
+        .badge{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;
+               text-transform:uppercase;letter-spacing:.3px;display:inline-flex;align-items:center;gap:4px;}
+        .b-open{background:rgba(59,130,246,.2);color:#60a5fa;border:1px solid rgba(59,130,246,.3);}
+        .b-inprog{background:rgba(245,158,11,.15);color:#fbbf24;border:1px solid rgba(245,158,11,.3);}
+        .b-resolved{background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.3);}
+        .b-closed{background:rgba(100,116,139,.15);color:#94a3b8;border:1px solid rgba(100,116,139,.3);}
+        .b-high{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3);}
+        .b-medium{background:rgba(245,158,11,.15);color:#fbbf24;border:1px solid rgba(245,158,11,.3);}
+        .b-low{background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.3);}
+
+        /* ── ALERTS ──────────────────────────────────────────────────────── */
+        .alert{padding:12px 16px;border-radius:var(--radius-sm);margin-bottom:16px;
+               font-size:13px;display:flex;gap:10px;align-items:flex-start;}
+        .alert-success{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:#4ade80;}
+        .alert-error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#f87171;}
+
+        /* ── KB SECTION ──────────────────────────────────────────────────── */
+        .kb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;}
+        .kb-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);
+                 padding:14px;text-decoration:none;color:inherit;transition:all .15s;display:block;}
+        .kb-card:hover{border-color:var(--accent);background:rgba(22,163,74,.05);}
+        .kb-card-title{font-size:13px;font-weight:600;margin-bottom:5px;}
+        .kb-card-desc{font-size:11px;color:var(--dim);line-height:1.5;}
+
+        /* ── STATUS INDICATOR ────────────────────────────────────────────── */
+        .status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;}
+        .dot-green{background:var(--success);box-shadow:0 0 6px rgba(34,197,94,.6);}
+        .dot-yellow{background:var(--warning);}
+        .dot-red{background:var(--danger);}
+        .dot-grey{background:var(--dim);}
+
+        /* ── SLA TIMER ───────────────────────────────────────────────────── */
+        .sla-chip{font-size:10px;color:var(--dim);display:flex;align-items:center;gap:3px;}
+        .sla-chip.overdue{color:var(--danger);}
+        .sla-chip.warning{color:var(--warning);}
+
+        /* ── EMPTY STATE ─────────────────────────────────────────────────── */
+        .empty{text-align:center;padding:48px 24px;color:var(--dim);}
+        .empty-icon{font-size:48px;margin-bottom:16px;opacity:.25;display:block;}
+
+        /* ── TABS ────────────────────────────────────────────────────────── */
+        .tabs{display:flex;gap:2px;background:var(--card);border-radius:var(--radius-sm);
+              padding:3px;margin-bottom:20px;border:1px solid var(--border);}
+        .tab{flex:1;padding:8px;border-radius:7px;border:none;background:none;
+             color:var(--muted);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;}
+        .tab.active{background:#1a2235;color:var(--text);font-weight:600;}
+        .tab-pane{display:none;}
+        .tab-pane.active{display:block;}
+
+        /* ── MODAL ───────────────────────────────────────────────────────── */
+        .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.7);
+                        backdrop-filter:blur(4px);z-index:200;display:none;
+                        align-items:center;justify-content:center;padding:20px;}
+        .modal-backdrop.show{display:flex;}
+        .modal{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+               width:100%;max-width:560px;max-height:90vh;overflow-y:auto;padding:24px;}
+        .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+        .modal-title{font-size:18px;font-weight:700;}
+        .modal-close{background:none;border:none;color:var(--muted);font-size:20px;
+                     cursor:pointer;padding:4px 8px;border-radius:6px;}
+        .modal-close:hover{background:rgba(255,255,255,.08);color:var(--text);}
+    </style>
+</head>
+<body>
+
+<!-- Top Navigation -->
+<nav class="nav">
+    <a href="{% url 'portal' %}" class="nav-brand">
+        <img src="/static/img/beitbridge_logo.jpg" alt="Beitbridge">
+        <div>
+            <span>IT Self-Service Portal</span>
+            <small>Municipality of Beitbridge</small>
+        </div>
+    </a>
+    <div class="nav-right">
+        {% if is_staff_user %}<a href="{% url 'dashboard' %}" class="nav-link"><i class="fas fa-gauge-high"></i> Dashboard</a>{% endif %}
+        <a href="{% url 'portal_create' %}" class="nav-link"><i class="fas fa-plus"></i> New request</a>
+        <a href="{% url 'quick_links' %}" class="nav-link" title="Raise requests without signing in"><i class="fas fa-link"></i> Quick links</a>
+        <a href="{% url 'kb_list' %}" class="nav-link">
+            <i class="fas fa-book-open"></i> Help Articles
+        </a>
+        <div class="nav-user">
+            <div class="nav-avatar">{{ request.user.get_full_name|default:request.user.username|first|upper }}</div>
+            <div>
+                <div style="font-size:13px;color:var(--text);font-weight:500;">
+                    {{ request.user.get_full_name|default:request.user.username }}
+                </div>
+                <div style="font-size:11px;color:var(--dim);">{{ request.user.email }}</div>
+            </div>
+        </div>
+        <a href="/accounts/mfa/settings/" class="nav-link" title="Security">
+            <i class="fas fa-shield-halved"></i>
+        </a>
+        <a href="/accounts/logout/" class="nav-link">
+            <i class="fas fa-sign-out-alt"></i> Sign Out
+        </a>
+    </div>
+</nav>
+
+<!-- Hero -->
+<div class="hero">
+    <div class="hero-content">
+        <h1><i class="fas fa-headset" style="font-size:24px;margin-right:8px;"></i>IT Self-Service Portal</h1>
+        <p>Get IT support fast. Submit requests, track progress, and find solutions — all in one place.</p>
+        <div class="hero-stats">
+            <div class="hero-stat">
+                <div class="hero-stat-num">{{ open_count }}</div>
+                <div class="hero-stat-lbl">Open Requests</div>
+            </div>
+            <div class="hero-stat">
+                <div class="hero-stat-num">{{ resolved_count }}</div>
+                <div class="hero-stat-lbl">Resolved</div>
+            </div>
+            <div class="hero-stat">
+                <div class="hero-stat-num">{{ total }}</div>
+                <div class="hero-stat-lbl">Total Submitted</div>
+            </div>
+            <div class="hero-stat">
+                <div class="hero-stat-num" style="color:var(--success);">
+                    <span class="status-dot dot-green"></span> Live
+                </div>
+                <div class="hero-stat-lbl">IT Desk Status</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="main">
+
+    <!-- Alerts -->
+    {% for msg in messages %}
+    <div class="alert {% if msg.tags == 'error' %}alert-error{% else %}alert-success{% endif %}">
+        <i class="fas fa-{% if msg.tags == 'error' %}circle-exclamation{% else %}circle-check{% endif %}" style="flex-shrink:0;margin-top:1px;"></i>
+        {{ msg }}
+    </div>
+    {% endfor %}
+
+    <!-- Service Categories -->
+    <div class="section-title"><i class="fas fa-bolt" style="color:var(--gold);"></i> What do you need help with?</div>
+    <div class="service-grid" id="serviceGrid">
+        {% for t in templates %}
+        <button class="service-btn" onclick="openRequestModal({{ t.pk }},'{{ t.name|escapejs }}','{{ t.icon|escapejs }}','{{ t.title_template|escapejs }}','{{ t.description_template|escapejs }}','{{ t.category_id|default:"" }}','{{ t.priority }}')"
+                title="{{ t.description }}">
+            <div class="service-icon" style="background:{{ t.color }}26;color:{{ t.color }};">
+                <i class="{{ t.icon }}"></i>
+            </div>
+            <span class="service-label">{{ t.name }}</span>
+        </button>
+        {% empty %}
+        <!-- Default categories when no templates exist -->
+        {% for svc in default_services %}
+        <button class="service-btn" onclick="openRequestModal(0,'{{ svc.name }}','{{ svc.icon }}','{{ svc.name }}','','','MEDIUM')">
+            <div class="service-icon" style="background:rgba(22,163,74,.15);color:var(--accent-h);">
+                <i class="{{ svc.icon }}"></i>
+            </div>
+            <span class="service-label">{{ svc.name }}</span>
+        </button>
+        {% endfor %}
+        {% endfor %}
+        <!-- Always show "Other" -->
+        <button class="service-btn" onclick="openRequestModal(0,'Other / General','fas fa-question-circle','','','','MEDIUM')">
+            <div class="service-icon" style="background:rgba(100,116,139,.15);color:var(--muted);">
+                <i class="fas fa-question-circle"></i>
+            </div>
+            <span class="service-label">Other / General</span>
+        </button>
+    </div>
+
+    <!-- Tabs: My Requests / Knowledge Base -->
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('requests',this)">
+            <i class="fas fa-list-check"></i> My Requests
+            {% if open_count %}<span style="background:var(--info);color:#fff;font-size:9px;padding:1px 6px;border-radius:10px;margin-left:4px;">{{ open_count }}</span>{% endif %}
+        </button>
+        <button class="tab" onclick="switchTab('kb',this)">
+            <i class="fas fa-book-open"></i> Help Articles
+        </button>
+    </div>
+
+    <!-- My Requests Tab -->
+    <div class="tab-pane active" id="pane-requests">
+        <form method="get" class="req-filters">
+            <div class="req-seg">
+                <a href="?status=all" class="{% if filter == 'all' %}on{% endif %}">All ({{ total }})</a>
+                <a href="?status=open" class="{% if filter == 'open' %}on{% endif %}">Open ({{ open_count }})</a>
+                <a href="?status=resolved" class="{% if filter == 'resolved' %}on{% endif %}">Resolved ({{ resolved_count }})</a>
+            </div>
+            <input type="hidden" name="status" value="{{ filter }}">
+            <input class="req-search" type="text" name="q" value="{{ q }}" placeholder="Search by title or ID…" autocomplete="off">
+        </form>
+        {% if my_tickets %}
+        <div class="requests-grid">
+            {% for ticket in my_tickets %}
+            <a href="{% url 'portal_ticket' ticket.ticket_id %}" class="req-card
+                {% if ticket.status == 'OPEN' %}ok
+                {% elif ticket.status == 'IN_PROGRESS' %}warn
+                {% elif ticket.status in 'RESOLVED CLOSED' %}neutral
+                {% else %}ok{% endif %}"
+                style="text-decoration:none;">
+                <div class="req-icon" style="
+                    {% if ticket.status == 'OPEN' %}background:rgba(59,130,246,.15);color:#60a5fa;
+                    {% elif ticket.status == 'IN_PROGRESS' %}background:rgba(245,158,11,.15);color:#fbbf24;
+                    {% elif ticket.status == 'RESOLVED' %}background:rgba(34,197,94,.15);color:#4ade80;
+                    {% else %}background:rgba(100,116,139,.15);color:#94a3b8;{% endif %}">
+                    <i class="fas fa-{% if ticket.status == 'OPEN' %}clock{% elif ticket.status == 'IN_PROGRESS' %}spinner{% elif ticket.status == 'RESOLVED' %}check-circle{% else %}circle-xmark{% endif %}"></i>
+                </div>
+                <div class="req-info">
+                    <div class="req-id">{{ ticket.ticket_id }}</div>
+                    <div class="req-title">{{ ticket.title }}</div>
+                    <div class="req-meta">
+                        <i class="fas fa-calendar" style="margin-right:4px;"></i>{{ ticket.created_at|date:"d M Y H:i" }}
+                        {% if ticket.category %} &nbsp;·&nbsp; {{ ticket.category.name }}{% endif %}
+                    </div>
+                    <div class="track" title="Submitted → Assigned → In progress → Resolved">
+                        {% for s in stages %}<i class="{% if forloop.counter < ticket.stage %}on{% elif forloop.counter == ticket.stage %}{% if ticket.stage == 4 %}on{% else %}now{% endif %}{% endif %}"></i>{% endfor %}
+                    </div>
+                    <div class="track-label">{% for s in stages %}{% if forloop.counter == ticket.stage %}{{ s }}{% endif %}{% endfor %}{% if ticket.assigned_to %} · with {{ ticket.assigned_to.get_full_name|default:ticket.assigned_to.username }}{% endif %}</div>
+                
+                </div>
+                <div class="req-right">
+                    {% if ticket.status == 'OPEN' %}<span class="badge b-open"><i class="fas fa-circle-dot"></i> Open</span>
+                    {% elif ticket.status == 'IN_PROGRESS' %}<span class="badge b-inprog"><i class="fas fa-spinner"></i> In Progress</span>
+                    {% elif ticket.status == 'RESOLVED' %}<span class="badge b-resolved"><i class="fas fa-check"></i> Resolved</span>
+                    {% else %}<span class="badge b-closed">Closed</span>{% endif %}
+                    {% if ticket.priority == 'HIGH' or ticket.priority == 'CRITICAL' %}
+                    <span class="badge b-high">{{ ticket.priority|capfirst }}</span>
+                    {% endif %}
+                    <i class="fas fa-chevron-right" style="color:var(--dim);font-size:11px;"></i>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% include 'helpdesk/_pagination.html' with page_obj=my_tickets param='page' noun='request' %}
+        {% else %}
+        <div class="empty">
+            <i class="fas fa-inbox empty-icon"></i>
+            <div style="font-size:16px;font-weight:600;color:var(--muted);margin-bottom:8px;">No requests yet</div>
+            <p style="font-size:13px;margin-bottom:20px;">Click any category above to submit your first IT request.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Knowledge Base Tab -->
+    <div class="tab-pane" id="pane-kb">
+        {% if kb_articles %}
+        <div class="kb-grid">
+            {% for article in kb_articles %}
+            <a href="{% url 'kb_detail' article.pk %}" class="kb-card">
+                <div class="kb-card-title">
+                    <i class="fas fa-book-open" style="color:var(--accent-h);margin-right:6px;"></i>
+                    {{ article.title }}
+                </div>
+                {% if article.summary %}
+                <div class="kb-card-desc">{{ article.summary }}</div>
+                {% else %}
+                <div class="kb-card-desc">{{ article.content|truncatechars:80 }}</div>
+                {% endif %}
+                <div style="margin-top:8px;font-size:10px;color:var(--dim);">
+                    <i class="fas fa-eye"></i> {{ article.views }} views
+                    {% if article.category %} &nbsp;·&nbsp; {{ article.category.name }}{% endif %}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        <div style="text-align:center;margin-top:16px;">
+            <a href="{% url 'kb_list' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-right"></i> View All Help Articles
+            </a>
+        </div>
+        {% else %}
+        <div class="empty">
+            <i class="fas fa-book-open empty-icon"></i>
+            <div style="font-size:14px;color:var(--muted);">No help articles available yet.</div>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- Request Modal -->
+<div class="modal-backdrop" id="requestModal">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title">
+                <i id="modalIcon" class="fas fa-ticket" style="color:var(--accent-h);margin-right:8px;"></i>
+                <span id="modalTitle">New IT Request</span>
+            </div>
+            <button class="modal-close" onclick="closeModal()">×</button>
+        </div>
+        <form method="post" action="{% url 'portal_create' %}" id="requestForm">
+            {% csrf_token %}
+            <input type="hidden" name="template_id" id="modalTemplateId">
+            <div class="form-group">
+                <label>What is the problem? *</label>
+                <input type="text" name="title" id="modalTitleInput"
+                       placeholder="Describe the issue briefly..." required>
+            </div>
+            <div class="form-group">
+                <label>More Details <span style="color:var(--dim);font-weight:400;">(optional but helps us resolve faster)</span></label>
+                <textarea name="description" id="modalDesc"
+                          placeholder="• When did it start?&#10;• Any error messages?&#10;• What were you doing?&#10;• Which device/room?"></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group" style="margin-bottom:0;">
+                    <label>Category</label>
+                    <select name="category" id="modalCategory">
+                        <option value="">— General —</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.pk }}">{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label>Department / Location</label>
+                    <input type="text" name="requester_section" id="modalSection"
+                           placeholder="e.g. Finance Dept, Room 3"
+                           value="{{ request.user.profile.preferred_db_year|default:'' }}">
+                </div>
+            </div>
+            <div class="form-group" style="margin-top:12px;">
+                <label>How urgent is this?</label>
+                <div class="priority-pills">
+                    <button type="button" class="priority-pill p-low" onclick="setPriority('LOW',this)">
+                        🟢 Low — no urgency
+                    </button>
+                    <button type="button" class="priority-pill p-medium selected" onclick="setPriority('MEDIUM',this)">
+                        🟡 Medium — affects work
+                    </button>
+                    <button type="button" class="priority-pill p-high" onclick="setPriority('HIGH',this)">
+                        🔴 High — cannot work
+                    </button>
+                </div>
+                <input type="hidden" name="priority" id="priorityInput" value="MEDIUM">
+            </div>
+            <div style="display:flex;gap:10px;margin-top:20px;">
+                <button type="submit" class="btn btn-primary" style="flex:1;">
+                    <i class="fas fa-paper-plane"></i> Submit Request
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// ── Tab switching ──────────────────────────────────────────────────────────────
+function switchTab(id, btn) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('pane-'+id).classList.add('active');
+}
+
+// ── Priority selection ─────────────────────────────────────────────────────────
+function setPriority(val, btn) {
+    document.querySelectorAll('.priority-pill').forEach(p => p.classList.remove('selected'));
+    btn.classList.add('selected');
+    document.getElementById('priorityInput').value = val;
+}
+
+// ── Request modal ──────────────────────────────────────────────────────────────
+function openRequestModal(id, name, icon, title, desc, catId, priority) {
+    document.getElementById('modalTemplateId').value = id || '';
+    document.getElementById('modalTitle').textContent = name || 'New IT Request';
+    document.getElementById('modalIcon').className = (icon || 'fas fa-ticket') + ' ' + 'fas';
+    document.getElementById('modalIcon').className = icon || 'fas fa-ticket';
+    document.getElementById('modalIcon').style.color = 'var(--accent-h)';
+    document.getElementById('modalTitleInput').value = title || '';
+    document.getElementById('modalDesc').value = desc || '';
+
+    // Set category
+    if (catId) {
+        var sel = document.getElementById('modalCategory');
+        if (sel) sel.value = catId;
+    }
+
+    // Set priority
+    var p = (priority || 'MEDIUM').toUpperCase();
+    document.getElementById('priorityInput').value = p;
+    document.querySelectorAll('.priority-pill').forEach(btn => btn.classList.remove('selected'));
+    var pClass = p === 'HIGH' || p === 'CRITICAL' ? 'p-high' : p === 'LOW' ? 'p-low' : 'p-medium';
+    var pill = document.querySelector('.priority-pill.' + pClass);
+    if (pill) pill.classList.add('selected');
+
+    document.getElementById('requestModal').classList.add('show');
+    setTimeout(() => document.getElementById('modalTitleInput').focus(), 100);
+}
+
+function closeModal() {
+    document.getElementById('requestModal').classList.remove('show');
+}
+
+// Close on backdrop click
+document.getElementById('requestModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+
+// Close on Escape
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% block title %}Manage Terms & Conditions{% endblock %}
+{% block page_title %}Terms & Conditions Management{% endblock %}
+{% block breadcrumb %}Admin / T&C Versions{% endblock %}
+
+{% block content %}
+<div style="max-width:900px;">
+
+<!-- Publish New Version -->
+<div class="card mb-6">
+    <div class="card-header">
+        <div class="header-icon" style="background:rgba(201,162,39,.2);color:var(--gold);">
+            <i class="fas fa-file-circle-plus"></i>
+        </div>
+        <h6>Publish New T&C Version</h6>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-warning mb-4" style="font-size:13px;">
+            <i class="fas fa-triangle-exclamation"></i>
+            Publishing a new version will require <strong>all users</strong> to re-accept on their next login.
+        </div>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="publish">
+            <div class="grid grid-3 gap-3 mb-4">
+                <div class="form-group">
+                    <label class="form-label">Version Number *</label>
+                    <input type="text" name="version" class="form-control"
+                           placeholder="e.g. 1.1, 2.0" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Effective Date *</label>
+                    <input type="date" name="effective_date" class="form-control" required
+                           value="{% now 'Y-m-d' %}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Title</label>
+                    <input type="text" name="title" class="form-control"
+                           value="BeitDesk System Terms & Conditions">
+                </div>
+            </div>
+            <div class="form-group mb-4">
+                <label class="form-label">
+                    T&C Content *
+                    <span style="font-size:10px;color:var(--text-muted);font-weight:400;">
+                        (Plain text — use blank lines to separate sections)
+                    </span>
+                </label>
+                <textarea name="content" class="form-control" rows="16"
+                          placeholder="Enter full Terms & Conditions text..." required
+                          style="font-family:monospace;font-size:12px;"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary"
+                    onclick="return confirm('Publish this T&C version? All users will be required to re-accept.')">
+                <i class="fas fa-upload"></i> Publish New Version
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Published Versions -->
+<div class="card mb-6">
+    <div class="card-header">
+        <div class="header-icon" style="background:rgba(88,166,255,.15);color:var(--info-text);">
+            <i class="fas fa-clock-rotate-left"></i>
+        </div>
+        <h6>Published Versions</h6>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Version</th>
+                    <th>Title</th>
+                    <th>Effective Date</th>
+                    <th>Published By</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for v in versions %}
+                <tr>
+                    <td class="mono" style="font-weight:600;color:var(--gold);">v{{ v.version }}</td>
+                    <td style="font-size:13px;">{{ v.title }}</td>
+                    <td style="font-size:12px;color:var(--text-muted);">
+                        {{ v.effective_date|date:"d M Y" }}
+                    </td>
+                    <td style="font-size:12px;">{{ v.created_by.username|default:"—" }}</td>
+                    <td>
+                        {% if v.is_current %}
+                        <span class="badge badge-open">
+                            <i class="fas fa-circle-check"></i> Current
+                        </span>
+                        {% else %}
+                        <span class="badge badge-closed">Archived</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'terms_view' %}" target="_blank"
+                           class="btn btn-secondary btn-sm">
+                            <i class="fas fa-eye"></i> View
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-muted" style="text-align:center;padding:24px;">
+                        No T&C versions published yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Recent Acceptances -->
+<div class="card mb-6">
+    <div class="card-header">
+        <div class="header-icon" style="background:rgba(35,134,54,.2);color:var(--success-text);">
+            <i class="fas fa-signature"></i>
+        </div>
+        <h6>Recent User Acceptances</h6>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Version</th>
+                    <th>Accepted At</th>
+                    <th>IP Address</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for acc in recent_acceptances %}
+                <tr>
+                    <td style="font-weight:500;">{{ acc.user.username }}</td>
+                    <td class="mono">v{{ acc.version.version }}</td>
+                    <td style="font-size:12px;color:var(--text-muted);">
+                        {{ acc.accepted_at|date:"d M Y H:i" }}
+                    </td>
+                    <td class="mono" style="font-size:11px;color:var(--text-muted);">
+                        {{ acc.ip_address|default:"—" }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="text-muted" style="text-align:center;padding:24px;">
+                        No acceptances recorded yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+</div>
+{% endblock %}

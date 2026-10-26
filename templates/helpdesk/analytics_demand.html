@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% load pager %}
+{% block title %}Request Demand{% endblock %}
+{% block page_title %}Request Demand{% endblock %}
+{% block breadcrumb %}Insights / Request demand{% endblock %}
+
+{% block content %}
+<style>
+.bar{height:7px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;min-width:80px;}
+.bar>i{display:block;height:100%;background:var(--accent-hover);border-radius:4px;}
+.seg{display:inline-flex;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.seg a{padding:7px 16px;font-size:13px;color:var(--text-muted);text-decoration:none;border-right:1px solid var(--border);}
+.seg a:last-child{border-right:none;} .seg a.on{background:rgba(26,107,48,.25);color:var(--accent-hover);font-weight:600;}
+th a{color:inherit;text-decoration:none;white-space:nowrap;} th a:hover{color:var(--accent-hover);}
+th .arrow{opacity:.8;font-size:10px;margin-left:3px;}
+.zero td{opacity:.55;}
+.sub{font-size:11px;color:var(--text-muted);}
+</style>
+
+<div class="flex-between mb-4" style="flex-wrap:wrap;gap:12px;">
+    <div>
+        <h1 style="font-size:20px;">Request Demand</h1>
+        <div class="text-muted" style="font-size:12px;margin-top:2px;">Who raises more or fewer IT requests · {{ period.label }}</div>
+    </div>
+    <form method="get" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input type="hidden" name="by" value="{{ by }}"><input type="hidden" name="sort" value="{{ sort }}"><input type="hidden" name="dir" value="{{ direction }}">
+        {% include 'helpdesk/_period_filter.html' %}
+        <a class="btn btn-secondary btn-sm" href="?{{ request.GET.urlencode }}{% if request.GET %}&{% endif %}export=csv"><i class="fas fa-file-csv"></i> CSV</a>
+    </form>
+</div>
+
+<div class="mb-4"><div class="seg">
+    {% for val,label in by_choices %}<a href="?by={{ val }}&period={{ period.key }}{% if period.key == 'custom' %}&from={{ period.from }}&to={{ period.to }}{% endif %}" class="{% if by == val %}on{% endif %}">By {{ label }}</a>{% endfor %}
+</div></div>
+
+<div class="grid grid-4 mb-4">
+    <div class="stat-card"><div class="stat-label">Total requests</div><div class="stat-value">{{ summary.total }}</div>
+        <div class="text-muted" style="font-size:12px;">{{ summary.active }} of {{ summary.groups }} {{ by_label|lower }}{{ summary.groups|pluralize }} raised any</div></div>
+    <div class="stat-card"><div class="stat-label">Most requests</div>
+        {% if summary.most %}<div style="font-weight:700;font-size:16px;margin-top:4px;">{{ summary.most.label }}</div><div class="text-muted" style="font-size:12px;">{{ summary.most.count }} request{{ summary.most.count|pluralize }}</div>{% else %}<div class="text-muted">—</div>{% endif %}</div>
+    <div class="stat-card"><div class="stat-label">Fewest (at least one)</div>
+        {% if summary.fewest %}<div style="font-weight:700;font-size:16px;margin-top:4px;">{{ summary.fewest.label }}</div><div class="text-muted" style="font-size:12px;">{{ summary.fewest.count }} request{{ summary.fewest.count|pluralize }}</div>{% else %}<div class="text-muted">—</div>{% endif %}</div>
+    <div class="stat-card"><div class="stat-label">No requests at all</div><div class="stat-value">{{ summary.silent }}</div>
+        <div class="text-muted" style="font-size:12px;">average {{ summary.average }} per {{ by_label|lower }}</div></div>
+</div>
+
+{% if summary.not_set and by != 'user' %}
+<div class="text-muted" style="font-size:12px;margin-bottom:10px;"><i class="fas fa-circle-info"></i> {{ summary.not_set }} request{{ summary.not_set|pluralize }} have no {{ by_label|lower }} recorded (older tickets, or callers who are not system users) and are listed as “(not set)”.</div>
+{% endif %}
+{% if fillable_tickets %}
+<div class="card mb-4" style="border-color:rgba(201,162,39,.4);"><div class="card-body" style="font-size:13px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+    <i class="fas fa-clock-rotate-left" style="color:var(--gold);"></i>
+    <span><b>{{ fillable_tickets }} older ticket{{ fillable_tickets|pluralize }}</b> can be assigned to the right {{ by_label|lower }} now that profiles are filled in.</span>
+    <a class="btn btn-secondary btn-sm" href="{% url 'organisation' %}">Open Organisation →</a>
+</div></div>
+{% endif %}
+{% if summary.unlinked and by == 'user' %}
+<div class="text-muted" style="font-size:12px;margin-bottom:10px;"><i class="fas fa-circle-info"></i> {{ summary.unlinked }} request{{ summary.unlinked|pluralize }} in this period were logged for callers who are not system users, so they are not attributed to anyone below.</div>
+{% endif %}
+
+<div class="card"><div class="table-wrapper"><table>
+    <thead><tr>
+        {% sort_url 'name' sort direction 'asc' as u_name %}{% sort_url 'count' sort direction as u_count %}{% sort_url 'rate' sort direction as u_rate %}
+        {% sort_url 'avg' sort direction 'asc' as u_avg %}{% sort_url 'last' sort direction as u_last %}
+        <th><a href="{{ u_name }}">{{ by_label }}{% if sort == 'name' %}<span class="arrow">{% if direction == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a></th>
+        <th><a href="{{ u_count }}">Requests{% if sort == 'count' %}<span class="arrow">{% if direction == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a></th>
+        <th>Share</th><th>Open</th><th>Resolved</th><th>High / Crit</th>
+        <th><a href="{{ u_avg }}">Avg resolution{% if sort == 'avg' %}<span class="arrow">{% if direction == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a></th>
+        {% if by != 'user' %}<th>People</th><th><a href="{{ u_rate }}">Per person{% if sort == 'rate' %}<span class="arrow">{% if direction == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a></th>{% endif %}
+        <th><a href="{{ u_last }}">Last request{% if sort == 'last' %}<span class="arrow">{% if direction == 'asc' %}▲{% else %}▼{% endif %}</span>{% endif %}</a></th>
+    </tr></thead>
+    <tbody>
+    {% for r in rows %}
+    <tr class="{% if not r.count %}zero{% endif %}">
+        <td>{% if r.drill %}<a href="{{ r.drill }}" title="Show these tickets"><b>{{ r.label }}</b></a>{% else %}<b>{{ r.label }}</b>{% endif %}{% if by == 'user' %}{% if r.is_staff %} <span class="badge" style="font-size:9px;">IT</span>{% endif %}
+            <div class="sub">{{ r.office|default:"—" }}{% if r.department %} · {{ r.department }}{% endif %}{% if r.section %} · {{ r.section }}{% endif %}</div>{% endif %}</td>
+        <td style="min-width:140px;"><div style="display:flex;gap:8px;align-items:center;"><b style="min-width:24px;">{% if r.drill %}<a href="{{ r.drill }}" title="Show these tickets">{{ r.count }}</a>{% else %}{{ r.count }}{% endif %}</b>
+            <div class="bar"><i style="width:{% widthratio r.count max_count 100 %}%;"></i></div></div></td>
+        <td>{{ r.share }}%</td><td>{{ r.open }}</td><td>{{ r.resolved }}</td><td>{{ r.urgent }}</td><td>{{ r.avg_label }}</td>
+        {% if by != 'user' %}<td>{{ r.headcount|default_if_none:"—" }}</td><td>{{ r.per_head|default_if_none:"—" }}</td>{% endif %}
+        <td class="text-muted" style="white-space:nowrap;">{% if r.last %}{{ r.last|date:"d M Y" }}{% else %}—{% endif %}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="9" class="text-muted" style="text-align:center;padding:30px;">Nothing to show for this period.</td></tr>
+    {% endfor %}
+    </tbody>
+</table></div>
+{% include 'helpdesk/_pagination.html' with page_obj=rows param='page' noun=by_label|lower %}
+</div>
+
+{% if by != 'user' and summary.groups <= 1 %}
+<p class="text-muted" style="font-size:12.5px;margin-top:14px;"><i class="fas fa-lightbulb"></i>
+    Requests are grouped by the {{ by_label|lower }} recorded on each person's profile.
+    {% if request.user.is_superuser %}<a href="{% url 'organisation' %}">Set offices, departments and sections →</a>{% else %}Ask an administrator to set each user's office, department and section.{% endif %}</p>
+{% endif %}
+<p class="text-muted" style="font-size:11.5px;margin-top:12px;">
+    Click a name or a count to see those tickets. "Per person" divides requests by the number of active, non-IT users in that {{ by_label|lower }}, so large and small groups can be compared fairly.
+    Groups with no requests are included. Office, department and section are recorded on the ticket when it is raised.
+</p>
+{% endblock %}

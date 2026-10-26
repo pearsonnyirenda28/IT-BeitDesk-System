@@ -1,390 +1,157 @@
 {% extends "admin/base_site.html" %}
 {% block content %}
-<div style="max-width:900px;">
+<style>
+.guide-section{background:#1c2128;border:1px solid #30363d;border-radius:10px;padding:20px;margin-bottom:16px;}
+.guide-section h2{font-size:14px;font-weight:700;color:#c9a227;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.guide-section h3{font-size:12px;font-weight:600;color:#58a6ff;margin:14px 0 6px;}
+.guide-section p,.guide-section li{font-size:12px;color:#8b949e;line-height:1.7;margin-bottom:4px;}
+.guide-section ul,.guide-section ol{padding-left:18px;margin-bottom:8px;}
+code{background:#21262d;border:1px solid #30363d;border-radius:4px;padding:1px 6px;font-size:11px;color:#79c0ff;}
+.cmd{display:block;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:8px 12px;font-family:monospace;font-size:11px;color:#79c0ff;margin:6px 0;}
+.note{background:rgba(201,162,39,.08);border:1px solid rgba(201,162,39,.2);border-radius:6px;padding:8px 12px;font-size:11px;color:#d29922;margin:8px 0;}
+.warn{background:rgba(218,54,51,.08);border:1px solid rgba(218,54,51,.2);border-radius:6px;padding:8px 12px;font-size:11px;color:#f85149;margin:8px 0;}
+.ok{background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.2);border-radius:6px;padding:8px 12px;font-size:11px;color:#3fb950;margin:8px 0;}
+</style>
 
-    <h1 style="margin-bottom:6px;">How to Use BeitDesk</h1>
-    <p style="color:#888;margin-bottom:28px;">Step-by-step guide for administrators and IT staff</p>
+<h1 style="font-size:20px;font-weight:700;margin-bottom:4px;color:#e6edf3;">BeitDesk — Administrator Guide</h1>
+<p style="color:#8b949e;font-size:13px;margin-bottom:20px;">Complete reference for managing BeitDesk</p>
 
-    <!-- Quick nav -->
-    <div style="background:#1c2128;border:1px solid #30363d;border-radius:8px;
-                padding:14px 20px;margin-bottom:28px;display:flex;gap:20px;flex-wrap:wrap;">
-        <span style="font-size:12px;color:#6e7681;">Jump to:</span>
-        <a href="#tickets"  style="font-size:12px;color:#58a6ff;">Tickets</a>
-        <a href="#voip"     style="font-size:12px;color:#58a6ff;">VoIP Calls</a>
-        <a href="#users"    style="font-size:12px;color:#58a6ff;">User Management</a>
-        <a href="#audit"    style="font-size:12px;color:#58a6ff;">Audit Trail</a>
-        <a href="#reports"  style="font-size:12px;color:#58a6ff;">Reports</a>
-        <a href="#roles"    style="font-size:12px;color:#58a6ff;">Roles &amp; Permissions</a>
-        <a href="#groups"   style="font-size:12px;color:#9b72ea;">Groups</a>
-        <a href="#voip-lan" style="font-size:12px;color:#3fb950;">VoIP LAN Setup</a>
-    </div>
+<div class="guide-section">
+    <h2>🚀 Starting the System</h2>
+    <h3>Normal HTTP (development / LAN without PWA)</h3>
+    <code class="cmd">py manage.py runserver 0.0.0.0:8000</code>
+    <h3>HTTPS (required for PWA install + camera MFA on other devices)</h3>
+    <code class="cmd">python run_https.py</code>
+    <div class="note">HTTPS certificates: run <code>mkcert -install && mkcert 192.168.1.171 localhost 127.0.0.1</code> once to create cert files. Update IP in <code>run_https.py</code> and <code>settings.py</code> to match your machine's LAN IP (<code>ipconfig</code>).</div>
+    <h3>First-time setup</h3>
+    <code class="cmd">pip install -r requirements.txt</code>
+    <code class="cmd">py manage.py migrate</code>
+    <code class="cmd">py manage.py seed_data</code>
+    <code class="cmd">py manage.py createsuperuser</code>
+    <p>The seed data does not create any user accounts. Create your administrator with the command above, then add everyone else from <strong style="color:#e6edf3;">Users → Create User</strong>.</p>
+</div>
 
-    <!-- ── TICKETS ─────────────────────────────────────────────────────── -->
-    <div id="tickets" style="background:#1c2128;border:1px solid #30363d;
-         border-radius:8px;padding:22px;margin-bottom:20px;">
-        <h2 style="font-size:15px;color:#3fb950;margin-bottom:16px;">
-            🎫 Ticket Management
-        </h2>
+<div class="guide-section">
+    <h2>👥 User Management</h2>
+    <h3>Permission Levels</h3>
+    <ul>
+        <li><strong style="color:#e6edf3;">Administrator (superuser)</strong> — full access to all features, can promote users, manage T&amp;C, delete backups, restore databases</li>
+        <li><strong style="color:#e6edf3;">IT Staff (is_staff)</strong> — manage all tickets, assets, KB articles, create backups, view all users</li>
+        <li><strong style="color:#e6edf3;">Regular User</strong> — can only see their own tickets and KB articles</li>
+    </ul>
+    <h3>Creating Groups (recommended)</h3>
+    <p>Go to <strong>Admin → Authentication → Groups</strong>. Create:</p>
+    <ul>
+        <li><code>IT Staff</code> — assign all staff. Gives <code>is_staff=True</code></li>
+        <li><code>IT Admin</code> — assign senior staff. Gives <code>is_superuser=True</code></li>
+    </ul>
+    <h3>Promote a user to admin</h3>
+    <p>Admin Panel → Users → select user → tick "Superuser status" → Save</p>
+</div>
 
-        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Creating a Ticket</h4>
-        <ol style="font-size:13px;color:#8b949e;line-height:2;padding-left:20px;margin-bottom:16px;">
-            <li>Click <strong style="color:#e6edf3;">New Ticket</strong> in the top bar or sidebar.</li>
-            <li>Fill in the <strong style="color:#e6edf3;">Title</strong> and <strong style="color:#e6edf3;">Description</strong> — be specific about the issue.</li>
-            <li>Select the <strong style="color:#e6edf3;">Category</strong> (e.g. Network, Hardware, Software).</li>
-            <li>Set the <strong style="color:#e6edf3;">Priority</strong>: Low / Medium / High / Critical.</li>
-            <li>Set the <strong style="color:#e6edf3;">Source</strong>: how the issue was reported (Web, Phone, Walk-In, VoIP, Email).</li>
-            <li>Enter the <strong style="color:#e6edf3;">Requester</strong> details — name, email, phone, department.</li>
-            <li>Click <strong style="color:#e6edf3;">Create Ticket</strong>. The system assigns a unique ID (e.g. ND001001).</li>
-        </ol>
-        <div style="background:#161b22;border-left:3px solid #f85149;padding:10px 14px;
-                    border-radius:4px;font-size:12px;color:#8b949e;margin-bottom:16px;">
-            ⚠️ <strong style="color:#e6edf3;">Important:</strong> Once created, ticket fields cannot be edited.
-            Ensure all details are correct before submitting. Only the status can be changed afterwards.
-        </div>
+<div class="guide-section">
+    <h2>🔒 MFA — Face Recognition &amp; TOTP</h2>
+    <h3>How MFA works</h3>
+    <ol>
+        <li>User logs in with username + password</li>
+        <li>If MFA is enabled on their account → redirected to verification page</li>
+        <li>Face tab: camera opens, blink detected for liveness, face compared to stored embedding</li>
+        <li>If face matches (≥75% confidence) → logged in. If not → try TOTP or backup code</li>
+    </ol>
+    <h3>Enrolling a user's face</h3>
+    <p>Visit <code>/accounts/mfa/enroll/?user_id=&lt;pk&gt;</code> as admin, or ask user to visit <code>/accounts/mfa/enroll/</code> themselves.</p>
+    <div class="note">Face recognition requires HTTPS and a camera. On HTTP (localhost only), camera works. On LAN devices, start the HTTPS server first.</div>
+    <h3>Unlocking a locked face account</h3>
+    <p>After 5 failed face attempts, account locks for 15 minutes. Admin can unlock at: <code>/accounts/mfa/settings/</code> → scroll to unlock section.</p>
+    <h3>TOTP Setup (Google Authenticator)</h3>
+    <ol>
+        <li>User visits MFA Settings → scans QR code with Google Authenticator or Authy</li>
+        <li>Enters 6-digit code to confirm → TOTP activated</li>
+        <li>8 backup codes generated — user should save these</li>
+    </ol>
+    <div class="warn">If a user loses their authenticator and has no backup codes, reset their TOTP secret from Admin Panel → UserProfiles → clear <code>totp_secret</code> and set <code>totp_enabled=False</code></div>
+</div>
 
-        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Managing Ticket Status</h4>
-        <table style="width:100%;font-size:12px;color:#8b949e;margin-bottom:16px;">
-            <tr style="border-bottom:1px solid #30363d;">
-                <th style="padding:6px 10px;text-align:left;color:#e6edf3;">Status</th>
-                <th style="padding:6px 10px;text-align:left;color:#e6edf3;">Meaning</th>
-                <th style="padding:6px 10px;text-align:left;color:#e6edf3;">Who can set</th>
-            </tr>
-            <tr><td style="padding:6px 10px;color:#17a2b8;">Open</td><td>Newly raised, not yet picked up</td><td>System (on create)</td></tr>
-            <tr><td style="padding:6px 10px;color:#388bfd;">In Progress</td><td>Actively being worked on</td><td>IT Staff / Admin</td></tr>
-            <tr><td style="padding:6px 10px;color:#d29922;">Pending</td><td>Waiting on requester or third party</td><td>IT Staff / Admin</td></tr>
-            <tr><td style="padding:6px 10px;color:#3fb950;">Resolved</td><td>Issue fixed, awaiting confirmation</td><td>IT Staff / Admin</td></tr>
-            <tr><td style="padding:6px 10px;color:#6e7681;">Closed</td><td>Confirmed resolved, archived</td><td>IT Staff / Admin</td></tr>
-        </table>
+<div class="guide-section">
+    <h2>📋 Terms &amp; Conditions</h2>
+    <ul>
+        <li>Current T&amp;C version is shown at <code>/accounts/terms/</code></li>
+        <li>Manage versions at <code>/accounts/terms/admin/</code> (superusers only)</li>
+        <li>Publishing a new version resets all users' acceptance — everyone re-accepts on next login</li>
+        <li>Every acceptance is logged with timestamp and IP in <code>UserTermsAcceptance</code></li>
+    </ul>
+</div>
 
-        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Assigning Tickets</h4>
-        <ul style="font-size:13px;color:#8b949e;line-height:2;padding-left:20px;margin-bottom:8px;">
-            <li><strong style="color:#e6edf3;">Administrators</strong> can assign any ticket to any IT staff member from the ticket detail page.</li>
-            <li><strong style="color:#e6edf3;">IT Staff</strong> can <em>take</em> any open, unassigned ticket by clicking <strong style="color:#e6edf3;">Take This Ticket</strong>. The ticket automatically moves to In Progress.</li>
-            <li>Once assigned, only administrators can reassign the ticket to someone else.</li>
-        </ul>
-    </div>
+<div class="guide-section">
+    <h2>🗄 Database Backup &amp; Restore</h2>
+    <h3>Create a backup</h3>
+    <p>Dashboard → DB Backup → Create New Backup. Saves to <code>backups/</code> folder.</p>
+    <div class="note">For SQLite (dev): copies .db file. For PostgreSQL (prod): uses <code>pg_dump</code> — ensure it's on your PATH.</div>
+    <h3>Restore (admin only)</h3>
+    <div class="warn">Restore OVERWRITES the current database. Always create a new backup before restoring.</div>
+    <h3>Year Databases</h3>
+    <p>BeitDesk supports multiple year databases. Register years at Dashboard → Database / Year. Staff can switch to a past year at login to view historical records. Past-year databases are read-only in the UI.</p>
+</div>
 
-    <!-- ── VOIP ──────────────────────────────────────────────────────────── -->
-    <div id="voip" style="background:#1c2128;border:1px solid #30363d;
-         border-radius:8px;padding:22px;margin-bottom:20px;">
-        <h2 style="font-size:15px;color:#58a6ff;margin-bottom:16px;">
-            📞 VoIP Call Tracking
-        </h2>
-        <div style="background:#161b22;border-left:3px solid #58a6ff;padding:10px 14px;
-                    border-radius:4px;font-size:12px;color:#8b949e;margin-bottom:16px;">
-            ℹ️ Live call events require a PBX/Asterisk integration on the LAN.
-            Manual call logging is always available regardless.
-        </div>
+<div class="guide-section">
+    <h2>📊 SLA Escalation (Scheduling)</h2>
+    <h3>Manual run</h3>
+    <code class="cmd">py manage.py check_sla</code>
+    <code class="cmd">py manage.py check_sla --dry-run  # preview without sending</code>
+    <h3>Schedule on Windows (every 30 minutes)</h3>
+    <code class="cmd">schtasks /create /tn "BeitDesk SLA" /tr "C:\path\to\.venv\Scripts\python.exe C:\path\to\manage.py check_sla" /sc minute /mo 30 /st 00:00</code>
+    <h3>Schedule on Linux (cron)</h3>
+    <code class="cmd">*/30 * * * * cd /path/to/beitdesk && python manage.py check_sla >> /var/log/beitdesk_sla.log 2>&1</code>
+    <p>Escalation levels: 1=Warning (within 2h of due), 2=Breached (past due), 3=Critical (24h+ overdue).</p>
+</div>
 
-        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Logging a Call Manually</h4>
-        <ol style="font-size:13px;color:#8b949e;line-height:2;padding-left:20px;margin-bottom:16px;">
-            <li>Click <strong style="color:#e6edf3;">Log Call</strong> in the top bar or VoIP → Log a Call in the sidebar.</li>
-            <li>Enter the <strong style="color:#e6edf3;">Caller Number</strong> (full number with country code, e.g. +263771234567).</li>
-            <li>Enter the <strong style="color:#e6edf3;">Caller Name</strong> if known.</li>
-            <li>Set the <strong style="color:#e6edf3;">Direction</strong> (Inbound / Outbound / Internal) and <strong style="color:#e6edf3;">Status</strong>.</li>
-            <li>Enter the <strong style="color:#e6edf3;">Talk Duration</strong> in minutes (decimals allowed, e.g. 2.5 = 2m 30s).</li>
-            <li>Add <strong style="color:#e6edf3;">Notes</strong> summarising the call topic.</li>
-            <li>Optionally tick <strong style="color:#e6edf3;">Also create a ticket</strong> to log a support issue from the call.</li>
-        </ol>
+<div class="guide-section">
+    <h2>📱 PWA Installation</h2>
+    <ul>
+        <li><strong>Windows Chrome/Edge</strong> — install prompt appears automatically on HTTPS. Or click ⊕ in address bar</li>
+        <li><strong>Android Chrome</strong> — install banner appears after 30 seconds on HTTPS site</li>
+        <li><strong>iPhone (Safari)</strong> — Share button → Add to Home Screen (iOS cannot show auto-prompt)</li>
+        <li><strong>Other LAN devices</strong> — open <code>https://&lt;your-ip&gt;:8000</code> in Chrome, install from menu</li>
+    </ul>
+    <div class="note">Camera (face MFA) and PWA install both require HTTPS. Start <code>python run_https.py</code> for LAN devices.</div>
+</div>
 
-        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Call Log &amp; Caller Directory</h4>
-        <ul style="font-size:13px;color:#8b949e;line-height:2;padding-left:20px;">
-            <li>The <strong style="color:#e6edf3;">Call Log</strong> lists all recorded calls with filters for date, status, and direction.</li>
-            <li>The <strong style="color:#e6edf3;">Caller Directory</strong> tracks known callers — name, company, total calls, last call, VIP/blocked flags.</li>
-            <li>From any call record, click <strong style="color:#e6edf3;">Create Ticket</strong> to raise a linked support ticket pre-filled with caller details.</li>
-        </ul>
-    </div>
+<div class="guide-section">
+    <h2>📤 Data Export</h2>
+    <ul>
+        <li><strong>Tickets CSV</strong> — Dashboard → Export CSV (IT Staff + Admin only)</li>
+        <li><strong>Assets CSV</strong> — Assets → Export CSV (IT Staff + Admin only)</li>
+        <li>Both exports include all current filter selections</li>
+    </ul>
+</div>
 
-    <!-- ── USERS ─────────────────────────────────────────────────────────── -->
-    <div id="users" style="background:#1c2128;border:1px solid #30363d;
-         border-radius:8px;padding:22px;margin-bottom:20px;">
-        <h2 style="font-size:15px;color:#d29922;margin-bottom:16px;">
-            👥 User Management
-        </h2>
-
-        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Creating a New User</h4>
-        <ol style="font-size:13px;color:#8b949e;line-height:2;padding-left:20px;margin-bottom:16px;">
-            <li>Go to <strong style="color:#e6edf3;">Analytics → Manage Users</strong> in the sidebar.</li>
-            <li>Click <strong style="color:#e6edf3;">Add User</strong> (superusers only).</li>
-            <li>Fill in username, name, email, and a password of at least 8 characters.</li>
-            <li>Tick <strong style="color:#e6edf3;">Grant IT Staff access</strong> if this person should be an agent who can manage tickets.</li>
-            <li>Click <strong style="color:#e6edf3;">Create User</strong>.</li>
-        </ol>
-
-        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Resetting a Password</h4>
-        <ol style="font-size:13px;color:#8b949e;line-height:2;padding-left:20px;margin-bottom:16px;">
-            <li>Go to <strong style="color:#e6edf3;">Manage Users</strong> and click the gear icon next to the user.</li>
-            <li>In the <strong style="color:#e6edf3;">Reset Password</strong> panel, enter and confirm the new password.</li>
-            <li>Click <strong style="color:#e6edf3;">Reset Password</strong>. The user must use this new password on next login.</li>
-        </ol>
-
-        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Deactivating a User</h4>
-        <ul style="font-size:13px;color:#8b949e;line-height:2;padding-left:20px;">
-            <li>On the user's detail page, click <strong style="color:#e6edf3;">Deactivate Account</strong>.</li>
-            <li>The user cannot log in, but all their ticket history and audit events are preserved.</li>
-            <li>Click <strong style="color:#e6edf3;">Reactivate Account</strong> to restore access at any time.</li>
-            <li>IT Staff cannot deactivate or manage administrator accounts.</li>
-        </ul>
-    </div>
-
-    <!-- ── AUDIT TRAIL ───────────────────────────────────────────────────── -->
-    <div id="audit" style="background:#1c2128;border:1px solid #30363d;
-         border-radius:8px;padding:22px;margin-bottom:20px;">
-        <h2 style="font-size:15px;color:#f85149;margin-bottom:16px;">
-            🛡️ Audit Trail
-        </h2>
-        <ul style="font-size:13px;color:#8b949e;line-height:2;padding-left:20px;">
-            <li>Every action in BeitDesk is recorded: logins, ticket creation, status changes, assignments, comments, call logs, and user changes.</li>
-            <li><strong style="color:#e6edf3;">Administrators</strong> can see all events across all users.</li>
-            <li><strong style="color:#e6edf3;">IT Staff</strong> can see only their own audit events.</li>
-            <li><strong style="color:#e6edf3;">Regular Users</strong> see only their own events on the dashboard — they cannot access the full audit trail page.</li>
-            <li>The audit trail records the <strong style="color:#e6edf3;">user</strong>, <strong style="color:#e6edf3;">action</strong>, <strong style="color:#e6edf3;">timestamp</strong>, and <strong style="color:#e6edf3;">IP address</strong> for every event.</li>
-            <li>Audit records cannot be edited or deleted through the application interface.</li>
-        </ul>
-    </div>
-
-    <!-- ── REPORTS ───────────────────────────────────────────────────────── -->
-    <div id="reports" style="background:#1c2128;border:1px solid #30363d;
-         border-radius:8px;padding:22px;margin-bottom:20px;">
-        <h2 style="font-size:15px;color:#9b72ea;margin-bottom:16px;">
-            📊 Reports
-        </h2>
-        <ul style="font-size:13px;color:#8b949e;line-height:2;padding-left:20px;">
-            <li>Go to <strong style="color:#e6edf3;">Analytics → Reports</strong> from the sidebar.</li>
-            <li>Use the period selector to view data for the last <strong style="color:#e6edf3;">7, 30, 90, or 365 days</strong>.</li>
-            <li>Reports show: total tickets created and resolved, average resolution time, breakdown by priority/category/source, and agent performance.</li>
-            <li>VoIP stats show total calls, completion rate, missed calls, and average call duration for the period.</li>
-        </ul>
-    </div>
-
-    <!-- ── ROLES ─────────────────────────────────────────────────────────── -->
-    <div id="roles" style="background:#1c2128;border:1px solid #30363d;
-         border-radius:8px;padding:22px;margin-bottom:20px;">
-        <h2 style="font-size:15px;color:#c9a227;margin-bottom:16px;">
-            🔐 Roles &amp; Permissions Summary
-        </h2>
-        <table style="width:100%;font-size:12px;border-collapse:collapse;">
-            <tr style="background:#161b22;border-bottom:1px solid #30363d;">
-                <th style="padding:8px 12px;text-align:left;color:#e6edf3;">Feature</th>
-                <th style="padding:8px 12px;text-align:center;color:#f85149;">Admin</th>
-                <th style="padding:8px 12px;text-align:center;color:#388bfd;">IT Staff</th>
-                <th style="padding:8px 12px;text-align:center;color:#8b949e;">User</th>
-            </tr>
-            <tr style="border-bottom:1px solid #21262d;">
-                <td style="padding:7px 12px;color:#8b949e;">View own tickets</td>
-                <td style="text-align:center;color:#3fb950;">✔</td>
-                <td style="text-align:center;color:#3fb950;">✔</td>
-                <td style="text-align:center;color:#3fb950;">✔</td>
-            </tr>
-            <tr style="border-bottom:1px solid #21262d;">
-                <td style="padding:7px 12px;color:#8b949e;">View all tickets</td>
-                <td style="text-align:center;color:#3fb950;">✔</td>
-                <td style="text-align:center;color:#3fb950;">✔</td>
-                <td style="text-align:center;color:#f85149;">✘</td>
-            </tr>
-            <tr style="border-bottom:1px solid #21262d;">
-                <td style="padding:7px 12px;color:#8b949e;">Change ticket status</td>
-                <td style="text-align:center;color:#3fb950;">✔</td>
-                <td style="text-align:center;color:#3fb950;">✔</td>
-                <td style="text-align:center;color:#f85149;">✘</td>
-            </tr>
-            <tr style="border-bottom:1px solid #21262d;">
-                <td style="padding:7px 12px;color:#8b949e;">Assign ticket to agent</td>
-                <td style="text-align:center;color:#3fb950;">✔</td>
-                <td style="text-align:center;color:#f85149;">✘</td>
-                <td style="text-align:center;color:#f85149;">✘</td>
-            </tr>
-            <tr style="border-bottom:1px solid #21262d;">
-                <td style="padding:7px 12px;color:#8b949e;">Take unassigned ticket</td>
-                <td style="text-align:center;color:#3fb950;">✔</td>
-                <td style="text-align:center;color:#3fb950;">✔</td>
-                <td style="text-align:center;color:#f85149;">✘</td>
-            </tr>
-            <tr style="border-bottom:1px solid #21262d;">
-                <td style="padding:7px 12px;color:#8b949e;">Log / view VoIP calls</td>
-                <td style="text-align:center;color:#3fb950;">✔</td>
-                <td style="text-align:center;color:#3fb950;">✔</td>
-                <td style="text-align:center;color:#3fb950;">✔</td>
-            </tr>
-            <tr style="border-bottom:1px solid #21262d;">
-                <td style="padding:7px 12px;color:#8b949e;">Full audit trail</td>
-                <td style="text-align:center;color:#3fb950;">✔ (all)</td>
-                <td style="text-align:center;color:#d29922;">✔ (own)</td>
-                <td style="text-align:center;color:#f85149;">✘</td>
-            </tr>
-            <tr style="border-bottom:1px solid #21262d;">
-                <td style="padding:7px 12px;color:#8b949e;">Manage users</td>
-                <td style="text-align:center;color:#3fb950;">✔</td>
-                <td style="text-align:center;color:#d29922;">✔ (non-admins)</td>
-                <td style="text-align:center;color:#f85149;">✘</td>
-            </tr>
-            <tr style="border-bottom:1px solid #21262d;">
-                <td style="padding:7px 12px;color:#8b949e;">Create / deactivate users</td>
-                <td style="text-align:center;color:#3fb950;">✔</td>
-                <td style="text-align:center;color:#f85149;">✘</td>
-                <td style="text-align:center;color:#f85149;">✘</td>
-            </tr>
-            <tr>
-                <td style="padding:7px 12px;color:#8b949e;">Edit own profile</td>
-                <td style="text-align:center;color:#3fb950;">✔</td>
-                <td style="text-align:center;color:#3fb950;">✔</td>
-                <td style="text-align:center;color:#3fb950;">✔</td>
-            </tr>
-        </table>
-    </div>
-
-    <!-- ── GROUPS ────────────────────────────────────────────────────────── -->
-    <div id="groups" style="background:#1c2128;border:1px solid #30363d;
-         border-radius:8px;padding:22px;margin-bottom:20px;">
-        <h2 style="font-size:15px;color:#9b72ea;margin-bottom:16px;">
-            👥 Groups (Django Permission Groups)
-        </h2>
-        <p style="font-size:13px;color:#8b949e;line-height:1.7;margin-bottom:14px;">
-            BeitDesk uses Django's built-in Groups system for additional permission granularity.
-            Groups are managed from the Admin Panel under
-            <strong style="color:#e6edf3;">Authentication and Authorization → Groups</strong>.
-        </p>
-
-        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Role Flags vs Groups</h4>
-        <table style="width:100%;font-size:12px;color:#8b949e;margin-bottom:16px;border-collapse:collapse;">
-            <tr style="background:#161b22;border-bottom:1px solid #30363d;">
-                <th style="padding:8px 12px;text-align:left;color:#e6edf3;">Role / Flag</th>
-                <th style="padding:8px 12px;text-align:left;color:#e6edf3;">Set via</th>
-                <th style="padding:8px 12px;text-align:left;color:#e6edf3;">Effect in BeitDesk</th>
-            </tr>
-            <tr style="border-bottom:1px solid #21262d;">
-                <td style="padding:7px 12px;color:#f85149;">is_superuser</td>
-                <td>Manage Users → Promote to Administrator</td>
-                <td>Full access — all tickets, all users, full audit log, assign tickets</td>
-            </tr>
-            <tr style="border-bottom:1px solid #21262d;">
-                <td style="padding:7px 12px;color:#388bfd;">is_staff</td>
-                <td>Manage Users → Grant Staff Role</td>
-                <td>All tickets visible, can take/change status, own audit log</td>
-            </tr>
-            <tr style="border-bottom:1px solid #21262d;">
-                <td style="padding:7px 12px;color:#8b949e;">Neither</td>
-                <td>Default for new users</td>
-                <td>Own tickets only, own profile, own audit events on dashboard</td>
-            </tr>
-            <tr>
-                <td style="padding:7px 12px;color:#9b72ea;">Django Group</td>
-                <td>Admin → Groups → assign to user</td>
-                <td>Model-level permissions (add/change/delete on specific models)</td>
-            </tr>
-        </table>
-
-        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Creating a Custom Group</h4>
-        <ol style="font-size:13px;color:#8b949e;line-height:2;padding-left:20px;margin-bottom:14px;">
-            <li>Go to <code style="background:#161b22;padding:2px 5px;border-radius:3px;">/admin/</code>
-                → <strong style="color:#e6edf3;">Authentication and Authorization → Groups → Add Group</strong>.</li>
-            <li>Name the group (e.g. <code style="background:#161b22;padding:2px 5px;border-radius:3px;">Level 2 Support</code>).</li>
-            <li>In the <strong style="color:#e6edf3;">Permissions</strong> panel, select the model
-                permissions this group should have (e.g. <code>helpdesk | ticket | Can view ticket</code>).</li>
-            <li>Click <strong style="color:#e6edf3;">Save</strong>.</li>
-            <li>To assign: open any user in <code>/admin/auth/user/</code>, scroll to
-                <strong style="color:#e6edf3;">Groups</strong>, and add them to the group.</li>
-        </ol>
-
-        <div style="background:#161b22;border-left:3px solid #9b72ea;padding:10px 14px;
-                    border-radius:4px;font-size:12px;color:#8b949e;">
-            ℹ️ For most deployments the <strong style="color:#e6edf3;">is_staff</strong> and
-            <strong style="color:#e6edf3;">is_superuser</strong> flags (managed from BeitDesk's own
-            Manage Users page) are sufficient. Use Django Groups only when you need
-            fine-grained model permissions beyond the three built-in roles.
-        </div>
-    </div>
-
-    <!-- ── VOIP LAN CONFIG ───────────────────────────────────────────────── -->
-    <div id="voip-lan" style="background:#1c2128;border:1px solid #30363d;
-         border-radius:8px;padding:22px;margin-bottom:20px;">
-        <h2 style="font-size:15px;color:#58a6ff;margin-bottom:16px;">
-            🔌 Configuring Live VoIP on LAN (Asterisk / FreePBX)
-        </h2>
-        <p style="font-size:13px;color:#8b949e;line-height:1.7;margin-bottom:14px;">
-            BeitDesk supports live call events from a PBX on your local network.
-            When configured, calls appear on the Live Call Board automatically.
-            Manual logging always works with or without a PBX connected.
-        </p>
-
-        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Requirements</h4>
-        <ul style="font-size:13px;color:#8b949e;line-height:2;padding-left:20px;margin-bottom:14px;">
-            <li>Asterisk 18+ or FreePBX 16+ on the same LAN as BeitDesk</li>
-            <li>AMI (Asterisk Manager Interface) enabled on the PBX</li>
-            <li>BeitDesk server reachable from the PBX on its port (default 8000)</li>
-        </ul>
-
-        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Step 1 — Enable AMI on the PBX</h4>
-        <p style="font-size:12px;color:#8b949e;margin-bottom:6px;">
-            Edit <code style="background:#161b22;padding:2px 5px;border-radius:3px;">/etc/asterisk/manager.conf</code>:
-        </p>
-        <pre style="background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:14px;
-                    font-size:12px;color:#79c0ff;overflow-x:auto;margin-bottom:14px;">[general]
-enabled = yes
-port = 5038
-bindaddr = 0.0.0.0
-
-[beitdesk]
-secret = your_ami_password_here
-read = call,cdr,agent
-write = call
-permit = 192.168.1.0/255.255.255.0   ; replace with your LAN subnet</pre>
-        <p style="font-size:12px;color:#8b949e;margin-bottom:14px;">
-            Restart Asterisk: <code style="background:#161b22;padding:2px 5px;border-radius:3px;">sudo systemctl restart asterisk</code>
-        </p>
-
-        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Step 2 — Update .env</h4>
-        <pre style="background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:14px;
-                    font-size:12px;color:#79c0ff;overflow-x:auto;margin-bottom:14px;">ASTERISK_HOST=192.168.1.10       # PBX IP on your LAN
-ASTERISK_PORT=5038               # AMI port (default 5038)
-ASTERISK_USERNAME=beitdesk       # matches [beitdesk] in manager.conf
-ASTERISK_PASSWORD=your_ami_password_here</pre>
-
-        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Step 3 — Add VoIP Provider in BeitDesk Admin</h4>
-        <ol style="font-size:13px;color:#8b949e;line-height:2;padding-left:20px;margin-bottom:14px;">
-            <li>Go to <code style="background:#161b22;padding:2px 5px;border-radius:3px;">/admin/</code>
-                → <strong style="color:#e6edf3;">Voip → Voip providers → Add</strong>.</li>
-            <li>Set <strong style="color:#e6edf3;">Name</strong> (e.g. Beitbridge PBX),
-                <strong style="color:#e6edf3;">Host</strong> to the PBX LAN IP,
-                <strong style="color:#e6edf3;">Port</strong> to 5060 (SIP),
-                <strong style="color:#e6edf3;">Protocol</strong> to SIP.</li>
-            <li>Tick <strong style="color:#e6edf3;">Is active</strong> and save.</li>
-        </ol>
-
-        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Step 4 — Register Extensions</h4>
-        <ol style="font-size:13px;color:#8b949e;line-height:2;padding-left:20px;margin-bottom:14px;">
-            <li>Go to <code style="background:#161b22;padding:2px 5px;border-radius:3px;">/admin/</code>
-                → <strong style="color:#e6edf3;">Voip → Extensions → Add</strong>.</li>
-            <li>Enter the <strong style="color:#e6edf3;">Extension number</strong> (e.g. 4001).</li>
-            <li>Link to the <strong style="color:#e6edf3;">User</strong> (IT staff member using that extension).</li>
-            <li>Set <strong style="color:#e6edf3;">Department</strong> and select the VoIP provider.</li>
-            <li>Repeat for each IT staff extension.</li>
-        </ol>
-
-        <h4 style="font-size:13px;color:#e6edf3;margin-bottom:8px;">Step 5 — Test</h4>
-        <ol style="font-size:13px;color:#8b949e;line-height:2;padding-left:20px;margin-bottom:14px;">
-            <li>Make a test call to a registered extension.</li>
-            <li>Open <strong style="color:#e6edf3;">VoIP → Live Board</strong> — the call should appear within seconds.</li>
-            <li>If nothing appears, verify the PBX can reach BeitDesk on port 8000 and AMI credentials match.</li>
-        </ol>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-            <div style="background:#161b22;border-left:3px solid #f85149;padding:10px 14px;border-radius:4px;font-size:12px;color:#8b949e;">
-                ⚠️ <strong style="color:#e6edf3;">Firewall:</strong> Port 5038 must be open between
-                BeitDesk and the PBX. On Windows: Windows Firewall inbound rule.
-                On Linux: <code>sudo ufw allow 5038</code>.
-            </div>
-            <div style="background:#161b22;border-left:3px solid #3fb950;padding:10px 14px;border-radius:4px;font-size:12px;color:#8b949e;">
-                ✅ <strong style="color:#e6edf3;">No PBX?</strong> Use <strong style="color:#e6edf3;">VoIP → Log a Call</strong>
-                manually. All other features including the call board work fully in manual mode.
-            </div>
-        </div>
-    </div>
-
-    <div style="background:#1c2128;border:1px solid #30363d;border-radius:8px;padding:16px;
-                text-align:center;font-size:12px;color:#6e7681;">
-        BeitDesk v1.0 &bull; Municipality of Beitbridge &bull; IT Department &bull;
-        <a href="/admin/about/" style="color:#c9a227;">About this system</a>
-    </div>
+<div class="guide-section">
+    <h2>🔧 Troubleshooting</h2>
+    <h3>Camera won't start</h3>
+    <ul>
+        <li>Ensure you're on HTTPS (<code>python run_https.py</code>), not HTTP</li>
+        <li>Allow camera permissions in browser (click lock icon in address bar)</li>
+        <li>Use Chrome or Edge — Firefox and Safari have limited support</li>
+        <li>Check that a webcam is physically connected</li>
+    </ul>
+    <h3>QR code not showing</h3>
+    <ul>
+        <li>Ensure internet access (loads qrcode.js from CDN)</li>
+        <li>Try refreshing the page</li>
+        <li>Use the manual key entry instead — copy the secret into your authenticator app</li>
+    </ul>
+    <h3>Face not recognised</h3>
+    <ul>
+        <li>Improve lighting — face should be well-lit from the front</li>
+        <li>Re-enroll face in better lighting conditions</li>
+        <li>Use authenticator app as fallback</li>
+        <li>Admin can clear face lock: MFA Settings → scroll down</li>
+    </ul>
+    <h3>DB backup fails</h3>
+    <ul>
+        <li>SQLite: ensure <code>nexusdesk.db</code> is not locked by another process</li>
+        <li>PostgreSQL: ensure <code>pg_dump</code> is installed and on PATH</li>
+        <li>Check <code>backups/</code> folder exists and is writable</li>
+    </ul>
 </div>
 {% endblock %}

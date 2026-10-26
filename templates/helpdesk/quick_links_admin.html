@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% load pager %}
+{% block title %}Quick Links{% endblock %}
+{% block page_title %}Quick Links{% endblock %}
+{% block breadcrumb %}Admin / Quick links{% endblock %}
+{% block content %}
+<style>
+.seg{display:inline-flex;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.seg a{padding:7px 16px;font-size:13px;color:var(--text-muted);text-decoration:none;border-right:1px solid var(--border);display:flex;gap:8px;align-items:center;}
+.seg a:last-child{border-right:none;} .seg a.on{background:rgba(26,107,48,.25);color:var(--accent-hover);font-weight:600;}
+.seg .n{background:rgba(255,255,255,.1);border-radius:10px;padding:0 8px;font-size:11px;}
+.st{font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;}
+.st.active{background:rgba(35,134,54,.2);color:var(--success-text);} .st.expired{background:rgba(139,148,158,.18);color:#8b949e;} .st.revoked{background:rgba(248,81,73,.18);color:#f85149;}
+</style>
+<div class="flex-between mb-4" style="flex-wrap:wrap;gap:12px;">
+    <div><h1 style="font-size:20px;">Quick Links</h1>
+        <div class="text-muted" style="font-size:12px;margin-top:2px;">Personal expiring links users made to raise requests without signing in. The link itself is never stored — only who made it and when it works.</div></div>
+    <form method="get" style="display:flex;gap:8px;align-items:center;">
+        <input type="hidden" name="status" value="{{ status }}">
+        <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Search user or name…" style="width:210px;">
+        <button class="btn btn-secondary btn-sm" type="submit"><i class="fas fa-magnifying-glass"></i></button>
+    </form>
+</div>
+<div class="mb-4"><div class="seg">
+    <a href="?status=all&q={{ q }}" class="{% if status == 'all' %}on{% endif %}">All <span class="n">{{ total }}</span></a>
+    <a href="?status=active&q={{ q }}" class="{% if status == 'active' %}on{% endif %}">Active <span class="n">{{ counts.active }}</span></a>
+    <a href="?status=expired&q={{ q }}" class="{% if status == 'expired' %}on{% endif %}">Expired <span class="n">{{ counts.expired }}</span></a>
+    <a href="?status=revoked&q={{ q }}" class="{% if status == 'revoked' %}on{% endif %}">Revoked <span class="n">{{ counts.revoked }}</span></a>
+</div></div>
+<div class="card"><div class="table-wrapper"><table>
+    <thead><tr><th>Owner</th><th>Link</th><th>Status</th><th>Created</th><th>Expires</th><th>Last used</th><th>Uses</th><th></th></tr></thead>
+    <tbody>
+    {% for l in links %}
+    <tr>
+        <td><b>{{ l.user.get_full_name|default:l.user.username }}</b><div class="text-muted" style="font-size:11px;">{{ l.user.username }}</div></td>
+        <td>{{ l.label }}<div class="text-muted" style="font-size:11px;font-family:monospace;">…{{ l.token_hint }}</div></td>
+        <td><span class="st {{ l.status }}">{{ l.status|title }}</span>{% if l.revoked_note %}<div class="text-muted" style="font-size:11px;">{{ l.revoked_note }}</div>{% endif %}</td>
+        <td style="white-space:nowrap;">{{ l.created_at|date:"d M Y H:i" }}</td>
+        <td style="white-space:nowrap;">{{ l.expires_at|date:"d M Y H:i" }}</td>
+        <td style="white-space:nowrap;">{% if l.last_used_at %}{{ l.last_used_at|date:"d M Y H:i" }}{% else %}—{% endif %}</td>
+        <td>{{ l.use_count }}</td>
+        <td>{% if l.status == 'active' %}<form method="post" action="{% url 'quick_link_revoke' l.pk %}" onsubmit="return confirm('Revoke this link?');">{% csrf_token %}<input type="hidden" name="from" value="admin"><button class="btn btn-secondary btn-sm" type="submit"><i class="fas fa-ban"></i> Revoke</button></form>{% endif %}</td>
+    </tr>
+    {% empty %}<tr><td colspan="8" class="text-muted" style="text-align:center;padding:30px;">No links found.</td></tr>{% endfor %}
+    </tbody>
+</table></div>
+{% include 'helpdesk/_pagination.html' with page_obj=links param='page' noun='link' %}
+</div>
+{% endblock %}

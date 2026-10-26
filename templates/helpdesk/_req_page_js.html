@@ -1,0 +1,74 @@
+{# Shared by the request page and the quick-link page. Needs tpl_json in context. #}
+{{ tpl_json|json_script:"tplData" }}
+<script>
+(function(){
+    var TPL = JSON.parse(document.getElementById('tplData').textContent || '{}');
+    var PRI = ['LOW','MEDIUM','HIGH','CRITICAL'];
+
+    window.setPri = function(p){
+        var h = document.getElementById('priorityHidden'); if (!h) return;
+        h.value = p;
+        PRI.forEach(function(x){
+            var b = document.getElementById('p-' + x.toLowerCase());
+            if (b) b.className = 'p-opt' + (x === p ? ' sel-' + x.toLowerCase() : '');
+        });
+    };
+
+    function setActive(id){
+        document.querySelectorAll('#tplGrid .tpl-card').forEach(function(c){
+            c.classList.toggle('active', (c.dataset.id || '') === String(id || '') && id !== '' && id != null);
+        });
+    }
+
+    function pick(id){
+        var hidden = document.getElementById('tmplId');
+        var title = document.getElementById('f-title'), body = document.getElementById('f-desc'),
+            cat = document.getElementById('f-cat'), note = document.getElementById('tplNote');
+        if (!id){                                   // blank request
+            if (hidden) hidden.value = '';
+            setActive('');
+            if (note) note.style.display = 'none';
+            if (title) title.focus();
+            return;
+        }
+        var t = TPL[id]; if (!t) return;
+        // never silently throw away something the person has already typed
+        var typed = (title && title.value.trim() && title.value !== t.title) ||
+                    (body && body.value.trim() && body.value !== t.body);
+        if (typed && !confirm('Replace what you have typed with the "' + t.name + '" template?')) return;
+        if (hidden) hidden.value = t.id;
+        if (title) title.value = t.title;
+        if (body) body.value = t.body;
+        if (cat && t.category) cat.value = t.category;
+        setPri(t.priority);
+        setActive(t.id);
+        if (note) note.style.display = 'block';
+        if (body) body.focus();
+    }
+
+    document.querySelectorAll('#tplGrid .tpl-card').forEach(function(c){
+        c.addEventListener('click', function(){ pick(c.dataset.id); });
+    });
+
+    var search = document.getElementById('tplSearch');
+    if (search) search.addEventListener('input', function(){
+        var q = this.value.trim().toLowerCase(), shown = 0;
+        document.querySelectorAll('#tplGrid .tpl-card').forEach(function(c){
+            if (!c.dataset.id) { c.style.display = q ? 'none' : ''; return; }
+            var hit = !q || (c.dataset.search || '').indexOf(q) !== -1;
+            c.style.display = hit ? '' : 'none'; if (hit) shown++;
+        });
+        document.getElementById('tplNone').style.display = (q && !shown) ? 'block' : 'none';
+    });
+
+    // restore state after a validation error / ?template= link
+    var h = document.getElementById('tmplId');
+    if (h && h.value) setActive(h.value);
+    var ph = document.getElementById('priorityHidden');
+    setPri(ph && ph.value ? ph.value : 'MEDIUM');
+
+    // jump to the first field that needs attention
+    var e = document.querySelector('.has-error input,.has-error select,.has-error textarea');
+    if (e){ e.scrollIntoView({block:'center'}); try{ e.focus(); }catch(x){} }
+})();
+</script>

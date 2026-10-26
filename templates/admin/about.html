@@ -1,96 +1,149 @@
 {% extends "admin/base_site.html" %}
 {% block content %}
-<div style="max-width:860px;">
+<style>
+.g{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px;margin-top:20px;}
+.c{background:#1c2128;border:1px solid #30363d;border-radius:10px;padding:18px;}
+.c h3{font-size:11px;font-weight:700;color:#c9a227;text-transform:uppercase;
+       letter-spacing:.6px;margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+.c ul{list-style:none;padding:0;margin:0;}
+.c li{font-size:12px;color:#8b949e;padding:5px 0;border-bottom:1px solid #21262d;
+       display:flex;justify-content:space-between;align-items:center;}
+.c li:last-child{border-bottom:none;}
+.c li span{color:#e6edf3;font-weight:500;}
+.ok{background:rgba(63,185,80,.15);color:#3fb950;border:1px solid rgba(63,185,80,.3);
+    padding:1px 8px;border-radius:10px;font-size:10px;font-weight:700;}
+.na{background:rgba(110,118,129,.15);color:#8b949e;border:1px solid #30363d;
+    padding:1px 8px;border-radius:10px;font-size:10px;}
+</style>
 
-    <h1 style="margin-bottom:6px;">About BeitDesk</h1>
-    <p style="color:#888;margin-bottom:28px;">Municipality of Beitbridge — IT Help Desk & Support System</p>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px;">
-        <div style="background:#1c2128;border:1px solid #30363d;border-radius:8px;padding:20px;">
-            <h3 style="color:#3fb950;margin-bottom:12px;font-size:14px;">
-                <span style="margin-right:8px;">ℹ️</span>System Overview
-            </h3>
-            <p style="font-size:13px;color:#8b949e;line-height:1.7;">
-                BeitDesk is the official IT Help Desk and Support Management System for the
-                Municipality of Beitbridge. It provides a centralised platform for logging,
-                tracking, and resolving IT support tickets raised by municipal staff, while
-                also monitoring VoIP call activity for the IT department.
-            </p>
-        </div>
-        <div style="background:#1c2128;border:1px solid #30363d;border-radius:8px;padding:20px;">
-            <h3 style="color:#c9a227;margin-bottom:12px;font-size:14px;">
-                <span style="margin-right:8px;">🏛️</span>Organisation
-            </h3>
-            <table style="width:100%;font-size:13px;color:#8b949e;">
-                <tr><td style="padding:4px 0;color:#e6edf3;">Organisation</td><td>Municipality of Beitbridge</td></tr>
-                <tr><td style="padding:4px 0;color:#e6edf3;">Department</td><td>Information Technology</td></tr>
-                <tr><td style="padding:4px 0;color:#e6edf3;">System</td><td>BeitDesk v1.0</td></tr>
-                <tr><td style="padding:4px 0;color:#e6edf3;">Framework</td><td>Django 5.2 / Python 3.14</td></tr>
-                <tr><td style="padding:4px 0;color:#e6edf3;">Database</td><td>PostgreSQL 18</td></tr>
-                <tr><td style="padding:4px 0;color:#e6edf3;">Established</td><td>2007</td></tr>
-            </table>
-        </div>
-    </div>
-
-    <div style="background:#1c2128;border:1px solid #30363d;border-radius:8px;padding:20px;margin-bottom:20px;">
-        <h3 style="color:#58a6ff;margin-bottom:14px;font-size:14px;">
-            <span style="margin-right:8px;">✅</span>System Capabilities
-        </h3>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;color:#8b949e;">
-            <div>✔ Ticket creation, assignment, and tracking</div>
-            <div>✔ Priority and category management</div>
-            <div>✔ VoIP call logging with caller ID</div>
-            <div>✔ Live call board with auto-refresh</div>
-            <div>✔ Role-based access control (Admin / Staff / User)</div>
-            <div>✔ Immutable audit trail with full event history</div>
-            <div>✔ Agent workload monitoring</div>
-            <div>✔ Period-based reporting and analytics</div>
-            <div>✔ Caller directory and history</div>
-            <div>✔ Self-service profile and password management</div>
-        </div>
-    </div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
-        <div style="background:#1c2128;border:1px solid #30363d;border-radius:8px;padding:20px;">
-            <h3 style="color:#f85149;margin-bottom:12px;font-size:14px;">
-                <span style="margin-right:8px;">🔐</span>Access Control
-            </h3>
-            <table style="width:100%;font-size:12px;color:#8b949e;">
-                <tr style="border-bottom:1px solid #30363d;">
-                    <th style="padding:6px 0;color:#e6edf3;text-align:left;">Role</th>
-                    <th style="padding:6px 0;color:#e6edf3;text-align:left;">Capabilities</th>
-                </tr>
-                <tr>
-                    <td style="padding:6px 0;color:#f85149;">Administrator</td>
-                    <td>Full system access, assign tickets, manage all users</td>
-                </tr>
-                <tr>
-                    <td style="padding:6px 0;color:#388bfd;">IT Staff</td>
-                    <td>All tickets, take unassigned, change status, view own audit</td>
-                </tr>
-                <tr>
-                    <td style="padding:6px 0;color:#8b949e;">User</td>
-                    <td>Own tickets only, own audit events, own profile</td>
-                </tr>
-            </table>
-        </div>
-        <div style="background:#1c2128;border:1px solid #30363d;border-radius:8px;padding:20px;">
-            <h3 style="color:#d29922;margin-bottom:12px;font-size:14px;">
-                <span style="margin-right:8px;">👨‍💻</span>Developer Information
-            </h3>
-            <table style="width:100%;font-size:13px;color:#8b949e;">
-                <tr><td style="padding:4px 0;color:#e6edf3;">Developer</td><td>Bl@de_zar</td></tr>
-                <tr><td style="padding:4px 0;color:#e6edf3;">Full Name</td><td>Pearson Nyirenda</td></tr>
-                <tr><td style="padding:4px 0;color:#e6edf3;">Version</td><td>1.0.0</td></tr>
-                <tr><td style="padding:4px 0;color:#e6edf3;">Motto</td><td style="color:#c9a227;">Ambition · Perseverance · Success</td></tr>
-            </table>
-        </div>
-    </div>
-
-    <div style="background:#1c2128;border:1px solid #30363d;border-radius:8px;padding:16px;
-                text-align:center;font-size:12px;color:#6e7681;">
-        BeitDesk &copy; {% now "Y" %} Municipality of Beitbridge &bull;
-        Built with Django &bull; Ambition · Perseverance · Success
+<div style="display:flex;align-items:center;gap:14px;margin-bottom:4px;">
+    <img src="/static/img/beitbridge_logo.jpg" alt="" style="width:52px;height:52px;border-radius:10px;border:2px solid rgba(201,162,39,.4);">
+    <div>
+        <h1 style="font-size:22px;font-weight:800;color:#e6edf3;margin:0;">BeitDesk</h1>
+        <p style="color:#8b949e;font-size:13px;margin:2px 0 0;">IT Help Desk &amp; Asset Management System — Municipality of Beitbridge, Zimbabwe</p>
     </div>
 </div>
+<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+    <span style="background:rgba(63,185,80,.15);color:#3fb950;border:1px solid rgba(63,185,80,.3);padding:3px 12px;border-radius:20px;font-size:11px;font-weight:700;">v1.0 — Production Ready</span>
+    <span style="background:rgba(201,162,39,.12);color:#c9a227;border:1px solid rgba(201,162,39,.2);padding:3px 12px;border-radius:20px;font-size:11px;">Bl@de_zar | Pearson Nyirenda</span>
+    <span style="background:rgba(88,166,255,.12);color:#58a6ff;border:1px solid rgba(88,166,255,.2);padding:3px 12px;border-radius:20px;font-size:11px;">Ambition · Perseverance · Success</span>
+</div>
+
+<div class="g">
+    <div class="c">
+        <h3>⚙️ Technology Stack</h3>
+        <ul>
+            <li>Framework <span>Django 5.2.3</span></li>
+            <li>Language <span>Python 3.12+</span></li>
+            <li>Database (Dev) <span>SQLite</span></li>
+            <li>Database (Prod) <span>PostgreSQL 18</span></li>
+            <li>Static Files <span>WhiteNoise 6.7</span></li>
+            <li>HTTPS Server <span>Werkzeug</span></li>
+            <li>UI Icons <span>Font Awesome 6.4 (local)</span></li>
+            <li>Charts <span>Chart.js 4.4</span></li>
+            <li>Face MFA <span>face-api.js 0.22.2 (local)</span></li>
+            <li>TOTP MFA <span>pyotp 2.9</span></li>
+            <li>Web Push <span>pywebpush + VAPID</span></li>
+        </ul>
+    </div>
+
+    <div class="c">
+        <h3>✅ Core Help Desk</h3>
+        <ul>
+            <li>Ticket CRUD + Audit Trail <span class="ok">Active</span></li>
+            <li>SLA Escalation (check_sla) <span class="ok">Active</span></li>
+            <li>Bulk Ticket Actions <span class="ok">Active</span></li>
+            <li>Date Filters + Section Field <span class="ok">Active</span></li>
+            <li>E-signature approval (Approve / Reject) <span class="ok">Active</span></li>
+            <li>Staff Performance Reports <span class="ok">Active</span></li>
+            <li>CSV Export (tickets + assets) <span class="ok">Active</span></li>
+            <li>Word Prediction / Autocomplete <span class="ok">Active</span></li>
+            <li>Ticket Templates (quick-fill) <span class="ok">Active</span></li>
+            <li>Recurring Tickets (scheduled) <span class="ok">Active</span></li>
+        </ul>
+    </div>
+
+    <div class="c">
+        <h3>🔒 Security &amp; MFA</h3>
+        <ul>
+            <li>Face Recognition MFA <span class="ok">Active</span></li>
+            <li>TOTP (Google Authenticator) <span class="ok">Active</span></li>
+            <li>8 One-Time Backup Codes <span class="ok">Active</span></li>
+            <li>MFA Enable/Disable Toggle <span class="ok">Active</span></li>
+            <li>Face Lockout (5 fails/15min) <span class="ok">Active</span></li>
+            <li>MFA Audit Log <span class="ok">Active</span></li>
+            <li>Terms &amp; Conditions (versioned) <span class="ok">Active</span></li>
+            <li>T&C Acceptance Audit Trail <span class="ok">Active</span></li>
+            <li>CSRF Protection <span class="ok">Active</span></li>
+            <li>Full Activity Audit <span class="ok">Active</span></li>
+        </ul>
+    </div>
+
+    <div class="c">
+        <h3>🌐 Portal &amp; Notifications</h3>
+        <ul>
+            <li>IT Self-Service Portal <span class="ok">Active</span></li>
+            <li>True Server Push (VAPID) <span class="ok">Active</span></li>
+            <li>In-App Notification Bell <span class="ok">Active</span></li>
+            <li>Email Notifications <span class="ok">Active</span></li>
+            <li>PWA (Installable App) <span class="ok">Active</span></li>
+            <li>Offline Page (Service Worker) <span class="ok">Active</span></li>
+            <li>Knowledge Base <span class="ok">Active</span></li>
+            <li>IT Asset Registry <span class="ok">Active</span></li>
+            <li>DB Backup / Restore <span class="ok">Active</span></li>
+            <li>VoIP Call Tracking <span class="ok">Active</span></li>
+        </ul>
+    </div>
+
+    <div class="c">
+        <h3>🗄 Database Models</h3>
+        <ul>
+            <li>Ticket, TicketComment <span style="color:#8b949e;font-size:10px;">helpdesk</span></li>
+            <li>Category, Tag, AuditLog <span style="color:#8b949e;font-size:10px;">helpdesk</span></li>
+            <li>KBArticle, Asset <span style="color:#8b949e;font-size:10px;">helpdesk</span></li>
+            <li>DatabaseBackup, DatabaseYear <span style="color:#8b949e;font-size:10px;">helpdesk</span></li>
+            <li>TicketTemplate <span style="color:#8b949e;font-size:10px;">helpdesk</span></li>
+            <li>RecurringTicket <span style="color:#8b949e;font-size:10px;">helpdesk</span></li>
+            <li>PendingNotification <span style="color:#8b949e;font-size:10px;">helpdesk</span></li>
+            <li>UserProfile, MFALog <span style="color:#8b949e;font-size:10px;">accounts</span></li>
+            <li>TermsVersion, UserTermsAcceptance <span style="color:#8b949e;font-size:10px;">accounts</span></li>
+            <li>VoIPCall, Extension <span style="color:#8b949e;font-size:10px;">voip</span></li>
+        </ul>
+    </div>
+
+    <div class="c">
+        <h3>📋 Management Commands</h3>
+        <ul>
+            <li><code style="color:#79c0ff;">seed_data</code> <span>Create demo data + T&C</span></li>
+            <li><code style="color:#79c0ff;">check_sla</code> <span>Escalate overdue tickets</span></li>
+            <li><code style="color:#79c0ff;">check_sla --dry-run</code> <span>Preview only</span></li>
+            <li><code style="color:#79c0ff;">process_recurring</code> <span>Create scheduled tickets</span></li>
+            <li><code style="color:#79c0ff;">process_recurring --dry-run</code> <span>Preview</span></li>
+        </ul>
+        <h3 style="margin-top:16px;">🚀 Run Commands</h3>
+        <ul>
+            <li>HTTP <span style="font-size:10px;font-family:monospace;color:#79c0ff;">py manage.py runserver 0.0.0.0:8000</span></li>
+            <li>HTTPS (LAN) <span style="font-size:10px;font-family:monospace;color:#79c0ff;">python run_https.py</span></li>
+        </ul>
+    </div>
+
+    <div class="c">
+        <h3>👥 Permission Levels</h3>
+        <ul>
+            <li>Administrator <span>Full system access</span></li>
+            <li>IT Staff <span>Tickets, Assets, KB, Backup</span></li>
+            <li>Regular User <span>IT Self-Service Portal only</span></li>
+        </ul>
+        <h3 style="margin-top:16px;">🔑 First-time Setup</h3>
+        <ul>
+            <li>Create admin <span>py manage.py createsuperuser</span></li>
+            <li>URL (HTTP) <span>http://localhost:8000</span></li>
+            <li>URL (HTTPS/LAN) <span>https://&lt;ip&gt;:8000</span></li>
+        </ul>
+    </div>
+</div>
+<p style="margin-top:24px;font-size:11px;color:#6e7681;text-align:center;">
+    BeitDesk v1.0 &copy; 2025–2026 Municipality of Beitbridge &bull;
+    Developed by Bl@de_zar | Pearson Nyirenda &bull; Ambition · Perseverance · Success
+</p>
 {% endblock %}

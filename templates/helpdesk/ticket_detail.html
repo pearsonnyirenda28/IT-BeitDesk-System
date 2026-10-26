@@ -29,10 +29,12 @@
             </div>
         </div>
     </div>
-    {% if request.user.is_superuser %}
-    <a href="{% url 'print_ticket_single' ticket.ticket_id %}" target="_blank"
-       class="btn btn-secondary btn-sm">
-        <i class="fas fa-print"></i> Print
+    {% if latest_approval %}
+    <a href="#esign-card" class="badge" style="text-decoration:none;align-self:flex-start;
+       {% if latest_approval.decision == 'APPROVED' %}background:rgba(35,134,54,.15);color:var(--success-text);border:1px solid rgba(63,185,80,.3);
+       {% else %}background:rgba(218,54,51,.15);color:#f85149;border:1px solid rgba(248,81,73,.3);{% endif %}">
+        <i class="fas fa-{% if latest_approval.decision == 'APPROVED' %}circle-check{% else %}circle-xmark{% endif %}"></i>
+        {{ latest_approval.get_decision_display }}
     </a>
     {% endif %}
 </div>
@@ -56,6 +58,129 @@
                            white-space:pre-wrap;">{{ ticket.description }}</p>
             </div>
         </div>
+
+        <!-- E-Signature / Approval -->
+        {% if request.user.is_staff or approvals %}
+        <div class="card mb-4" id="esign-card">
+            <div class="card-header">
+                <div class="header-icon" style="background:rgba(201,162,39,.2);color:var(--gold);">
+                    <i class="fas fa-signature"></i>
+                </div>
+                <h6>Approval &amp; E-Signature</h6>
+            </div>
+            <div class="card-body">
+
+                {% if latest_approval %}
+                <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:12px 14px;border-radius:8px;margin-bottom:14px;
+                    {% if latest_approval.decision == 'APPROVED' %}background:rgba(35,134,54,.10);border:1px solid rgba(63,185,80,.3);
+                    {% else %}background:rgba(218,54,51,.10);border:1px solid rgba(248,81,73,.3);{% endif %}">
+                    <div style="font-size:26px;{% if latest_approval.decision == 'APPROVED' %}color:var(--success-text);{% else %}color:#f85149;{% endif %}">
+                        <i class="fas fa-{% if latest_approval.decision == 'APPROVED' %}circle-check{% else %}circle-xmark{% endif %}"></i>
+                    </div>
+                    <div style="flex:1;min-width:180px;">
+                        <div style="font-weight:700;font-size:14px;">{{ latest_approval.get_decision_display }}
+                            by {{ latest_approval.signer_name }}{% if latest_approval.signer_title %}
+                            <span class="text-muted" style="font-weight:400;">· {{ latest_approval.signer_title }}</span>{% endif %}</div>
+                        <div class="text-muted" style="font-size:12px;">{{ latest_approval.signed_at|date:"d M Y, H:i" }}
+                            {% if latest_approval.is_intact %}
+                            · <span style="color:var(--success-text);"><i class="fas fa-shield-halved"></i> Record verified</span>
+                            {% else %}
+                            · <span style="color:#f85149;"><i class="fas fa-triangle-exclamation"></i> Record has been altered</span>
+                            {% endif %}
+                        </div>
+                        {% if latest_approval.reason %}
+                        <div style="font-size:13px;margin-top:6px;white-space:pre-wrap;">{{ latest_approval.reason }}</div>
+                        {% endif %}
+                    </div>
+                    <img src="{{ latest_approval.signature_image }}" alt="Signature of {{ latest_approval.signer_name }}"
+                         style="height:64px;max-width:220px;background:#fff;border-radius:6px;padding:4px;">
+                </div>
+                {% endif %}
+
+                {% if request.user.is_staff %}
+                <form method="post" id="esignForm" autocomplete="off">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="esign">
+                    <input type="hidden" name="signature" id="esignData" value="{{ esign_values.signature }}">
+
+                    {% if esign_errors %}
+                    <div class="form-alert"><i class="fas fa-circle-exclamation"></i>
+                        Nothing was lost — fix the highlighted field(s) below and sign again.</div>
+                    {% endif %}
+
+                    <div class="form-group {% if esign_errors.decision %}has-error{% endif %}">
+                        <label class="form-label">Decision *</label>
+                        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                            <label class="btn btn-secondary" style="cursor:pointer;gap:8px;">
+                                <input type="radio" name="decision" value="APPROVED"
+                                       {% if esign_values.decision == 'APPROVED' %}checked{% endif %}> Approve
+                            </label>
+                            <label class="btn btn-secondary" style="cursor:pointer;gap:8px;">
+                                <input type="radio" name="decision" value="REJECTED"
+                                       {% if esign_values.decision == 'REJECTED' %}checked{% endif %}> Reject
+                            </label>
+                        </div>
+                        {% if esign_errors.decision %}<div class="field-error" data-focus>{{ esign_errors.decision }}</div>{% endif %}
+                    </div>
+
+                    <div class="form-group {% if esign_errors.reason %}has-error{% endif %}" id="reasonGroup"
+                         style="{% if esign_values.decision != 'REJECTED' %}display:none;{% endif %}">
+                        <label class="form-label">Reason for rejection *</label>
+                        <textarea name="reason" id="esignReason" class="form-control" rows="3"
+                                  placeholder="Explain why this ticket is being rejected...">{{ esign_values.reason }}</textarea>
+                        {% if esign_errors.reason %}<div class="field-error" data-focus>{{ esign_errors.reason }}</div>{% endif %}
+                    </div>
+
+                    <div class="grid grid-2 gap-3">
+                        <div class="form-group">
+                            <label class="form-label">Title / Role <span class="text-muted" style="font-weight:400;">(optional)</span></label>
+                            <input type="text" name="signer_title" class="form-control" maxlength="100"
+                                   value="{{ esign_values.signer_title }}" placeholder="e.g. IT Manager">
+                        </div>
+                        <div class="form-group {% if esign_errors.password %}has-error{% endif %}">
+                            <label class="form-label">Confirm your password *</label>
+                            <input type="password" name="password" class="form-control" autocomplete="current-password">
+                            {% if esign_errors.password %}<div class="field-error" data-focus>{{ esign_errors.password }}</div>{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="form-group {% if esign_errors.signature %}has-error{% endif %}">
+                        <label class="form-label">Signature * <span class="text-muted" style="font-weight:400;">— draw with mouse, finger or stylus</span></label>
+                        <div style="position:relative;">
+                            <canvas id="sigPad" width="600" height="160"
+                                    style="width:100%;max-width:600px;height:160px;background:#fff;border:1px dashed #8b949e;
+                                           border-radius:8px;touch-action:none;cursor:crosshair;display:block;"></canvas>
+                            <button type="button" id="sigClear" class="btn btn-secondary btn-sm"
+                                    style="position:absolute;top:8px;right:8px;">Clear</button>
+                        </div>
+                        {% if esign_errors.signature %}<div class="field-error" data-focus>{{ esign_errors.signature }}</div>{% endif %}
+                    </div>
+
+                    <p class="text-muted" style="font-size:11px;margin:0 0 12px;">
+                        By signing you confirm this decision is yours. Your name, signature, time and IP address are
+                        stored with a tamper-evident fingerprint of this ticket.
+                    </p>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-pen-nib"></i> Sign &amp; Submit</button>
+                </form>
+                {% elif not latest_approval %}
+                <p class="text-muted" style="font-size:13px;">Awaiting sign-off.</p>
+                {% endif %}
+
+                {% if approvals|length > 1 %}
+                <div style="margin-top:18px;border-top:1px solid var(--border);padding-top:12px;">
+                    <div class="form-label" style="margin-bottom:8px;">Sign-off history</div>
+                    {% for a in approvals %}
+                    <div style="display:flex;gap:10px;align-items:center;font-size:12px;padding:5px 0;{% if not forloop.last %}border-bottom:1px solid var(--border-subtle);{% endif %}">
+                        <span class="badge" style="{% if a.decision == 'APPROVED' %}color:var(--success-text);{% else %}color:#f85149;{% endif %}">{{ a.get_decision_display }}</span>
+                        <span>{{ a.signer_name }}</span>
+                        <span class="text-muted" style="margin-left:auto;">{{ a.signed_at|date:"d M Y H:i" }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
 
         <!-- Change Status -->
         {% if request.user.is_staff %}
@@ -260,6 +385,67 @@
                     </div>
                 </div>
                 {% endif %}
+
+                <!-- Tags section -->
+                <div>
+                    <div class="text-muted"
+                         style="font-size:10px;text-transform:uppercase;
+                                letter-spacing:.5px;margin-bottom:6px;">
+                        <i class="fas fa-tags"></i> Tags
+                    </div>
+                    <div id="tagChips" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;">
+                        {% for tag in ticket.tags.all %}
+                        <span class="tag-chip" data-id="{{ tag.pk }}"
+                              style="display:inline-flex;align-items:center;gap:4px;
+                                     padding:3px 8px 3px 10px;border-radius:12px;
+                                     font-size:11px;font-weight:600;cursor:default;
+                                     background:{{ tag.color }}22;color:{{ tag.color }};
+                                     border:1px solid {{ tag.color }}55;">
+                            #{{ tag.name }}
+                            {% if request.user.is_staff %}
+                            <button onclick="removeTag({{ tag.pk }},this.parentElement)"
+                                    style="background:none;border:none;color:{{ tag.color }};
+                                           cursor:pointer;padding:0;font-size:12px;line-height:1;
+                                           opacity:.7;margin-left:2px;" title="Remove tag">×</button>
+                            {% endif %}
+                        </span>
+                        {% empty %}
+                        <span id="noTagsMsg" style="font-size:11px;color:var(--text-muted);">No tags</span>
+                        {% endfor %}
+                    </div>
+                    {% if request.user.is_staff %}
+                    <div style="position:relative;">
+                        <button onclick="document.getElementById('tagDropdown').style.display=document.getElementById('tagDropdown').style.display==='block'?'none':'block'"
+                                style="font-size:11px;color:var(--accent-hover);background:none;
+                                       border:1px dashed var(--accent);border-radius:8px;
+                                       padding:3px 10px;cursor:pointer;">
+                            <i class="fas fa-plus"></i> Add Tag
+                        </button>
+                        <div id="tagDropdown" style="display:none;position:absolute;left:0;top:28px;
+                             z-index:50;background:var(--bg-card);border:1px solid var(--border);
+                             border-radius:8px;padding:8px;min-width:200px;max-height:220px;
+                             overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.4);">
+                            <div style="font-size:10px;color:var(--text-muted);padding:0 4px 6px;
+                                        text-transform:uppercase;letter-spacing:.4px;">Available Tags</div>
+                            {% for tag in all_tags %}
+                            <button onclick="addTag({{ tag.pk }},'{{ tag.name|escapejs }}','{{ tag.color|escapejs }}')"
+                                    title="{{ tag.description }}"
+                                    style="display:flex;align-items:center;gap:8px;width:100%;
+                                           background:none;border:none;padding:6px 8px;
+                                           border-radius:6px;cursor:pointer;text-align:left;
+                                           color:var(--text-primary);font-size:12px;
+                                           transition:background .1s;"
+                                    onmouseover="this.style.background='var(--bg-tertiary)'"
+                                    onmouseout="this.style.background='none'">
+                                <span style="width:10px;height:10px;border-radius:50%;
+                                             background:{{ tag.color }};flex-shrink:0;"></span>
+                                #{{ tag.name }}
+                            </button>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
 
@@ -437,6 +623,60 @@
 <script>
 (function(){
     'use strict';
+    var canvas=document.getElementById('sigPad'); if(!canvas) return;
+    var ctx=canvas.getContext('2d'), data=document.getElementById('esignData');
+    var drawing=false, dirty=false;
+    ctx.lineWidth=2.4; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#0b1f3a';
+
+    // Re-draw a previously entered signature after a validation error
+    if(data.value){
+        var img=new Image();
+        img.onload=function(){ctx.drawImage(img,0,0,canvas.width,canvas.height); dirty=true;};
+        img.src=data.value;
+    }
+    function pos(e){
+        var r=canvas.getBoundingClientRect();
+        return {x:(e.clientX-r.left)*canvas.width/r.width, y:(e.clientY-r.top)*canvas.height/r.height};
+    }
+    canvas.addEventListener('pointerdown',function(e){
+        drawing=true; canvas.setPointerCapture(e.pointerId);
+        var p=pos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p.x+.1,p.y+.1); ctx.stroke(); dirty=true; e.preventDefault();
+    });
+    canvas.addEventListener('pointermove',function(e){
+        if(!drawing) return; var p=pos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); e.preventDefault();
+    });
+    ['pointerup','pointercancel'].forEach(function(ev){canvas.addEventListener(ev,function(){drawing=false;});});
+
+    document.getElementById('sigClear').addEventListener('click',function(){
+        ctx.clearRect(0,0,canvas.width,canvas.height); dirty=false; data.value='';
+    });
+
+    // Show the reason box only when rejecting
+    var group=document.getElementById('reasonGroup'), reason=document.getElementById('esignReason');
+    document.querySelectorAll('#esignForm input[name=decision]').forEach(function(r){
+        r.addEventListener('change',function(){
+            group.style.display=(this.value==='REJECTED')?'':'none';
+            if(this.value==='REJECTED') reason.focus();
+        });
+    });
+
+    document.getElementById('esignForm').addEventListener('submit',function(){
+        // Transparent PNG: server rejects it if nothing was drawn
+        data.value = dirty ? canvas.toDataURL('image/png') : '';
+    });
+
+    // After an error, jump to the first field that needs attention
+    var firstErr=document.querySelector('#esignForm .field-error');
+    if(firstErr){
+        var box=firstErr.closest('.form-group'), f=box&&box.querySelector('input:not([type=radio]),textarea');
+        document.getElementById('esign-card').scrollIntoView({block:'center'});
+        if(f&&f.type!=='hidden') f.focus();
+    }
+})();
+</script>
+<script>
+(function(){
+    'use strict';
     const SUGGEST_URL='/dashboard/api/suggest/';
     const CSRF=document.querySelector('[name=csrfmiddlewaretoken]').value;
     const input=document.getElementById('id_comment_body');
@@ -496,5 +736,65 @@
     input.addEventListener('blur',()=>setTimeout(hide,150));
     document.addEventListener('click',e=>{if(!e.target.closest('.ac-wrap'))hide();});
 })();
+
+// ── Tag Management ────────────────────────────────────────────────────────────
+var TICKET_ID = '{{ ticket.ticket_id }}';
+var CSRF_TOKEN = document.querySelector('[name=csrfmiddlewaretoken]') ?
+    document.querySelector('[name=csrfmiddlewaretoken]').value : '';
+
+function addTag(tagId, tagName, tagColor) {
+    document.getElementById('tagDropdown').style.display = 'none';
+    // Check if already on ticket
+    if (document.querySelector('.tag-chip[data-id="'+tagId+'"]')) return;
+
+    fetch('/dashboard/api/tickets/' + TICKET_ID + '/tags/', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','X-CSRFToken': CSRF_TOKEN},
+        body: JSON.stringify({tag_id: tagId, remove: false})
+    })
+    .then(r => r.json())
+    .then(data => {
+        // Remove "No tags" message
+        var noMsg = document.getElementById('noTagsMsg');
+        if (noMsg) noMsg.remove();
+
+        // Add chip
+        var chip = document.createElement('span');
+        chip.className = 'tag-chip';
+        chip.dataset.id = tagId;
+        chip.style.cssText = 'display:inline-flex;align-items:center;gap:4px;padding:3px 8px 3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:' + tagColor + '22;color:' + tagColor + ';border:1px solid ' + tagColor + '55;';
+        chip.innerHTML = '#' + tagName +
+            '<button onclick="removeTag(' + tagId + ',this.parentElement)" style="background:none;border:none;color:' + tagColor + ';cursor:pointer;padding:0;font-size:12px;opacity:.7;margin-left:2px;">×</button>';
+        document.getElementById('tagChips').appendChild(chip);
+    });
+}
+
+function removeTag(tagId, chipEl) {
+    fetch('/dashboard/api/tickets/' + TICKET_ID + '/tags/', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','X-CSRFToken': CSRF_TOKEN},
+        body: JSON.stringify({tag_id: tagId, remove: true})
+    })
+    .then(r => r.json())
+    .then(() => {
+        if (chipEl) chipEl.remove();
+        if (!document.querySelectorAll('.tag-chip').length) {
+            var chips = document.getElementById('tagChips');
+            var span = document.createElement('span');
+            span.id = 'noTagsMsg';
+            span.style.cssText = 'font-size:11px;color:var(--text-muted);';
+            span.textContent = 'No tags';
+            chips.appendChild(span);
+        }
+    });
+}
+
+// Close tag dropdown on outside click
+document.addEventListener('click', function(e) {
+    var dd = document.getElementById('tagDropdown');
+    if (dd && !e.target.closest('[onclick*="tagDropdown"]') && !e.target.closest('#tagDropdown')) {
+        dd.style.display = 'none';
+    }
+});
 </script>
 {% endblock %}
