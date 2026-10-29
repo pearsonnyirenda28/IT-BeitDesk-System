@@ -16,7 +16,6 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'it_helpdesk-change-this-in-production
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
-
 # ── Multi-device / LAN access ─────────────────────────────────────────────────
 # Find your PC's LAN IP: run  ipconfig  in CMD, look for IPv4 Address.
 #
@@ -29,15 +28,18 @@ ALLOWED_HOSTS = ['*']
 #   python run_https.py
 #   Other devices: https://<your-ip>:8000
 #
-# Replace 192.168.1.171 below with YOUR actual LAN IP address.
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:8000',
     'http://127.0.0.1:8000',
     'https://localhost:8000',
     'https://127.0.0.1:8000',
-    # Your LAN IP — update this to match your ipconfig IPv4 address:
+    # Your LAN IPs — updated to match your current IP (192.168.1.96)
     'http://192.168.1.171:8000',
     'https://192.168.1.171:8000',
+    'http://192.168.1.96:8000',   # <-- Added current IP
+    'https://192.168.1.96:8000',  # <-- Added current IP
+    # Catch-all for in-app browsers (Teams, WhatsApp, etc.) or sandboxed iframes
+    #'null',                       # <-- Added 'null' to fix the 403 error
 ]
 
 # Cookie settings — 'Lax' works for both HTTP and HTTPS on LAN
@@ -69,16 +71,16 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    # GZip first — compresses all HTTP responses (HTML, JSON, API)
-    # Reduces payload ~70-80% — critical for slow LAN/legacy machines
     'django.middleware.gzip.GZipMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    # WhiteNoise — serves static files directly, with compression+caching headers
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    # Year DB router — must come after session so it can read active year
     'helpdesk.db_router.YearDatabaseMiddleware',
     'django.middleware.common.CommonMiddleware',
+    
+    # --- ADD THIS LINE HERE ---
+    'helpdesk.csrf_middleware.SpoofNullOriginMiddleware', 
+    
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',

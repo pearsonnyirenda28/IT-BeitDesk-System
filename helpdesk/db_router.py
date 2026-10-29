@@ -64,7 +64,8 @@ class YearDatabaseRouter:
     # These apps/models always use the default DB regardless of year selection
     # (user accounts, sessions, admin history, and IT HelpDesk registry tables
     # must be shared across years — they are never year-specific data)
-    DEFAULT_ONLY_APPS = {'auth', 'contenttypes', 'sessions', 'admin'}
+    # ADDED 'accounts' HERE:
+    DEFAULT_ONLY_APPS = {'auth', 'contenttypes', 'sessions', 'admin', 'accounts'}
 
     # Models within helpdesk that must always stay on default DB
     DEFAULT_ONLY_MODELS = {'databaseyear', 'glossaryterm', 'auditlog', 'category', 'tag',
@@ -112,7 +113,6 @@ class YearDatabaseMiddleware:
 
         if active_year and active_db_name:
             alias = register_year_alias(active_year, active_db_name)
-
             set_current_db_alias(alias)
         else:
             clear_current_db_alias()
