@@ -886,8 +886,8 @@ def database_switcher(request):
         'active_year':    active_year,
         'active_db_name': request.session.get('active_db_name', ''),
         'current_year':   current_year,
-        'suggested_db':   f'beitdesk_{current_year}',
-        'db_user':        os.environ.get('DB_USER', 'beitdesk_user'),
+        'suggested_db':   f'it_helpdesk_{current_year}',
+        'db_user':        os.environ.get('DB_USER', 'it_helpdesk_user'),
     })
 
 
@@ -1446,13 +1446,13 @@ def db_backup(request):
             import os, subprocess
             from django.conf import settings
             db_cfg  = settings.DATABASES.get('default',{})
-            db_name = db_cfg.get('NAME','beitdesk')
-            db_user = db_cfg.get('USER','beitdesk_user')
+            db_name = db_cfg.get('NAME','it_helpdesk')
+            db_user = db_cfg.get('USER','it_helpdesk_user')
             db_host = db_cfg.get('HOST','localhost')
             db_port = db_cfg.get('PORT','5432')
 
             ts       = timezone.now().strftime('%Y%m%d_%H%M%S')
-            filename = f'beitdesk_backup_{ts}.sql'
+            filename = f'it_helpdesk_backup_{ts}.sql'
             backup_dir = os.path.join(settings.BASE_DIR, 'backups')
             os.makedirs(backup_dir, exist_ok=True)
             filepath = os.path.join(backup_dir, filename)
@@ -1520,8 +1520,8 @@ def db_backup(request):
                 from django.conf import settings
                 backup  = DatabaseBackup.objects.get(pk=backup_id)
                 db_cfg  = settings.DATABASES.get('default',{})
-                db_name = db_cfg.get('NAME','beitdesk')
-                db_user = db_cfg.get('USER','beitdesk_user')
+                db_name = db_cfg.get('NAME','it_helpdesk')
+                db_user = db_cfg.get('USER','it_helpdesk_user')
                 db_host = db_cfg.get('HOST','localhost')
                 db_port = db_cfg.get('PORT','5432')
 
@@ -1675,7 +1675,7 @@ def export_tickets_csv(request):
         (writer.writerow(row) for row in rows()),
         content_type='text/csv')
     ts = timezone.now().strftime('%Y%m%d_%H%M')
-    response['Content-Disposition'] = f'attachment; filename="beitdesk_tickets_{ts}.csv"'
+    response['Content-Disposition'] = f'attachment; filename="it_helpdesk_tickets_{ts}.csv"'
     return response
 
 
@@ -1732,7 +1732,7 @@ def export_assets_csv(request):
         (writer.writerow(row) for row in rows()),
         content_type='text/csv')
     ts = timezone.now().strftime('%Y%m%d_%H%M')
-    response['Content-Disposition'] = f'attachment; filename="beitdesk_assets_{ts}.csv"'
+    response['Content-Disposition'] = f'attachment; filename="it_helpdesk_assets_{ts}.csv"'
     return response
 
 

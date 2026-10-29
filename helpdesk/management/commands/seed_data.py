@@ -87,10 +87,10 @@ ASSET_SEED = [
 
 
 class Command(BaseCommand):
-    help = 'Seeds BeitDesk with categories, IT assets, demo tickets, VoIP calls, T&C and tags (no users)'
+    help = 'Seeds IT HelpDesk with categories, IT assets, demo tickets, VoIP calls, T&C and tags (no users)'
 
     def handle(self, *args, **options):
-        self.stdout.write(self.style.MIGRATE_HEADING('\n🚀  Seeding NexusDesk demo data...\n'))
+        self.stdout.write(self.style.MIGRATE_HEADING('\n🚀  Seeding IT HelpDesk demo data...\n'))
         self._create_categories()
         self._create_assets()
         self._create_voip_providers()
@@ -305,16 +305,16 @@ class Command(BaseCommand):
             today = tz.now().strftime('%d %B %Y')
             TermsVersion.objects.create(
                 version='1.0',
-                title='BeitDesk System Terms & Conditions',
+                title='IT HelpDesk System Terms & Conditions',
                 is_current=True,
                 effective_date=tz.now().date(),
                 created_by=admin_user,
-                content=f"""MUNICIPALITY OF BEITBRIDGE — IT HELP DESK SYSTEM
+                content=f"""MUNICIPALITY OF BEITBRIDGE — IT HELPDESK SYSTEM
 TERMS AND CONDITIONS OF USE — Version 1.0
 Effective Date: {today}
 
 1. SYSTEM OVERVIEW
-BeitDesk is the official IT Help Desk and Asset Management System of the Municipality of Beitbridge. By logging in you agree to these Terms and Conditions.
+IT HelpDesk is the official IT HelpDesk and Asset Management System of the Municipality of Beitbridge. By logging in you agree to these Terms and Conditions.
 
 2. AUTHORISED USE
 2.1 Access is granted exclusively to authorised employees, contractors, and agents of the Municipality of Beitbridge.
@@ -353,7 +353,7 @@ BeitDesk is the official IT Help Desk and Asset Management System of the Municip
 7.3 Only authorised IT staff may create, edit, or delete Knowledge Base articles.
 
 8. SYSTEM AVAILABILITY
-8.1 BeitDesk is maintained on a best-effort basis during business hours: 08:00–17:00, Monday to Friday (excluding public holidays).
+8.1 IT HelpDesk is maintained on a best-effort basis during business hours: 07:30 a.m. – 16:30 p.m., Monday to Friday (excluding public holidays).
 8.2 Planned maintenance will be communicated in advance where possible. Emergency maintenance may occur without prior notice.
 
 9. PROHIBITED ACTIONS
@@ -382,7 +382,7 @@ For questions about these Terms and Conditions, contact:
 IT Department — Municipality of Beitbridge
 Beitbridge, Matabeleland South, Zimbabwe
 
-By clicking "I Accept — Enter BeitDesk" you confirm that you have read, fully understood, and agree to be legally bound by these Terms and Conditions of Use."""
+By clicking "I Accept — Enter IT HelpDesk" you confirm that you have read, fully understood, and agree to be legally bound by these Terms and Conditions of Use."""
             )
             self.stdout.write(self.style.SUCCESS('  ✓ T&C v1.0 seeded'))
         else:

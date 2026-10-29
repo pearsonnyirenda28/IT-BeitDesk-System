@@ -1,5 +1,5 @@
 """
-BeitDesk - Municipality of Beitbridge IT Help Desk & VoIP Tracking System
+IT HelpDesk - Municipality of Beitbridge IT HelpDesk & VoIP Tracking System
 Django Settings
 """
 
@@ -11,7 +11,7 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get('SECRET_KEY', 'beitdesk-change-this-in-production-use-env-vars')
+SECRET_KEY = os.environ.get('SECRET_KEY', 'it_helpdesk-change-this-in-production-use-env-vars')
 
 DEBUG = True
 
@@ -90,7 +90,7 @@ MIDDLEWARE = [
 # Routes helpdesk/voip queries to the year-selected DB when active
 DATABASE_ROUTERS = ['helpdesk.db_router.YearDatabaseRouter']
 
-ROOT_URLCONF = 'nexus_helpdesk.urls'
+ROOT_URLCONF = 'it_helpdesk.urls'
 
 TEMPLATES = [
     {
@@ -109,15 +109,15 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'nexus_helpdesk.wsgi.application'
+WSGI_APPLICATION = 'it_helpdesk.wsgi.application'
 
 # --- DATABASE ---
 # PostgreSQL (recommended for production)
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': os.environ.get('DB_NAME', 'nexusdesk'),
-#         'USER': os.environ.get('DB_USER', 'nexusdesk_user'),
+#         'NAME': os.environ.get('DB_NAME', 'it_helpdesk'),
+#         'USER': os.environ.get('DB_USER', 'it_helpdesk_user'),
 #         'PASSWORD': os.environ.get('DB_PASSWORD', ''),
 #         'HOST': os.environ.get('DB_HOST', 'localhost'),
 #         'PORT': os.environ.get('DB_PORT', '5432'),
@@ -128,7 +128,7 @@ WSGI_APPLICATION = 'nexus_helpdesk.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'nexusdesk.db',
+        'NAME': BASE_DIR / 'it_helpdesk.db',
     }
 }
 
@@ -204,7 +204,7 @@ CHANNEL_LAYERS = {
         "BACKEND": "channels.layers.InMemoryChannelLayer",
     }
 }
-ASGI_APPLICATION = "nexus_helpdesk.asgi.application"
+ASGI_APPLICATION = "it_helpdesk.asgi.application"
 
 # ── Performance Optimisations ─────────────────────────────────────────────────
 
@@ -213,7 +213,7 @@ ASGI_APPLICATION = "nexus_helpdesk.asgi.application"
 CACHES = {
     'default': {
         'BACKEND':  'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'beitdesk-cache',
+        'LOCATION': 'it_helpdesk-cache',
         'TIMEOUT':  300,  # 5 minutes
         'OPTIONS':  {'MAX_ENTRIES': 1000},
     }

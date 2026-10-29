@@ -1,5 +1,5 @@
 """
-BeitDesk Notification Service
+IT HelpDesk Notification Service
 ==============================
 Two delivery mechanisms work together:
 
@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def _name(user, default='BeitDesk'):
+def _name(user, default='IT HelpDesk'):
     if not user:
         return default
     return user.get_full_name() or user.username
@@ -60,7 +60,7 @@ def _active_staff(exclude=None):
 
 # ── WebSocket push via channel layer ─────────────────────────────────────────
 
-def ws_push(user_id, title, body, url='/dashboard/', tag='beitdesk',
+def ws_push(user_id, title, body, url='/dashboard/', tag='it_helpdesk',
             level='info', notif_id=None, extra=None):
     """
     Push a notification to a user's WebSocket connection instantly.
@@ -123,7 +123,7 @@ def ws_broadcast_staff(ticket_id, title, status, priority, url):
 
 # ── VAPID Web Push (background / browser closed) ─────────────────────────────
 
-def vapid_push(user, title, body, url='/dashboard/', tag='beitdesk', extra=None):
+def vapid_push(user, title, body, url='/dashboard/', tag='it_helpdesk', extra=None):
     """
     Send a real OS-level push notification using VAPID / pywebpush.
     Works even when the browser tab is closed.
@@ -208,7 +208,7 @@ def queue_notification(user, title, body, url, tag, level='info', extra=None):
 
 # ── Main notification functions ───────────────────────────────────────────────
 
-def notify(user, title, body, url='/dashboard/', tag='beitdesk',
+def notify(user, title, body, url='/dashboard/', tag='it_helpdesk',
            level='info', email_subject=None, *, sender='', ticket=None, kind=''):
     """
     Deliver a notification to a user via all available channels:
@@ -242,7 +242,7 @@ def notify(user, title, body, url='/dashboard/', tag='beitdesk',
         try:
             from django.core.mail import send_mail
             send_mail(
-                subject=f'[BeitDesk] {email_subject}',
+                subject=f'[IT HelpDesk] {email_subject}',
                 message=f'{body}\n\nView: http://localhost:8000{url}',
                 from_email='noreply@beitbridge.gov.zw',
                 recipient_list=[user.email],
@@ -326,7 +326,7 @@ def notify_ticket_assigned(ticket, assigned_by=None):
         tag=f'assigned-{ticket.ticket_id}',
         level='info',
         email_subject=f'Ticket Assigned — {ticket.ticket_id}',
-        sender=_name(assigned_by, 'BeitDesk'), ticket=ticket, kind='assigned',
+        sender=_name(assigned_by, 'IT HelpDesk'), ticket=ticket, kind='assigned',
     )
     # Also broadcast to all IT staff live feed
     ws_broadcast_staff(

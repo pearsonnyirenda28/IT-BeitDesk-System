@@ -331,7 +331,7 @@ class DatabaseYear(models.Model):
         verbose_name = 'Database Year'
 
     def __str__(self):
-        return f'BeitDesk {self.year} ({self.db_name})'
+        return f'IT HelpDesk {self.year} ({self.db_name})'
 
     def save(self, *args, **kwargs):
         if self.is_current:
@@ -344,7 +344,7 @@ class DatabaseYear(models.Model):
         return {
             'ENGINE': 'django.db.backends.postgresql',
             'NAME': self.db_name,
-            'USER': self.db_user or os.environ.get('DB_USER', 'beitdesk_user'),
+            'USER': self.db_user or os.environ.get('DB_USER', 'it_helpdesk_user'),
             'PASSWORD': os.environ.get('DB_PASSWORD', ''),
             'HOST': self.db_host or os.environ.get('DB_HOST', 'localhost'),
             'PORT': self.db_port or '5432',

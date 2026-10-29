@@ -65,6 +65,6 @@ urlpatterns = [
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) \
   + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
-admin.site.site_header = "BeitDesk Administration — Municipality of Beitbridge"
-admin.site.site_title = "BeitDesk Admin"
+admin.site.site_header = "IT HelpDesk Administration — Municipality of Beitbridge"
+admin.site.site_title = "IT HelpDesk Admin"
 admin.site.index_title = "IT Help Desk & Support Management"

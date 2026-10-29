@@ -1,5 +1,5 @@
 """
-BeitDesk ASGI configuration.
+IT HelpDesk ASGI configuration.
 Handles both HTTP (Django) and WebSocket (Channels) connections.
 
 Run with daphne for production:

@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block title %}Database / Year{% endblock %}
 {% block page_title %}Database Year Manager{% endblock %}
-{% block breadcrumb %}BeitDesk / Database &amp; Year{% endblock %}
+{% block breadcrumb %}IT HelpDesk / Database &amp; Year{% endblock %}
 
 {% block content %}
 
@@ -139,7 +139,7 @@
                         <span class="nav-icon-box icon-green" style="flex-shrink:0;margin-top:1px;font-weight:700;">1</span>
                         <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;">
                             Each year gets its own PostgreSQL database — e.g.
-                            <span class="mono">beitdesk_2025</span>, <span class="mono">beitdesk_2026</span>.
+                            <span class="mono">IT HelpDesk_2025</span>, <span class="mono">IT HelpDesk_2026</span>.
                             Records stay clean, fast and separated by year.
                         </div>
                     </div>
@@ -200,7 +200,7 @@
                     <div class="form-group">
                         <label class="form-label">Description</label>
                         <input type="text" name="description" class="form-control"
-                               placeholder="e.g. BeitDesk records for {{ current_year }}">
+                               placeholder="e.g. IT HelpDesk records for {{ current_year }}">
                     </div>
                     <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">
                         <i class="fas fa-database"></i> Register Year Database

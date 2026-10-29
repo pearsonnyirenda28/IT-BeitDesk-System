@@ -4,14 +4,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}BeitDesk{% endblock %} | Beitbridge IT Help Desk</title>
+    <title>{% block title %}IT Help Desk{% endblock %} | Beitbridge IT HelpDesk</title>
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#1a6b30">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="BeitDesk">
+    <meta name="apple-mobile-web-app-title" content="IT HelpDesk">
     <!-- Favicons -->
     <link rel="icon" type="image/x-icon" href="{% static 'img/favicon.ico' %}">
     <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
@@ -440,8 +440,8 @@
         <img src="{% static 'img/beitbridge_logo.jpg' %}" alt="Beitbridge"
              style="width:36px;height:36px;border-radius:6px;object-fit:cover;flex-shrink:0;">
         <div>
-            <div class="brand-text">BeitDesk</div>
-            <div class="brand-sub">Beitbridge IT Help Desk</div>
+            <div class="brand-text">IT HelpDesk</div>
+            <div class="brand-sub">Beitbridge IT HelpDesk</div>
         </div>
     </div>
 
@@ -668,7 +668,7 @@
     </button>
     <div>
         <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
-        <div class="topbar-breadcrumb">{% block breadcrumb %}BeitDesk{% endblock %}</div>
+        <div class="topbar-breadcrumb">{% block breadcrumb %}IT HelpDesk{% endblock %}</div>
     </div>
     <div class="topbar-right">
         {% if sidebar_active_calls %}
@@ -853,7 +853,7 @@
         {% block content %}{% endblock %}
         <footer style="margin-top:28px;padding-top:14px;border-top:1px solid var(--border-subtle);
                        text-align:center;font-size:11px;color:var(--text-muted);">
-            BeitDesk &copy; {% now "Y" %} &bull; Municipality of Beitbridge IT Help Desk
+            IT HelpDesk &copy; {% now "Y" %} &bull; Municipality of Beitbridge IT HelpDesk
             <div style="font-size:10px;margin-top:3px;">
                 Developed by <span style="color:var(--gold);font-weight:600;">Bl@de_zar</span> | Pearson Nyirenda
             </div>
@@ -911,7 +911,7 @@ function getCsrf(){
 
 // ── Theme toggle ──────────────────────────────────────────────────────────────
 (function(){
-    const t=localStorage.getItem('beitdesk-theme')||'dark';
+    const t=localStorage.getItem('it_helpdesk-theme')||'dark';
     document.body.classList.toggle('theme-light',t==='light');
     const i=document.getElementById('themeIcon');
     if(i)i.className=t==='light'?'fas fa-sun':'fas fa-moon';
@@ -920,7 +920,7 @@ function applyTheme(t){
     document.body.classList.toggle('theme-light',t==='light');
     const i=document.getElementById('themeIcon');
     if(i)i.className=t==='light'?'fas fa-sun':'fas fa-moon';
-    localStorage.setItem('beitdesk-theme',t);
+    localStorage.setItem('it_helpdesk-theme',t);
 }
 function toggleTheme(){
     const next=document.body.classList.contains('theme-light')?'dark':'light';
@@ -932,7 +932,7 @@ function toggleTheme(){
 
 // ── Notification panel — handled by NOTIF object below ────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════
-// BEITDESK NOTIFICATION SYSTEM — YouTube-style
+// IT HELPDESK NOTIFICATION SYSTEM — YouTube-style
 // ═══════════════════════════════════════════════════════════════════════════
 
 /*WA-BEGIN*/
@@ -985,7 +985,7 @@ var WA = {
             return '<b>' + WA.esc(c.sender) + ':</b> ' + msg;
         return msg;
     },
-    osTitle: function(m) { return (m.sender && m.ticket_id) ? m.sender + ' · ' + m.ticket_id : (m.title || 'BeitDesk'); },
+    osTitle: function(m) { return (m.sender && m.ticket_id) ? m.sender + ' · ' + m.ticket_id : (m.title || 'IT Help Desk    '); },
     osBody:  function(m) { return m.body || ''; }
 };
 /*WA-END*/
@@ -1048,7 +1048,7 @@ var NOTIF = {
         // Show permission banner after 5s if not yet asked (first visit)
         if ('Notification' in window &&
             Notification.permission === 'default' &&
-            !localStorage.getItem('beitdesk_notif_asked')) {
+            !localStorage.getItem('it_helpdesk_notif_asked')) {
             setTimeout(function() { NOTIF.showPermBanner(); }, 5000);
         }
     },
@@ -1156,7 +1156,7 @@ var NOTIF = {
         a.onclick = function() { NOTIF.openConversation(c); };
         var name = c.ticket_id
             ? c.ticket_id + (c.ticket_title ? ' · ' + c.ticket_title : '')
-            : (c.title || 'BeitDesk');
+            : (c.title || 'IT HelpDesk');
         a.innerHTML =
             WA.avatarHtml(c.sender, c.kind) +
             '<div class="wa-main">' +
@@ -1216,7 +1216,7 @@ var NOTIF = {
                     body:     WA.osBody(msg),
                     icon:     '/static/pwa/icon-192.png',
                     badge:    '/static/pwa/icon-72.png',
-                    tag:      msg.ticket_id ? 'ticket-' + msg.ticket_id : (msg.tag || 'beitdesk'),
+                    tag:      msg.ticket_id ? 'ticket-' + msg.ticket_id : (msg.tag || 'it_helpdesk'),
                     renotify: true,
                     data:     { url: WA.safeUrl(msg.url) },
                     vibrate:  [100, 50, 100],
@@ -1257,7 +1257,7 @@ var NOTIF = {
             if (e.target.closest && e.target.closest('.wa-x')) return;
             if (msg.ticket_id) NOTIF.postRead({conversation: msg.ticket_id});
         };
-        var who = msg.sender || msg.title || 'BeitDesk';
+        var who = msg.sender || msg.title || 'IT HelpDesk';
         el.innerHTML =
             WA.avatarHtml(msg.sender, msg.kind) +
             '<div class="wa-toast-body">' +
@@ -1309,13 +1309,13 @@ var NOTIF = {
     },
 
     loadMute: function() {
-        try { this.muted = localStorage.getItem('beitdesk_notif_muted') === '1'; } catch (e) {}
+        try { this.muted = localStorage.getItem('it_helpdesk_notif_muted') === '1'; } catch (e) {}
         this.paintMute();
     },
 
     toggleMute: function() {
         this.muted = !this.muted;
-        try { localStorage.setItem('beitdesk_notif_muted', this.muted ? '1' : '0'); } catch (e) {}
+        try { localStorage.setItem('it_helpdesk_notif_muted', this.muted ? '1' : '0'); } catch (e) {}
         this.paintMute();
         if (!this.muted) this.playPop();
     },
@@ -1327,7 +1327,7 @@ var NOTIF = {
         b.innerHTML = '<i class="fas ' + (this.muted ? 'fa-volume-xmark' : 'fa-volume-high') + '" style="font-size:12px;"></i>';
     },
 
-    // ── Browser tab title: "(3) BeitDesk" ─────────────────────────────────────
+    // ── Browser tab title: "(3) IT HelpDesk" ─────────────────────────────────────
 
     updateTitle: function() {
         if (!this.baseTitle) this.baseTitle = document.title.replace(/^\(\d+\+?\)\s*/, '');
@@ -1387,13 +1387,13 @@ var NOTIF = {
     showPermBanner: function() {
         if (!this.permBanner) return;
         if (Notification.permission !== 'default') return;
-        if (localStorage.getItem('beitdesk_notif_asked')) return;
+        if (localStorage.getItem('it_helpdesk_notif_asked')) return;
         this.permBanner.style.display = 'block';
     },
 
     dismissPermBanner: function() {
         if (this.permBanner) this.permBanner.style.display = 'none';
-        localStorage.setItem('beitdesk_notif_asked', '1');
+        localStorage.setItem('it_helpdesk_notif_asked', '1');
     },
 
     requestPermission: async function() {
@@ -1580,7 +1580,7 @@ if (document.readyState !== 'loading') { NOTIF.init(); }
                     ws.send(JSON.stringify({type:'ping'}));
                 }
             }, 25000);
-            console.debug('[BeitDesk WS] Connected');
+            console.debug('[IT HelpDesk WS] Connected');
         };
 
         ws.onmessage = function(e){
@@ -1609,21 +1609,21 @@ if (document.readyState !== 'loading') { NOTIF.init(); }
             wsReady = false;
             clearInterval(heartbeatTimer);
             if(e.code === 4001){
-                console.debug('[BeitDesk WS] Not authenticated');
+                console.debug('[IT HelpDesk WS] Not authenticated');
                 return;
             }
             reconnectTimer = setTimeout(function(){
                 reconnectDelay = Math.min(reconnectDelay * 1.5, maxDelay);
                 connect();
             }, reconnectDelay);
-            console.debug('[BeitDesk WS] Disconnected (code=' + e.code + '), reconnecting in ' + Math.round(reconnectDelay/1000) + 's');
+            console.debug('[IT HelpDesk WS] Disconnected (code=' + e.code + '), reconnecting in ' + Math.round(reconnectDelay/1000) + 's');
         };
 
         ws.onerror = function(){};
     }
 
     function fallbackToPoll(){
-        console.debug('[BeitDesk WS] WebSocket unavailable, falling back to polling');
+        console.debug('[IT HelpDesk WS] WebSocket unavailable, falling back to polling');
         if(window.NOTIF) NOTIF.fetchNotifs();
         setInterval(function(){ if(window.NOTIF) NOTIF.fetchNotifs(); }, 15000);
     }
@@ -1658,11 +1658,11 @@ function pollNotifications(){ if(window.NOTIF) NOTIF.fetchNotifs(); }
      color:#fff;border-radius:12px;padding:14px 20px;
      box-shadow:0 8px 32px rgba(0,0,0,.4),0 2px 8px rgba(26,107,48,.5);
      display:none;align-items:center;gap:14px;max-width:420px;width:calc(100% - 32px);">
-    <img src="{% static 'pwa/icon-72.png' %}" alt="BeitDesk"
+    <img src="{% static 'pwa/icon-72.png' %}" alt="IT HelpDesk"
          style="width:40px;height:40px;border-radius:8px;flex-shrink:0;">
     <div style="flex:1;">
         <div style="font-size:13px;font-weight:700;margin-bottom:2px;">
-            Install BeitDesk
+            Install IT HelpDesk
         </div>
         <div style="font-size:11px;opacity:.85;line-height:1.4;">
             Add to your home screen for quick access — works offline too
@@ -1687,11 +1687,11 @@ if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js', { scope: '/' })
             .then(reg => {
-                console.log('[BeitDesk] SW registered, scope:', reg.scope);
+                console.log('[IT HelpDesk] SW registered, scope:', reg.scope);
                 // Check for updates every hour
                 setInterval(() => reg.update(), 3600000);
             })
-            .catch(err => console.warn('[BeitDesk] SW registration failed:', err));
+            .catch(err => console.warn('[IT HelpDesk] SW registration failed:', err));
     });
 }
 
@@ -1727,7 +1727,7 @@ if (installBtn) {
         if (!deferredPrompt) return;
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
-        console.log('[BeitDesk] PWA install outcome:', outcome);
+        console.log('[IT HelpDesk] PWA install outcome:', outcome);
         deferredPrompt = null;
         if (installBanner) installBanner.style.display = 'none';
     });
@@ -1747,7 +1747,7 @@ window.matchMedia('(display-mode: standalone)').addEventListener('change', e => 
 
 // Track when PWA is installed successfully
 window.addEventListener('appinstalled', () => {
-    console.log('[BeitDesk] PWA installed successfully');
+    console.log('[IT HelpDesk] PWA installed successfully');
     localStorage.setItem('pwaInstalled', 'true');
     if (installBanner) installBanner.style.display = 'none';
 });

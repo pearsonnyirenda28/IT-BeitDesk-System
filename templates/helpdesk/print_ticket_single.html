@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BeitDesk — Ticket {{ ticket.ticket_id }}</title>
+    <title>IT HelpDesk — Ticket {{ ticket.ticket_id }}</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -231,7 +231,7 @@
 <!-- ── Print Controls ── -->
 <div class="print-controls">
     <div>
-        <strong>BeitDesk</strong> — Printing Ticket {{ ticket.ticket_id }}
+        <strong>IT HelpDesk</strong> — Printing Ticket {{ ticket.ticket_id }}
         &nbsp;·&nbsp; <a href="javascript:history.back()">← Back</a>
     </div>
     <div>
@@ -444,7 +444,7 @@
 
 <!-- ── Footer ── -->
 <div class="print-footer">
-    <div>BeitDesk v1.0 — Municipality of Beitbridge IT Help Desk</div>
+    <div>IT HelpDesk v1.0 — Municipality of Beitbridge IT Help Desk</div>
     <div>Ref: {{ ticket.ticket_id }} &nbsp;|&nbsp; Printed: {{ printed_at|date:"d F Y H:i" }}</div>
     <div>CONFIDENTIAL — FOR INTERNAL USE ONLY</div>
 </div>

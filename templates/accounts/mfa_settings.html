@@ -276,7 +276,7 @@
                     {{ profile.totp_secret }}
                 </div>
                 <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
-                    Issuer: BeitDesk — Beitbridge Municipality
+                    Issuer: IT HelpDesk — Beitbridge Municipality
                 </div>
                 {% if not profile.totp_enabled %}
                 <form method="post" style="margin-top:14px;">
@@ -367,7 +367,7 @@
 
         <!-- Print template (hidden) -->
         <div id="printArea" style="display:none;">
-            <h2>BeitDesk — Emergency Backup Codes</h2>
+            <h2>IT HelpDesk — Emergency Backup Codes</h2>
             <p>User: {{ request.user.get_full_name|default:request.user.username }} ({{ request.user.username }})</p>
             <p>Generated: {% now "d M Y H:i" %}</p>
             <p><strong>Each code can only be used once. Keep this page secure.</strong></p>
@@ -376,7 +376,7 @@
                 <div style="border:1px solid #ccc;padding:8px;text-align:center;font-family:monospace;font-size:14px;letter-spacing:3px;">{{ code }}</div>
                 {% endfor %}
             </div>
-            <p style="font-size:11px;color:#666;">Municipality of Beitbridge IT Help Desk — BeitDesk</p>
+            <p style="font-size:11px;color:#666;">Municipality of Beitbridge IT Help Desk — IT HelpDesk</p>
         </div>
 
         {% else %}
@@ -482,7 +482,7 @@ function printCodes() {
     var pa = document.getElementById('printArea');
     if (!pa) return;
     var w = window.open('','_blank','width=620,height=520');
-    w.document.write('<!DOCTYPE html><html><head><title>BeitDesk Backup Codes</title>');
+    w.document.write('<!DOCTYPE html><html><head><title>IT HelpDesk Backup Codes</title>');
     w.document.write('<style>body{font-family:Arial,sans-serif;padding:30px;color:#000;}h2{color:#1a6b30;}');
     w.document.write('div{break-inside:avoid;}</style></head><body>');
     w.document.write(pa.innerHTML);
@@ -494,7 +494,7 @@ function copyCodes() {
     var codes=[];
     document.querySelectorAll('#codesGrid .mono').forEach(function(el){codes.push(el.textContent.trim());});
     if(!codes.length)return;
-    var text='BeitDesk Emergency Backup Codes\n================================\n'+codes.join('\n')+'\n\nEach code can only be used once.\nMunicipality of Beitbridge IT Help Desk\n';
+    var text='IT HelpDesk Emergency Backup Codes\n================================\n'+codes.join('\n')+'\n\nEach code can only be used once.\nMunicipality of Beitbridge IT Help Desk\n';
     navigator.clipboard.writeText(text).then(function(){
         var btn=document.getElementById('copyBtn');
         if(btn){btn.innerHTML='<i class="fas fa-check"></i> Copied!';btn.style.color='var(--success-text)';

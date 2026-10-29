@@ -274,7 +274,7 @@ class ImportViewTests(TestCase):
         org(self.t, '=SUM(A1)', 'Finance', '')
         r = self.client.get(reverse('organisation_export'))
         body = r.content.decode('utf-8-sig')
-        self.assertEqual(r['Content-Disposition'], 'attachment; filename="beitdesk_organisation.csv"')
+        self.assertEqual(r['Content-Disposition'], 'attachment; filename="it_helpdesk_organisation.csv"')
         self.assertTrue(body.startswith('username,full name,role,office,department,section'))
         self.assertIn("'=SUM(A1)", body)
         self.assertIn('rudo,Rudo,User,Old Depot', body)

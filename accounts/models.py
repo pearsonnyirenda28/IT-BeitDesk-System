@@ -1,5 +1,5 @@
 from django.db import models
-# NexusDesk uses Django's built-in User model.
+# IT HelpDesk uses Django's built-in User model.
 # Extend here if you need a custom UserProfile in the future.
 from django.db import models
 from django.contrib.auth.models import User
@@ -104,7 +104,7 @@ class TermsVersion(models.Model):
     version     = models.CharField(max_length=10, unique=True,
                                    help_text='e.g. 1.0, 1.1, 2.0')
     title       = models.CharField(max_length=200,
-                                   default='BeitDesk System Terms & Conditions')
+                                   default='IT HelpDesk System Terms & Conditions')
     content     = models.TextField(help_text='Full T&C text (plain text or HTML)')
     is_current  = models.BooleanField(default=False,
                                       help_text='Only one version can be current')

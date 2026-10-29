@@ -1,5 +1,5 @@
 """
-BeitDesk Year-Scoped Database Router
+IT HelpDesk Year-Scoped Database Router
 =====================================
 When a user selects a year in the Database Switcher, all subsequent queries
 are routed to that year's PostgreSQL database until they switch back.
@@ -62,7 +62,7 @@ class YearDatabaseRouter:
     """
 
     # These apps/models always use the default DB regardless of year selection
-    # (user accounts, sessions, admin history, and BeitDesk registry tables
+    # (user accounts, sessions, admin history, and IT HelpDesk registry tables
     # must be shared across years — they are never year-specific data)
     DEFAULT_ONLY_APPS = {'auth', 'contenttypes', 'sessions', 'admin'}
 

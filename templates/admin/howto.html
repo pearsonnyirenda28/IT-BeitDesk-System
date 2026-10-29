@@ -13,11 +13,11 @@ code{background:#21262d;border:1px solid #30363d;border-radius:4px;padding:1px 6
 .ok{background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.2);border-radius:6px;padding:8px 12px;font-size:11px;color:#3fb950;margin:8px 0;}
 </style>
 
-<h1 style="font-size:20px;font-weight:700;margin-bottom:4px;color:#e6edf3;">BeitDesk — Administrator Guide</h1>
-<p style="color:#8b949e;font-size:13px;margin-bottom:20px;">Complete reference for managing BeitDesk</p>
+<h1 style="font-size:20px;font-weight:700;margin-bottom:4px;color:#e6edf3;">IT HelpDesk — Administrator Guide</h1>
+<p style="color:#8b949e;font-size:13px;margin-bottom:20px;">Complete reference for managing IT HelpDesk</p>
 
 <div class="guide-section">
-    <h2>🚀 Starting the System</h2>
+    <h2>🚀 Starting the System</h2> 
     <h3>Normal HTTP (development / LAN without PWA)</h3>
     <code class="cmd">py manage.py runserver 0.0.0.0:8000</code>
     <h3>HTTPS (required for PWA install + camera MFA on other devices)</h3>
@@ -62,7 +62,7 @@ code{background:#21262d;border:1px solid #30363d;border-radius:4px;padding:1px 6
     <p>Visit <code>/accounts/mfa/enroll/?user_id=&lt;pk&gt;</code> as admin, or ask user to visit <code>/accounts/mfa/enroll/</code> themselves.</p>
     <div class="note">Face recognition requires HTTPS and a camera. On HTTP (localhost only), camera works. On LAN devices, start the HTTPS server first.</div>
     <h3>Unlocking a locked face account</h3>
-    <p>After 5 failed face attempts, account locks for 15 minutes. Admin can unlock at: <code>/accounts/mfa/settings/</code> → scroll to unlock section.</p>
+    <p>After 5 failed face attempts,     account locks for 15 minutes. Admin can unlock at: <code>/accounts/mfa/settings/</code> → scroll to unlock section.</p>
     <h3>TOTP Setup (Google Authenticator)</h3>
     <ol>
         <li>User visits MFA Settings → scans QR code with Google Authenticator or Authy</li>
@@ -90,7 +90,7 @@ code{background:#21262d;border:1px solid #30363d;border-radius:4px;padding:1px 6
     <h3>Restore (admin only)</h3>
     <div class="warn">Restore OVERWRITES the current database. Always create a new backup before restoring.</div>
     <h3>Year Databases</h3>
-    <p>BeitDesk supports multiple year databases. Register years at Dashboard → Database / Year. Staff can switch to a past year at login to view historical records. Past-year databases are read-only in the UI.</p>
+    <p>IT HelpDesk supports multiple year databases. Register years at Dashboard → Database / Year. Staff can switch to a past year at login to view historical records. Past-year databases are read-only in the UI.</p>
 </div>
 
 <div class="guide-section">
@@ -99,9 +99,9 @@ code{background:#21262d;border:1px solid #30363d;border-radius:4px;padding:1px 6
     <code class="cmd">py manage.py check_sla</code>
     <code class="cmd">py manage.py check_sla --dry-run  # preview without sending</code>
     <h3>Schedule on Windows (every 30 minutes)</h3>
-    <code class="cmd">schtasks /create /tn "BeitDesk SLA" /tr "C:\path\to\.venv\Scripts\python.exe C:\path\to\manage.py check_sla" /sc minute /mo 30 /st 00:00</code>
+    <code class="cmd">schtasks /create /tn "IT HelpDesk SLA" /tr "C:\path\to\.venv\Scripts\python.exe C:\path\to\manage.py check_sla" /sc minute /mo 30 /st 00:00</code>
     <h3>Schedule on Linux (cron)</h3>
-    <code class="cmd">*/30 * * * * cd /path/to/beitdesk && python manage.py check_sla >> /var/log/beitdesk_sla.log 2>&1</code>
+    <code class="cmd">*/30 * * * * cd /path/to/it_helpdesk && python manage.py check_sla >> /var/log/it_helpdesk_sla.log 2>&1</code>
     <p>Escalation levels: 1=Warning (within 2h of due), 2=Breached (past due), 3=Critical (24h+ overdue).</p>
 </div>
 

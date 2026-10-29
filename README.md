@@ -1,6 +1,6 @@
-# BeitDesk — Municipality of Beitbridge IT Help Desk
+# IT HelpDesk — Municipality of Beitbridge IT HelpDesk
 
-**BeitDesk** is the official IT Help Desk and VoIP Tracking System for the
+**IT HelpDesk** is the official IT Help Desk and VoIP Tracking System for the
 Municipality of Beitbridge. Built with Django, it provides centralised ticket
 management, VoIP call logging, role-based access control, and a full audit trail.
 
@@ -55,12 +55,12 @@ management, VoIP call logging, role-based access control, and a full audit trail
 ### 1. Clone or extract the project
 
 ```cmd
-cd C:\Users\YourName\Documents
-git clone https://github.com/your-username/beitdesk.git
-cd beitdesk
+cd C:\Users\PC\Documents
+git clone https://github.com/pearsonnyirenda/IT-HelpDesk-System.git
+cd IT-HelpDesk-System
 ```
 
-Or extract the `.7z` archive, then `cd` into the `nexus_helpdesk` folder.
+Or extract the `.7z` archive, then `cd` into the `IT-HelpDesk-System` folder.
 
 ### 2. Create a virtual environment
 
@@ -111,10 +111,10 @@ psql -U postgres
 Run these SQL commands:
 
 ```sql
-CREATE DATABASE beitdesk;
-CREATE USER beitdesk_user WITH PASSWORD 'StrongPassword123!';
-GRANT ALL PRIVILEGES ON DATABASE beitdesk TO beitdesk_user;
-ALTER DATABASE beitdesk OWNER TO beitdesk_user;
+CREATE DATABASE it-helpdesk;
+CREATE USER it-helpdesk_user WITH PASSWORD 'your-password!';
+GRANT ALL PRIVILEGES ON DATABASE it-helpdesk TO it-helpdesk_user;
+ALTER DATABASE it-helpdesk OWNER TO it-helpdesk_user;
 \q
 ```
 
@@ -138,7 +138,7 @@ Creates 5 staff users, 8 categories, 15 tickets, 20 VoIP call records.
 python manage.py runserver
 ```
 
-Open **http://127.0.0.1:8000** — login: `admin` / `admin123!`
+Open **http://127.0.0.1:8000** 
 
 ---
 
@@ -147,8 +147,8 @@ Open **http://127.0.0.1:8000** — login: `admin` / `admin123!`
 ### 1. Clone and set up environment
 
 ```bash
-git clone https://github.com/your-username/beitdesk.git
-cd beitdesk
+git clone https://github.com/pearsonnyirenda/IT-HelpDesk-System.git
+cd IT-HelpDesk-System
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
@@ -168,13 +168,13 @@ sudo -u postgres psql
 ```
 
 ```sql
-CREATE DATABASE beitdesk;
-CREATE USER beitdesk_user WITH PASSWORD 'StrongPassword123!';
-ALTER ROLE beitdesk_user SET client_encoding TO 'utf8';
-ALTER ROLE beitdesk_user SET default_transaction_isolation TO 'read committed';
-ALTER ROLE beitdesk_user SET timezone TO 'Africa/Harare';
-GRANT ALL PRIVILEGES ON DATABASE beitdesk TO beitdesk_user;
-ALTER DATABASE beitdesk OWNER TO beitdesk_user;
+CREATE DATABASE it-helpdesk;
+CREATE USER it-helpdesk_user WITH PASSWORD 'yourpassword';
+ALTER ROLE it-helpdesk_user SET client_encoding TO 'utf8';
+ALTER ROLE it-helpdesk_user SET default_transaction_isolation TO 'read committed';
+ALTER ROLE it-helpdesk_user SET timezone TO 'Africa/Harare';
+GRANT ALL PRIVILEGES ON DATABASE it-helpdesk TO it-helpdesk_user;
+ALTER DATABASE it-helpdesk OWNER TO it-helpdesk_user;
 \q
 ```
 
@@ -205,11 +205,11 @@ server {
     server_name helpdesk.beitbridge.gov.zw;
 
     location /static/ {
-        alias /path/to/beitdesk/staticfiles/;
+        alias /path/to/it-helpdesk/staticfiles/;
     }
 
     location /media/ {
-        alias /path/to/beitdesk/media/;
+        alias /path/to/it-helpdesk/media/;
     }
 
     location / {
@@ -226,15 +226,15 @@ server {
 ## PostgreSQL Configuration
 
 The database connection is controlled by environment variables in `.env`.
-Update `nexus_helpdesk/settings.py` if you want to hardcode values instead:
+Update `it_helpdesk/settings.py` if you want to hardcode values instead:
 
 ```python
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'beitdesk',
-        'USER': 'beitdesk_user',
-        'PASSWORD': 'StrongPassword123!',
+        'NAME': 'it-helpdesk',
+        'USER': 'it-helpdesk_user',
+        'PASSWORD': 'yourpassword',
         'HOST': 'localhost',
         'PORT': '5432',
     }
@@ -262,9 +262,9 @@ DEBUG=True                        # Set to False in production
 
 # ── Database ──────────────────────────────────────
 DB_ENGINE=django.db.backends.postgresql
-DB_NAME=beitdesk
-DB_USER=beitdesk_user
-DB_PASSWORD=StrongPassword123!
+DB_NAME=it-helpdesk
+DB_USER=it-helpdesk_user
+DB_PASSWORD=yourpassword
 DB_HOST=localhost
 DB_PORT=5432
 
@@ -279,7 +279,7 @@ EMAIL_HOST_PASSWORD=your-app-password
 # ── VoIP / Asterisk AMI (optional) ────────────────
 ASTERISK_HOST=192.168.1.10
 ASTERISK_PORT=5038
-ASTERISK_USERNAME=beitdesk
+ASTERISK_USERNAME=ami-user
 ASTERISK_PASSWORD=ami-password
 
 # ── Time Zone ─────────────────────────────────────
@@ -321,17 +321,7 @@ python -c "from django.core.management.utils import get_random_secret_key; print
 ```
 
 ---
-
-## First-Time Login
-
-| Credential | Value |
-|---|---|
-| URL | http://127.0.0.1:8000 |
-| Username | `admin` |
-| Password | `admin123!` |
-
-**Change the admin password immediately after first login:**
-Go to the top-right profile icon → My Profile → Change Password.
+sword.
 
 ### Create your first IT staff user
 
@@ -388,7 +378,7 @@ enabled = yes
 port = 5038
 bindaddr = 0.0.0.0
 
-[beitdesk]
+[it-helpdesk]
 secret = your_ami_password
 read = call,cdr,agent
 write = call
@@ -402,7 +392,7 @@ Restart Asterisk: `sudo systemctl restart asterisk`
 ```ini
 ASTERISK_HOST=192.168.1.10
 ASTERISK_PORT=5038
-ASTERISK_USERNAME=beitdesk
+ASTERISK_USERNAME=your-ami-user
 ASTERISK_PASSWORD=your_ami_password
 ```
 
@@ -429,9 +419,9 @@ should appear within seconds. See Admin Panel → How to Use for firewall tips.
 # First time
 git init
 git add .
-git commit -m "Initial BeitDesk commit"
+git commit -m "Initial IT HelpDesk commit"
 git branch -M main
-git remote add origin https://github.com/your-username/beitdesk.git
+git remote add origin git clone https://github.com/pearsonnyirenda/IT-HelpDesk-System.git
 git push -u origin main
 
 # Subsequent updates
@@ -473,8 +463,8 @@ venv/           # Virtual environment
 ## Project Structure
 
 ```
-nexus_helpdesk/
-├── nexus_helpdesk/         # Django project config
+it_helpdesk/
+├── it_helpdesk/         # Django project config
 │   ├── settings.py
 │   ├── urls.py
 │   └── wsgi.py
@@ -492,7 +482,7 @@ nexus_helpdesk/
 │   ├── base.html           # Sidebar + topbar (Beitbridge branding)
 │   ├── admin/
 │   │   ├── base_site.html  # Custom admin branding
-│   │   ├── about.html      # About BeitDesk page
+│   │   ├── about.html      # About IT HelpDesk page
 │   │   └── howto.html      # How to Use + LAN VoIP setup
 │   ├── helpdesk/
 │   ├── voip/
@@ -508,5 +498,5 @@ nexus_helpdesk/
 
 ---
 
-*BeitDesk v1.0 — Municipality of Beitbridge IT Department*  
+*IT HelpDesk v1.0 — Municipality of Beitbridge IT Department*  
 *Ambition · Perseverance · Success*

@@ -655,7 +655,7 @@ def face_enroll(request):
     import pyotp
     totp_uri = pyotp.totp.TOTP(profile.totp_secret).provisioning_uri(
         name=target.email or target.username,
-        issuer_name='BeitDesk — Beitbridge Municipality')
+        issuer_name='IT HelpDesk — Beitbridge Municipality')
 
     return render(request, 'accounts/face_enroll.html', {
         'target':   target,
@@ -757,7 +757,7 @@ def mfa_settings(request):
     # Always provide totp_uri so QR code renders (needed for setup AND re-scan)
     totp_uri = pyotp.totp.TOTP(profile.totp_secret).provisioning_uri(
         name=request.user.email or request.user.username,
-        issuer_name='BeitDesk — Beitbridge Municipality')
+        issuer_name='IT HelpDesk — Beitbridge Municipality')
 
     # Always generate backup codes if none exist (so they show on first visit)
     if not profile.totp_backup_codes:
@@ -863,14 +863,14 @@ def terms_accept(request):
                 ip_address=get_client_ip_mfa(request),
                 user_agent=request.META.get('HTTP_USER_AGENT','')[:300])
 
-            messages.success(request, 'Terms accepted. Welcome to BeitDesk.')
+            messages.success(request, 'Terms accepted. Welcome to IT HelpDesk.')
             return redirect('/dashboard/')
         else:
             # Declined — log them out
             from django.contrib.auth import logout as auth_logout
             auth_logout(request)
             messages.warning(request,
-                'You must accept the Terms & Conditions to use BeitDesk.')
+                'You must accept the Terms & Conditions to use IT HelpDesk.')
             return redirect('login')
 
     return render(request, 'accounts/terms_accept.html', {'terms': terms})
@@ -980,7 +980,7 @@ def qr_image(request):
 
     uri = pyotp.totp.TOTP(profile.totp_secret).provisioning_uri(
         name=request.user.email or request.user.username,
-        issuer_name='BeitDesk — Beitbridge Municipality')
+        issuer_name='IT HelpDesk — Beitbridge Municipality')
 
     img = qrcode.make(uri, box_size=6, border=2)
     buf = io.BytesIO()

@@ -1,5 +1,5 @@
 """
-BeitDesk Word Learning Signals
+IT HelpDesk Word Learning Signals
 ================================
 Automatically extracts and stores phrases from ticket and comment text
 whenever they are saved. This powers the autocomplete/word prediction

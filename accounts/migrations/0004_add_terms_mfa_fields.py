@@ -33,7 +33,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('version', models.CharField(help_text='e.g. 1.0, 1.1, 2.0', max_length=10, unique=True)),
-                ('title', models.CharField(default='BeitDesk System Terms & Conditions', max_length=200)),
+                ('title', models.CharField(default='IT HelpDesk System Terms & Conditions', max_length=200)),
                 ('content', models.TextField(help_text='Full T&C text (plain text or HTML)')),
                 ('is_current', models.BooleanField(default=False, help_text='Only one version can be current')),
                 ('effective_date', models.DateField()),

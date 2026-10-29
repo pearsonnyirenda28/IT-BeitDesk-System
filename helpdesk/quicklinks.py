@@ -360,7 +360,7 @@ def quick_request(request, token):
             errors['mfa_code'] = 'Enter the code from your authenticator app (or a backup code).'
         if need == 'blocked':
             errors['general'] = ('This account uses face recognition only, which cannot be used from a link. '
-                                 'Sign in to BeitDesk normally, or add an authenticator app in MFA settings.')
+                                 'Sign in to IT HelpDesk normally, or add an authenticator app in MFA settings.')
 
         if not errors:                       # only spend an attempt on a complete, valid form
             result = verify_owner(request, link, request.POST.get('password', ''), request.POST.get('mfa_code', ''))

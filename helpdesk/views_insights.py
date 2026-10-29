@@ -105,7 +105,7 @@ def organisation_export(request):
         messages.error(request, 'Administrator access required.')
         return redirect('dashboard')
     rows = orgdata.export_rows()
-    return _csv('beitdesk_organisation.csv', rows[0], rows[1:])
+    return _csv('it_helpdesk_organisation.csv', rows[0], rows[1:])
 
 
 _IMPORT_SALT = 'org-import'

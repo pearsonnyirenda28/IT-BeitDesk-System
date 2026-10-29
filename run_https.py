@@ -1,7 +1,7 @@
 """
-BeitDesk HTTPS Server
+IT HelpDesk HTTPS Server
 ======================
-Runs BeitDesk over HTTPS so other devices on your LAN can install it as a PWA.
+Runs IT HelpDesk over HTTPS so other devices on your LAN can install it as a PWA.
 
 REQUIREMENTS
 ------------
@@ -83,7 +83,7 @@ except Exception:
 
 print()
 print('=' * 60)
-print('  BeitDesk — HTTPS Server')
+print('  IT HelpDesk — HTTPS Server')
 print('  Municipality of Beitbridge IT Help Desk')
 print('=' * 60)
 print(f'  Local:    https://localhost:{PORT}')
@@ -92,7 +92,7 @@ print(f'  Cert:     {CERT}')
 print()
 print('  Other devices on your LAN:')
 print(f'  → Open https://{lan_ip}:{PORT} in Chrome/Edge')
-print('  → Click the install button to add BeitDesk to home screen')
+print('  → Click the install button to add IT HelpDesk to home screen')
 print()
 print('  Press CTRL+C to stop')
 print('=' * 60)

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BeitDesk — Accept Terms & Conditions</title>
+    <title>IT HelpDesk — Accept Terms & Conditions</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/fontawesome/css/all.min.css">
     <style>
@@ -71,7 +71,7 @@
         </div>
         <h1>Terms & Conditions</h1>
         <p class="sub">Welcome, <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>.
-            Please read and accept these terms before accessing BeitDesk.</p>
+            Please read and accept these terms before accessing IT HelpDesk.</p>
     </div>
 
     {% if terms %}
@@ -95,7 +95,7 @@
                    onchange="document.getElementById('acceptBtn').disabled = !this.checked;">
             <label for="acceptCheck">
                 I have read, understood, and agree to be bound by the
-                <strong>BeitDesk Terms & Conditions v{{ terms.version }}</strong>.
+                <strong>IT HelpDesk Terms & Conditions v{{ terms.version }}</strong>.
                 I understand that my activity within this system is logged and audited,
                 and that misuse may result in disciplinary action or prosecution.
             </label>
@@ -103,7 +103,7 @@
         <div class="actions">
             <button type="submit" name="accept" value="yes" class="btn btn-primary"
                     id="acceptBtn" disabled>
-                <i class="fas fa-shield-check"></i> I Accept — Enter BeitDesk
+                <i class="fas fa-shield-check"></i> I Accept — Enter IT HelpDesk
             </button>
             <button type="submit" name="accept" value="no" class="btn btn-danger"
                     onclick="return confirm('Declining will log you out. Are you sure?')">

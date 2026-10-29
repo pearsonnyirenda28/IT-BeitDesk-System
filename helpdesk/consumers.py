@@ -1,5 +1,5 @@
 """
-BeitDesk WebSocket Consumer — Real-Time Notifications
+IT HelpDesk WebSocket Consumer — Real-Time Notifications
 
 Each logged-in user gets their own WebSocket connection at
 ws://host/ws/notifications/
